@@ -1,103 +1,207 @@
-import Image from "next/image";
+'use client';
 
-export default function Home() {
+import React, { useEffect, useState } from "react";
+import { Icon } from "@iconify/react";
+import { ApiResponse } from "@/types/api";
+import ChatPrompt from "./components/ChatPrompt";
+import ResponseUI from "./components/ResponseUI";
+import SessionSkeleton from "./components/SessionSkeleton";
+import { RecentSession } from "@/types/api";
+
+export default function Home(): React.JSX.Element {
+  const [message, setMessage] = useState<string>('');
+  const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
+  const [isSending, setIsSending] = useState<boolean>(false);
+  const [response, setResponse] = useState<ApiResponse | null>(null);
+  const [userPrompt, setUserPrompt] = useState<string>('');
+  
+  const [sessions, setSessions] = useState<RecentSession[]>([]);
+  const [initialLoading, setInitialLoading] = useState<boolean>(true);
+
+  useEffect(() => {
+    const fetchSessions = async () => {
+      const response = await fetch('/api/recent-sessions');
+      const data = await response.json();
+      console.log('Sessions:', data);
+      setSessions(data);
+      setInitialLoading(false);
+    };
+
+    fetchSessions();
+  }, []);
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
+    e.preventDefault();
+    if(isSending) return;
+    setIsSending(true);
+    
+    if (!message.trim()) return;
+    
+    try {
+      const apiResponse = await fetch('/api/submit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ message: message.trim() }),
+      });
+      
+      if (!apiResponse.ok) {
+        throw new Error(`HTTP error! status: ${apiResponse.status}`);
+      }
+      
+      const data: ApiResponse = await apiResponse.json();
+      setUserPrompt(message.trim());
+      setResponse(data);
+      console.log('API Response:', data);
+      setMessage('');
+    } catch (error) {
+      console.error('Error submitting message:', error);
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+    setMessage(e.target.value);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSubmit(e as any);
+    }
+  };
+
+  const handleSessionClick = (session: RecentSession): void => {
+    console.log('Selected session:', session);
+    setResponse(null);
+    setTimeout(() => {
+      setResponse(session);
+      setUserPrompt(session.prompt);
+    }, 100);
+  };
+
+  const handleBackToChat = (): void => {
+    setResponse(null);
+    setUserPrompt('');
+  };
+
   return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+    <div className="min-h-screen bg-[#e5e5e5]">
+      <div className="flex h-screen">
+        
+        {sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
+        <div className="w-80 bg-white/80 rounded-r-2xl backdrop-blur-sm flex flex-col">
+          
+          <div className="p-4 pb-0">
+            <div className="flex items-center space-x-3 bg-black/10 rounded-2xl p-4 drop-shadow-customShadow mt-2">
+              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
+                <span className="text-white font-semibold text-sm">JD</span>
+              </div>
+              <div>
+                <h3 className="font-semibold text-black">Jane Doe</h3>
+                <p className="text-sm text-gray-500">Developer</p>
+              </div>
+            </div>
+          </div>
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+          <div className="p-4">
+            <button onClick={() => setResponse(null)} className="cursor-pointer w-full bg-black/80 text-white rounded-2xl py-3 px-4 hover:bg-black transition-colors duration-300 flex items-center justify-center space-x-2">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+              </svg>
+              <span>New Chat</span>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-hidden flex flex-col">
+            <div className="px-4 pb-2">
+              <h4 className="text-base font-semibold text-gray-500">Recent Sessions:</h4>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto px-4 space-y-2 sidebar-scroll">
+              {initialLoading ? (
+                <SessionSkeleton count={8} />
+              ) : (
+                sessions.map((session) => (
+                <button
+                  key={session.id}
+                  onClick={() => handleSessionClick(session)}
+                  className="w-full text-left p-3 rounded-lg hover:bg-gray-200 transition-colors duration-200 group cursor-pointer"
+                >
+                  <div className="flex justify-between items-start mb-1">
+                    <h5 className="font-medium text-sm text-black truncate">
+                      {session.title}
+                    </h5>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
+                      {new Date(session.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
+                    {session.prompt}
+                  </p>
+                </button>
+              )))}
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+
+        <div className="relative flex-1 flex flex-col lg:ml-0">
+
+          <video 
+            autoPlay 
+            loop 
+            muted 
+            playsInline
+            className="absolute top-0 left-0 w-full h-full object-cover transition-all duration-1000 ease-in-out"
+            aria-hidden="true"
+            ref={(video) => {
+              if (video) {
+                video.style.transition = 'filter 1s ease-in-out';
+                video.playbackRate = response ? 0 : isSending ? 1 : 0.2;
+              }
+            }}
+          >
+            <source src="/videos/loading.mp4" type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+
+          <div className="lg:hidden flex items-center justify-between p-4 bg-white/80 dark:bg-gray-800/80 backdrop-blur-xs border-b border-gray-200 dark:border-gray-700">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+              aria-label="Open sidebar"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+              </svg>
+            </button>
+            
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">dontvibecode</h1>
+            
+            <div className="w-10" /> {/* Spacer for centering */}
+          </div>
+          
+            <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
+              <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8">
+                {response ?
+                  <ResponseUI response={response} onBack={handleBackToChat} userPrompt={userPrompt} />
+                  :
+                  <div className="flex-1 flex flex-col items-center justify-center">
+                    <ChatPrompt message={message} setMessage={setMessage} handleSubmit={handleSubmit} isSending={isSending} handleInputChange={handleInputChange} handleKeyDown={handleKeyDown} />
+                  </div>
+                }
+              </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
