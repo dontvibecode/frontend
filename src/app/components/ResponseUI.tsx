@@ -218,8 +218,10 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
         </div>
       </motion.div>
 
+      <div className="w-full h-[1px] rounded-full bg-black/20 mb-4"></div>
+
       <motion.div 
-        className="flex justify-center space-x-4 pt-4"
+        className="flex justify-center space-x-4"
         variants={itemVariants}
       >
         <button className="cursor-pointer p-2 text-gray-400 hover:text-gray-600 transition-colors">
