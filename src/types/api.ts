@@ -22,11 +22,11 @@ export interface SubmitRequest {
   message: string;
 }
 
+//TODO: required id and title string to save
 export interface RecentSession extends ApiResponse {
   id: string;
   title: string;
   prompt: string;
   timestamp: string;
   language?: string;
-  status: 'completed' | 'in-progress' | 'failed';
 }

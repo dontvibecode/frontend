@@ -168,7 +168,7 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
                   <Icon icon="material-symbols:content-copy-outline" className="w-4 h-4 text-gray-400 cursor-pointer hover:text-white" />
                 </div>
 
-                {/* Note: Should return language for exercise so we can use correct syntax highlighting here etc */}
+                {/* TODO: Should return language for exercise so we can use correct syntax highlighting here etc */}
                 <SyntaxHighlighter
                   language="javascript"
                   style={vscDarkPlus}
