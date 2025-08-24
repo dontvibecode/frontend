@@ -190,7 +190,7 @@ export default function Home(): React.JSX.Element {
           </div>
           
             <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
-              <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8">
+              <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
                 {response ?
                   <ResponseUI response={response} onBack={handleBackToChat} userPrompt={userPrompt} />
                   :
