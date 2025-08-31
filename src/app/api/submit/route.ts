@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ApiResponse, SubmitRequest } from '@/types/api';
+import { InstructorResponse, SubmitRequest } from '@/types/api';
 
-export async function POST(request: NextRequest): Promise<NextResponse<ApiResponse>> {
+export async function POST(request: NextRequest): Promise<NextResponse<InstructorResponse>> {
   try {
     const body: SubmitRequest = await request.json();
     
@@ -13,7 +13,7 @@ export async function POST(request: NextRequest): Promise<NextResponse<ApiRespon
     }
 
     // Mock response data following the template
-    const mockResponse: ApiResponse = {
+    const mockResponse: InstructorResponse = {
       breakdown: "Here's a comprehensive breakdown of your coding issue. The problem seems to stem from a fundamental misunderstanding of how asynchronous operations work in JavaScript. When you're dealing with promises and async/await, the execution flow is different from synchronous code.",
       explanation: "The issue you're experiencing is a common one in modern web development. Your code is trying to access data before it's been fetched from the API. This happens because JavaScript doesn't wait for asynchronous operations to complete unless explicitly told to do so using await or .then() methods.",
       recommendedReadings: [

@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { ApiResponse, RecommendedReading } from "@/types/api";
+import { InstructorResponse, MessageData, RecommendedReading } from "@/types/api";
 import { Icon } from "@iconify/react";
 import { motion, useInView, Variants } from "framer-motion";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -41,7 +41,7 @@ const ReadingCard: React.FC<{ reading: RecommendedReading; index: number }> = ({
 };
 
 interface ResponseUIProps {
-  response: ApiResponse;
+  response: InstructorResponse;
   onBack?: () => void;
   userPrompt?: string;
 }
@@ -95,7 +95,7 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
           </button>
         )}
         {/* TODO: Title needed for original response object */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{response.title || "Title Here"}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{"Title Needed"}</h1>
         <button 
           className="cursor-pointer absolute right-0 bottom-0 pb-[1px] bg-[#5B5454] rounded-xl text-white transition-colors duration-300"
         >
@@ -118,7 +118,7 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
 
         <div>
           <h2 className="text-lg font-semibold text-gray-500 mb-4">Breakdown:</h2>
-          <TextUnroll 
+          <TextUnroll
             text={response.breakdown}
             className="text-gray-800"
             duration={500}
@@ -128,11 +128,11 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
         </div>
 
         <div>
-          <TextUnroll 
+          <TextUnroll
             text={response.explanation}
             className="text-gray-800"
             duration={500}
-            delay={1200}  
+            delay={1200}
             chunkSize={{ min: 3, max: 5 }}
           />
         </div>
@@ -150,7 +150,7 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
             <h3 className="text-lg font-semibold text-gray-900">Activity:</h3>
             <Icon icon="material-symbols:bookmark-outline" className="w-5 h-5 text-gray-400" />
           </div>
-          <TextUnroll 
+          <TextUnroll
             text="Try to carefully read through the code and identify why it's producing incorrect 
               results. Use your debugging skills to trace the logic and pinpoint where things 
               might be going wrong."
@@ -206,8 +206,7 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
 
       <motion.div variants={itemVariants}>
         <h2 className="text-xl font-bold text-gray-900 mb-6">Sources</h2>
-        
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {response.recommendedReadings.map((reading, index) => (
               <ReadingCard 
                 key={index}
