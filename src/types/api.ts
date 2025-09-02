@@ -1,3 +1,11 @@
+export interface MessageData {
+  text: string | null;
+  conversation: number;
+  from_user: boolean;
+  model_used: string;
+  json: InstructorResponse | null;
+}
+
 export interface RecommendedReading {
   title: string;
   Url: string;
@@ -11,7 +19,7 @@ export interface Exercise {
   code: string;
 }
 
-export interface ApiResponse {
+export interface InstructorResponse {
   breakdown: string;
   explanation: string;
   recommendedReadings: RecommendedReading[];
@@ -23,7 +31,7 @@ export interface SubmitRequest {
 }
 
 //TODO: required id and title string to save
-export interface RecentSession extends ApiResponse {
+export interface RecentSession extends MessageData {
   id: string;
   title: string;
   prompt: string;

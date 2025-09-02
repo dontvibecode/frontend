@@ -2,17 +2,18 @@
 
 import React, { useEffect, useState } from "react";
 import { Icon } from "@iconify/react";
-import { ApiResponse } from "@/types/api";
+import { InstructorResponse, MessageData } from "@/types/api";
 import ChatPrompt from "./components/ChatPrompt";
 import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
 import { RecentSession } from "@/types/api";
+import { m } from "framer-motion";
 
 export default function Home(): React.JSX.Element {
   const [message, setMessage] = useState<string>('');
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
-  const [response, setResponse] = useState<ApiResponse | null>(null);
+  const [response, setResponse] = useState<MessageData | null>(null);
   const [userPrompt, setUserPrompt] = useState<string>('');
   
   const [sessions, setSessions] = useState<RecentSession[]>([]);
@@ -38,23 +39,36 @@ export default function Home(): React.JSX.Element {
     if (!message.trim()) return;
     
     try {
-      const apiResponse = await fetch('/api/submit', {
+      const InstructorResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chat/message/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Access-Control-Request-Headers': '*',
         },
-        body: JSON.stringify({ message: message.trim() }),
+        body: JSON.stringify({ 
+          text: message.trim(),
+          conversation: 0, // testing
+          from_user: true,
+          model_used: "gemini-2.5-pro",
+          json: {}
+        }),
       });
+
+      console.log({ InstructorResponse})
       
-      if (!apiResponse.ok) {
-        throw new Error(`HTTP error! status: ${apiResponse.status}`);
+      if (!InstructorResponse.ok) {
+        throw new Error(`HTTP error! status: ${InstructorResponse.status}`);
       }
-      
-      const data: ApiResponse = await apiResponse.json();
-      setUserPrompt(message.trim());
-      setResponse(data);
-      console.log('API Response:', data);
-      setMessage('');
+      console.log({ InstructorResponse })
+      const data: MessageData = await InstructorResponse.json();
+      if (!data.json) {
+        console.log({ text: data.text })
+      } else {
+        setUserPrompt(message.trim());
+        setResponse(data);
+        console.log('API Response:', data);
+        setMessage(''); 
+      }
     } catch (error) {
       console.error('Error submitting message:', error);
     } finally {
@@ -191,8 +205,8 @@ export default function Home(): React.JSX.Element {
           
             <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
               <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
-                {response ?
-                  <ResponseUI response={response} onBack={handleBackToChat} userPrompt={userPrompt} />
+                {response && (response.json) ?
+                  <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} />
                   :
                   <div className="flex-1 flex flex-col items-center justify-center">
                     <ChatPrompt message={message} setMessage={setMessage} handleSubmit={handleSubmit} isSending={isSending} handleInputChange={handleInputChange} handleKeyDown={handleKeyDown} />
