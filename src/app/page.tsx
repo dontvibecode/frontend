@@ -15,7 +15,8 @@ export default function Home(): React.JSX.Element {
   const [isSending, setIsSending] = useState<boolean>(false);
   const [response, setResponse] = useState<MessageData | null>(null);
   const [userPrompt, setUserPrompt] = useState<string>('');
-  
+  const [experienceLevel, setExperienceLevel] = useState<string>('beginner');
+  const [model, setModel] = useState<string>('gemini');
   const [sessions, setSessions] = useState<RecentSession[]>([]);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
 
@@ -209,7 +210,14 @@ export default function Home(): React.JSX.Element {
                   <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} />
                   :
                   <div className="flex-1 flex flex-col items-center justify-center">
-                    <ChatPrompt message={message} setMessage={setMessage} handleSubmit={handleSubmit} isSending={isSending} handleInputChange={handleInputChange} handleKeyDown={handleKeyDown} />
+                    <ChatPrompt 
+                      message={message} 
+                      setMessage={setMessage} 
+                      handleSubmit={handleSubmit} 
+                      isSending={isSending} 
+                      handleInputChange={handleInputChange} 
+                      handleKeyDown={handleKeyDown} 
+                      experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
                   </div>
                 }
               </div>

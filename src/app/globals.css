@@ -34,6 +34,12 @@ body {
 }
 
 /* Custom scrollbar for sidebar */
+.sidebar-scroll {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #8b8b8b transparent;
+}
+
 .sidebar-scroll::-webkit-scrollbar {
   width: 12px;
 }
@@ -50,6 +56,11 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
+  .sidebar-scroll {
+    /* Firefox dark mode */
+    scrollbar-color: #a7a7a7 transparent;
+  }
+  
   .sidebar-scroll::-webkit-scrollbar-thumb {
     background: #a7a7a7;
     border: 3px solid #fafafa;
@@ -58,6 +69,12 @@ body {
 
 
 /* Custom scrollbar for main container */
+.main-scroll {
+  /* Firefox */
+  scrollbar-width: thin;
+  scrollbar-color: #8b8b8b transparent;
+}
+
 .main-scroll::-webkit-scrollbar {
   width: 12px;
 }
@@ -74,6 +91,11 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
+  .main-scroll {
+    /* Firefox dark mode */
+    scrollbar-color: #a7a7a7 transparent;
+  }
+  
   .main-scroll::-webkit-scrollbar-thumb {
     background: #a7a7a7;
     border: 3px solid #e5e5e5;
