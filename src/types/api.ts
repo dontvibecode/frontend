@@ -1,8 +1,8 @@
 export interface MessageData {
   text: string | null;
   conversation: number;
-  from_user: boolean;
-  model_used: string;
+  fromUser: boolean;
+  modelUsed: string;
   json: InstructorResponse | null;
 }
 
@@ -31,10 +31,8 @@ export interface SubmitRequest {
 }
 
 //TODO: required id and title string to save
-export interface RecentSession extends MessageData {
+export interface Session {
   id: string;
   title: string;
-  prompt: string;
-  timestamp: string;
-  language?: string;
+  lastActive: string;
 }

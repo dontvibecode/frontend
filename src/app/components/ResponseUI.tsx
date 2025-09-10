@@ -44,9 +44,10 @@ interface ResponseUIProps {
   response: InstructorResponse;
   onBack?: () => void;
   userPrompt?: string;
+  title: string;
 }
 
-export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIProps) {
+export default function ResponseUI({ response, onBack, userPrompt, title }: ResponseUIProps) {
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -76,13 +77,13 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="w-full max-w-4xl mx-auto p-6 space-y-8"
       variants={containerVariants}
       initial="hidden"
       animate="visible"
     >
-      <motion.div 
+      <motion.div
         className="text-center relative"
         variants={itemVariants}
       >
@@ -95,7 +96,7 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
           </button>
         )}
         {/* TODO: Title needed for original response object */}
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">{"Title Needed"}</h1>
+        <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
         <button 
           className="cursor-pointer absolute right-0 bottom-0 pb-[1px] bg-[#5B5454] rounded-xl text-white transition-colors duration-300"
         >
@@ -137,7 +138,7 @@ export default function ResponseUI({ response, onBack, userPrompt }: ResponseUIP
           />
         </div>
 
-        <motion.div 
+        <motion.div
           animate={{ opacity: 1, y: 0 }}
           initial={{ opacity: 0, y: 30 }}
           transition={{
