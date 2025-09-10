@@ -1,16 +1,30 @@
-'use client';
+"use client";
 
-import React, { useEffect, useState } from "react";
-import { Icon } from "@iconify/react";
-import { InstructorResponse, MessageData } from "@/types/api";
+import React, { useCallback, useEffect, useState } from "react";
+import { InstructorResponse, MessageData, Session } from "@/types/api";
 import ChatPrompt from "./components/ChatPrompt";
 import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
-import { RecentSession } from "@/types/api";
-import { m } from "framer-motion";
+
+type RawSession = {
+  id: number;
+  title: string;
+  user: number;
+  created_at: string;
+  last_active: string;
+};
+
+type RawMessageData = {
+  id: number;
+  text: string;
+  conversation: number;
+  from_user: boolean;
+  model_used: string;
+  json: InstructorResponse | null;
+};
 
 export default function Home(): React.JSX.Element {
-  const [message, setMessage] = useState<string>('');
+  const [message, setMessage] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [response, setResponse] = useState<MessageData | null>(null);
@@ -18,103 +32,168 @@ export default function Home(): React.JSX.Element {
   const [experienceLevel, setExperienceLevel] = useState<string>('beginner');
   const [model, setModel] = useState<string>('gemini');
   const [sessions, setSessions] = useState<RecentSession[]>([]);
+  const [currentConversationId, setCurrentConversationId] = useState<
+    string | null
+  >(null);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
+  const [title, setTitle] = useState<string>("");
 
-  useEffect(() => {
-    const fetchSessions = async () => {
-      const response = await fetch('/api/recent-sessions');
-      const data = await response.json();
-      console.log('Sessions:', data);
-      setSessions(data);
-      setInitialLoading(false);
-    };
-
-    fetchSessions();
+  const fetchSessions = useCallback(async () => {
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Request-Headers": "*",
+        },
+      }
+    );
+    const data = await response.json();
+    console.log({ data });
+    const sessions: Session[] = data.map((session: RawSession) => ({
+      id: session.id.toString(),
+      title: session.title,
+      lastActive: session.last_active,
+    }));
+    console.log("Sessions:", data);
+    setSessions(sessions);
+    setInitialLoading(false);
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>): Promise<void> => {
-    e.preventDefault();
-    if(isSending) return;
-    setIsSending(true);
-    
-    if (!message.trim()) return;
-    
-    try {
-      const InstructorResponse = await fetch(`${process.env.NEXT_PUBLIC_API_URL}api/chat/message/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Access-Control-Request-Headers': '*',
-        },
-        body: JSON.stringify({ 
-          text: message.trim(),
-          conversation: 0, // testing
-          from_user: true,
-          model_used: "gemini-2.5-pro",
-          json: {}
-        }),
-      });
+  useEffect(() => {
+    fetchSessions();
+  }, [fetchSessions]);
 
-      console.log({ InstructorResponse})
-      
+  useEffect(() => {
+    setTitle(
+      sessions.find((s) => s.id === currentConversationId)?.title || "New Chat"
+    );
+    console.log("Title set to:", title);
+    console.log({ sessions });
+    console.log({ currentConversationId });
+  }, [currentConversationId, sessions]);
+
+  const handleSubmit = async (
+    e: React.FormEvent<HTMLFormElement>
+  ): Promise<void> => {
+    e.preventDefault();
+    if (isSending) return;
+    setIsSending(true);
+
+    if (!message.trim()) return;
+
+    try {
+      const InstructorResponse = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}api/chat/message/`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Request-Headers": "*",
+          },
+          body: JSON.stringify({
+            text: message.trim(),
+            conversation: currentConversationId,
+            from_user: true,
+            model_used: "gemini-2.5-pro",
+            json: {},
+          }),
+        }
+      );
+
+      console.log({ InstructorResponse });
+
       if (!InstructorResponse.ok) {
         throw new Error(`HTTP error! status: ${InstructorResponse.status}`);
       }
-      console.log({ InstructorResponse })
+      console.log({ InstructorResponse });
+      await fetchSessions();
       const data: MessageData = await InstructorResponse.json();
       if (!data.json) {
-        console.log({ text: data.text })
+        console.log({ text: data.text });
+        // TODO: Currently only works for instructor model response
       } else {
         setUserPrompt(message.trim());
         setResponse(data);
-        console.log('API Response:', data);
-        setMessage(''); 
+        console.log("API Response:", data);
+        setMessage("");
+        setCurrentConversationId(data.conversation.toString());
       }
     } catch (error) {
-      console.error('Error submitting message:', error);
+      console.error("Error submitting message:", error);
     } finally {
       setIsSending(false);
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>): void => {
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLTextAreaElement>
+  ): void => {
     setMessage(e.target.value);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e as any);
     }
   };
 
-  const handleSessionClick = (session: RecentSession): void => {
-    console.log('Selected session:', session);
+  const handleSessionClick = async (session: Session) => {
+    console.log("Selected session:", session);
     setResponse(null);
-    setTimeout(() => {
-      setResponse(session);
-      setUserPrompt(session.prompt);
-    }, 100);
+    setUserPrompt(null);
+    const response = await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/${session.id}/`,
+      {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          "Access-Control-Request-Headers": "*",
+        },
+      }
+    );
+    const responseData: RawMessageData[] = await response.json();
+    setCurrentConversationId(session.id);
+    const data: MessageData[] = responseData.map((message: RawMessageData) => ({
+      text: message.text,
+      conversation: message.conversation,
+      fromUser: message.from_user,
+      modelUsed: message.model_used,
+      json: message.json,
+    }));
+    const userPrompt =
+      data.filter((message) => message.fromUser)[0]?.text || "";
+    const aiMessage = data.filter((message) => !message.fromUser)[0] || "";
+    setResponse(aiMessage);
+    setUserPrompt(userPrompt);
+    fetchSessions();
   };
 
   const handleBackToChat = (): void => {
     setResponse(null);
-    setUserPrompt('');
+    setUserPrompt("");
+    setCurrentConversationId(null);
+  };
+
+  const handleNewChat = (): void => {
+    setResponse(null);
+    setUserPrompt(null);
+    setCurrentConversationId(null);
   };
 
   return (
     <div className="min-h-screen bg-[#e5e5e5]">
       <div className="flex h-screen">
-        
         {sidebarOpen && (
-          <div 
+          <div
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
         )}
-        
+
         <div className="w-80 bg-white/80 rounded-r-2xl backdrop-blur-sm flex flex-col">
-          
           <div className="p-4 pb-0">
             <div className="flex items-center space-x-3 bg-black/10 rounded-2xl p-4 drop-shadow-customShadow mt-2">
               <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
@@ -128,9 +207,16 @@ export default function Home(): React.JSX.Element {
           </div>
 
           <div className="p-4">
-            <button onClick={() => setResponse(null)} className="cursor-pointer w-full bg-black/80 text-white rounded-2xl py-3 px-4 hover:bg-black transition-colors duration-300 flex items-center justify-center space-x-2">
+            <button
+              onClick={handleNewChat}
+              className="cursor-pointer w-full bg-black/80 text-white rounded-2xl py-3 px-4 hover:bg-black transition-colors duration-300 flex items-center justify-center space-x-2"
+            >
               <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+                  clipRule="evenodd"
+                />
               </svg>
               <span>New Chat</span>
             </button>
@@ -138,48 +224,50 @@ export default function Home(): React.JSX.Element {
 
           <div className="flex-1 overflow-hidden flex flex-col">
             <div className="px-4 pb-2">
-              <h4 className="text-base font-semibold text-gray-500">Recent Sessions:</h4>
+              <h4 className="text-base font-semibold text-gray-500">
+                Recent Sessions:
+              </h4>
             </div>
-            
+
             <div className="flex-1 overflow-y-auto px-4 space-y-2 sidebar-scroll">
               {initialLoading ? (
                 <SessionSkeleton count={8} />
               ) : (
-                sessions.map((session) => (
-                <button
-                  key={session.id}
-                  onClick={() => handleSessionClick(session)}
-                  className="w-full text-left p-3 rounded-lg hover:bg-gray-200 transition-colors duration-200 group cursor-pointer"
-                >
-                  <div className="flex justify-between items-start mb-1">
-                    <h5 className="font-medium text-sm text-black truncate">
-                      {session.title}
-                    </h5>
-                    <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
-                      {new Date(session.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500 dark:text-gray-400 line-clamp-2">
-                    {session.prompt}
-                  </p>
-                </button>
-              )))}
+                sessions.map((session, index) => (
+                  <button
+                    key={index}
+                    onClick={() => handleSessionClick(session)}
+                    className="w-full text-left p-3 rounded-lg hover:bg-gray-200 transition-colors duration-200 group cursor-pointer"
+                  >
+                    <div className="flex justify-between items-start mb-1">
+                      <h5 className="font-medium text-sm text-black truncate">
+                        {session.title}
+                      </h5>
+                      <span className="text-xs text-gray-400 dark:text-gray-500 flex-shrink-0 ml-2">
+                        {new Date(session.lastActive).toLocaleDateString(
+                          "en-US",
+                          { month: "short", day: "numeric" }
+                        )}
+                      </span>
+                    </div>
+                  </button>
+                ))
+              )}
             </div>
           </div>
         </div>
 
         <div className="relative flex-1 flex flex-col lg:ml-0">
-
-          <video 
-            autoPlay 
-            loop 
-            muted 
+          <video
+            autoPlay
+            loop
+            muted
             playsInline
             className="absolute top-0 left-0 w-full h-full object-cover transition-all duration-1000 ease-in-out"
             aria-hidden="true"
             ref={(video) => {
               if (video) {
-                video.style.transition = 'filter 1s ease-in-out';
+                video.style.transition = "filter 1s ease-in-out";
                 video.playbackRate = response ? 0 : isSending ? 1 : 0.2;
               }
             }}
@@ -195,32 +283,35 @@ export default function Home(): React.JSX.Element {
               aria-label="Open sidebar"
             >
               <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z" clipRule="evenodd" />
+                <path
+                  fillRule="evenodd"
+                  d="M3 5a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 10a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zM3 15a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"
+                  clipRule="evenodd"
+                />
               </svg>
             </button>
-            
-            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">dontvibecode</h1>
-            
+            <h1 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+              dontvibecode
+            </h1>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
-          
-            <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
-              <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
-                {response && (response.json) ?
-                  <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} />
-                  :
-                  <div className="flex-1 flex flex-col items-center justify-center">
-                    <ChatPrompt 
-                      message={message} 
-                      setMessage={setMessage} 
-                      handleSubmit={handleSubmit} 
-                      isSending={isSending} 
-                      handleInputChange={handleInputChange} 
-                      handleKeyDown={handleKeyDown} 
-                      experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
-                  </div>
-                }
-              </div>
+          <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
+            <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
+              {response && (response.json) ?
+                <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} />
+                :
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <ChatPrompt 
+                    message={message} 
+                    setMessage={setMessage} 
+                    handleSubmit={handleSubmit} 
+                    isSending={isSending} 
+                    handleInputChange={handleInputChange} 
+                    handleKeyDown={handleKeyDown} 
+                    experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
+                </div>
+              }
+            </div>
           </div>
         </div>
       </div>
