@@ -28,12 +28,13 @@ export default function Home(): React.JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [response, setResponse] = useState<MessageData | null>(null);
-  const [userPrompt, setUserPrompt] = useState<string | null>(null);
+  const [userPrompt, setUserPrompt] = useState<string>('');
+  const [experienceLevel, setExperienceLevel] = useState<string>('beginner');
+  const [model, setModel] = useState<string>('gemini');
+  const [sessions, setSessions] = useState<RecentSession[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
   >(null);
-
-  const [sessions, setSessions] = useState<Session[]>([]);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
   const [title, setTitle] = useState<string>("");
 
@@ -294,28 +295,22 @@ export default function Home(): React.JSX.Element {
             </h1>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
-
           <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
             <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
-              {response && response.json && userPrompt !== null ? (
-                <ResponseUI
-                  response={response.json}
-                  onBack={handleBackToChat}
-                  userPrompt={userPrompt}
-                  title={title}
-                />
-              ) : (
+              {response && (response.json) ?
+                <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} />
+                :
                 <div className="flex-1 flex flex-col items-center justify-center">
-                  <ChatPrompt
-                    message={message}
-                    setMessage={setMessage}
-                    handleSubmit={handleSubmit}
-                    isSending={isSending}
-                    handleInputChange={handleInputChange}
-                    handleKeyDown={handleKeyDown}
-                  />
+                  <ChatPrompt 
+                    message={message} 
+                    setMessage={setMessage} 
+                    handleSubmit={handleSubmit} 
+                    isSending={isSending} 
+                    handleInputChange={handleInputChange} 
+                    handleKeyDown={handleKeyDown} 
+                    experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
                 </div>
-              )}
+              }
             </div>
           </div>
         </div>
