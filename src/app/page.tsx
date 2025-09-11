@@ -5,6 +5,7 @@ import { InstructorResponse, MessageData, Session } from "@/types/api";
 import ChatPrompt from "./components/ChatPrompt";
 import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
+import OffTopic from "./components/OffTopic";
 
 type RawSession = {
   id: number;
@@ -31,7 +32,9 @@ export default function Home(): React.JSX.Element {
   const [userPrompt, setUserPrompt] = useState<string>('');
   const [experienceLevel, setExperienceLevel] = useState<string>('beginner');
   const [model, setModel] = useState<string>('gemini');
-  const [sessions, setSessions] = useState<RecentSession[]>([]);
+  const [isOffTopic, setIsOffTopic] = useState<boolean>(false);
+  const [offTopicResponse, setOffTopicResponse] = useState<InstructorResponse | null>(null);
+  const [sessions, setSessions] = useState<Session[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
   >(null);
@@ -82,6 +85,20 @@ export default function Home(): React.JSX.Element {
     setIsSending(true);
 
     if (!message.trim()) return;
+
+    // TODO: Mock response for off topic messages, handle in API
+    if (message.includes("off topic")) {
+      const mockResponse: InstructorResponse = {
+        offTopic: true,
+        offTopicMessage: "This is an off topic message. Please ask a coding or programming related question.",
+      };
+      setUserPrompt(message.trim());
+      setOffTopicResponse(mockResponse);
+      setIsOffTopic(true);
+      setMessage("");
+      setIsSending(false);
+      return;
+    }
 
     try {
       const InstructorResponse = await fetch(
@@ -143,7 +160,7 @@ export default function Home(): React.JSX.Element {
   const handleSessionClick = async (session: Session) => {
     console.log("Selected session:", session);
     setResponse(null);
-    setUserPrompt(null);
+    setUserPrompt("");
     const response = await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/${session.id}/`,
       {
@@ -175,12 +192,16 @@ export default function Home(): React.JSX.Element {
     setResponse(null);
     setUserPrompt("");
     setCurrentConversationId(null);
+    setIsOffTopic(false);
+    setOffTopicResponse(null);
   };
 
   const handleNewChat = (): void => {
     setResponse(null);
-    setUserPrompt(null);
+    setUserPrompt("");
     setCurrentConversationId(null);
+    setIsOffTopic(false);
+    setOffTopicResponse(null);
   };
 
   return (
@@ -295,24 +316,41 @@ export default function Home(): React.JSX.Element {
             </h1>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
-          <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
-            <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
-              {response && (response.json) ?
-                <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} />
-                :
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  <ChatPrompt 
-                    message={message} 
-                    setMessage={setMessage} 
-                    handleSubmit={handleSubmit} 
-                    isSending={isSending} 
-                    handleInputChange={handleInputChange} 
-                    handleKeyDown={handleKeyDown} 
-                    experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
-                </div>
-              }
-            </div>
-          </div>
+           <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
+             <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
+               {isOffTopic && offTopicResponse ?
+                 <OffTopic 
+                   response={offTopicResponse}
+                   onBack={handleBackToChat}
+                   userPrompt={userPrompt}
+                   title="Off Topic"
+                   message={message}
+                   setMessage={setMessage}
+                   handleSubmit={handleSubmit}
+                   isSending={isSending}
+                   handleInputChange={handleInputChange}
+                   handleKeyDown={handleKeyDown}
+                   experienceLevel={experienceLevel}
+                   setExperienceLevel={setExperienceLevel}
+                   model={model}
+                   setModel={setModel}
+                 />
+                 : response && (response.json) ?
+                   <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} title={title} />
+                   :
+                   <div className="flex-1 flex flex-col items-center justify-center">
+                     <ChatPrompt 
+                       message={message} 
+                       setMessage={setMessage} 
+                       handleSubmit={handleSubmit} 
+                       isSending={isSending} 
+                       handleInputChange={handleInputChange} 
+                       handleKeyDown={handleKeyDown} 
+                       experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
+                   </div>
+               }
+             </div>
+           </div>
         </div>
       </div>
     </div>
