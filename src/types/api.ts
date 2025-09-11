@@ -20,10 +20,12 @@ export interface Exercise {
 }
 
 export interface InstructorResponse {
-  breakdown: string;
-  explanation: string;
-  recommendedReadings: RecommendedReading[];
-  exercises: Exercise[];
+  offTopic?: boolean;
+  offTopicMessage?: string;
+  breakdown?: string;
+  explanation?: string;
+  recommendedReadings?: RecommendedReading[];
+  exercises?: Exercise[];
 }
 
 export interface SubmitRequest {

@@ -12,6 +12,17 @@ export async function POST(request: NextRequest): Promise<NextResponse<Instructo
       );
     }
 
+    const offTopic = body.message.includes('off topic');
+    
+    // TODO: Handle off topic messages, to test, input "off topic" in the text box 
+    if(offTopic) {
+      const mockResponse: InstructorResponse = {
+        offTopic: true,
+        offTopicMessage: "This is an off topic message. Please ask a coding or programming related question.",
+      };
+      return NextResponse.json(mockResponse);
+    }
+
     // Mock response data following the template
     const mockResponse: InstructorResponse = {
       breakdown: "Here's a comprehensive breakdown of your coding issue. The problem seems to stem from a fundamental misunderstanding of how asynchronous operations work in JavaScript. When you're dealing with promises and async/await, the execution flow is different from synchronous code.",
