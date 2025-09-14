@@ -1,5 +1,5 @@
 import React, { useRef } from "react";
-import { InstructorResponse, MessageData, RecommendedReading } from "@/types/api";
+import { ExperienceLevel, InstructorResponse, MessageData, RecommendedReading } from "@/types/api";
 import { Icon } from "@iconify/react";
 import { motion, useInView, Variants } from "framer-motion";
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
@@ -8,7 +8,7 @@ import TextUnroll from "./TextUnroll";
 import { ChatBox } from "./ChatPrompt";
 
 interface OffTopicProps {
-  response: InstructorResponse;
+  response: string;
   onBack?: () => void;
   userPrompt?: string;
   title: string;
@@ -19,7 +19,7 @@ interface OffTopicProps {
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   experienceLevel: string;
-  setExperienceLevel: (level: string) => void;
+  setExperienceLevel: (level: ExperienceLevel) => void;
   model: string;
   setModel: (model: string) => void;
 }
@@ -100,7 +100,7 @@ export default function OffTopic({
             variants={itemVariants}
           >
             <TextUnroll
-              text={response.offTopicMessage || "This topic is off-topic for coding assistance."}
+              text={response || "This topic is off-topic for coding assistance."}
               className="text-gray-800"
               duration={500}
               delay={500}

@@ -38,3 +38,6 @@ export interface Session {
   title: string;
   lastActive: string;
 }
+export const ExperienceLevels = ['Beginner', 'Novice', 'Junior', 'Senior'] as const;
+
+export type ExperienceLevel = typeof ExperienceLevels[number];
