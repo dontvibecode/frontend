@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { Icon } from "@iconify/react";
 import { motion, Variants } from "framer-motion";
+import { ExperienceLevel, ExperienceLevels } from "@/types";
 
 interface ChatPromptProps {
   message: string;
@@ -10,7 +11,7 @@ interface ChatPromptProps {
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   experienceLevel: string;
-  setExperienceLevel: (level: string) => void;
+  setExperienceLevel: (level: ExperienceLevel) => void;
   model: string;
   setModel: (model: string) => void;
 }
@@ -35,9 +36,9 @@ export const ChatBox = ({
 
   const experienceLevels = [
     { value: 'beginner', label: 'Beginner' },
-    { value: 'intermediate', label: 'Intermediate' },
-    { value: 'proficient', label: 'Proficient' },
-    { value: 'expert', label: 'Expert' }
+    { value: 'novice', label: 'Novice' },
+    { value: 'junior', label: 'Junior' },
+    { value: 'senior', label: 'Senior' }
   ];
   
   const models = [
@@ -80,7 +81,7 @@ export const ChatBox = ({
               className="cursor-pointer flex items-center gap-2 px-3 py-2 text-sm bg-white/90 border border-black/5 rounded-full text-black/80 hover:bg-white hover:border-black/10 transition-all duration-200 backdrop-blur-xl drop-shadow-customShadowDark"
             >
               <span className="font-semibold text-black">
-                {experienceLevels.find(level => level.value === experienceLevel)?.label || 'Experience'}
+                {experienceLevel}
               </span>
               <Icon 
                 icon="mingcute:down-line" 
@@ -93,7 +94,7 @@ export const ChatBox = ({
                   experienceDropdownOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
                 style={{
-                  height: experienceDropdownOpen ? `${experienceLevels.length * 40 + 12}px` : '0px'
+                  height: experienceDropdownOpen ? `${ExperienceLevels.length * 40 + 12}px` : '0px'
                 }}
                 onMouseLeave={() => setHoveredExperienceIndex(null)}
               >
@@ -111,22 +112,22 @@ export const ChatBox = ({
                   }}
                 />
                 
-                {experienceLevels.map((level, index) => (
+                {ExperienceLevels.map((level, index) => (
                   <button
-                    key={level.value}
+                    key={level}
                     type="button"
                     onClick={() => {
-                      setExperienceLevel(level.value);
+                      setExperienceLevel(level);
                       setExperienceDropdownOpen(false);
                       setHoveredExperienceIndex(null);
                     }}
                     onMouseEnter={() => setHoveredExperienceIndex(index)}
                     className={`relative cursor-pointer rounded-xl w-full text-left px-4 py-2 text-sm transition-colors duration-150 hover:text-white ${
-                      experienceLevel === level.value ? 'text-black font-semibold' : 'text-black'
+                      experienceLevel === level ? 'text-black font-semibold' : 'text-black'
                     }`}
                     style={{ height: '40px' }}
                   >
-                    {level.label}
+                    {level}
                   </button>
                 ))}
               </div>

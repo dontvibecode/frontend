@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { InstructorResponse, MessageData, Session } from "@/types/api";
+import { ExperienceLevel, InstructorResponse, MessageData, Session } from "@/types/api";
 import ChatPrompt from "./components/ChatPrompt";
 import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
@@ -29,11 +29,10 @@ export default function Home(): React.JSX.Element {
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [response, setResponse] = useState<MessageData | null>(null);
-  const [userPrompt, setUserPrompt] = useState<string>('');
-  const [experienceLevel, setExperienceLevel] = useState<string>('beginner');
-  const [model, setModel] = useState<string>('gemini');
-  const [isOffTopic, setIsOffTopic] = useState<boolean>(false);
-  const [offTopicResponse, setOffTopicResponse] = useState<InstructorResponse | null>(null);
+  const [userPrompt, setUserPrompt] = useState<string>("");
+  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("Beginner");
+  const [model, setModel] = useState<string>("gemini");
+  const [offTopicResponse, setOffTopicResponse] = useState<string | null>(null);
   const [sessions, setSessions] = useState<Session[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
@@ -86,20 +85,6 @@ export default function Home(): React.JSX.Element {
 
     if (!message.trim()) return;
 
-    // TODO: Mock response for off topic messages, handle in API
-    if (message.includes("off topic")) {
-      const mockResponse: InstructorResponse = {
-        offTopic: true,
-        offTopicMessage: "This is an off topic message. Please ask a coding or programming related question.",
-      };
-      setUserPrompt(message.trim());
-      setOffTopicResponse(mockResponse);
-      setIsOffTopic(true);
-      setMessage("");
-      setIsSending(false);
-      return;
-    }
-
     try {
       const InstructorResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}api/chat/message/`,
@@ -115,25 +100,23 @@ export default function Home(): React.JSX.Element {
             from_user: true,
             model_used: "gemini-2.5-pro",
             json: {},
+            experience_level: experienceLevel,
           }),
         }
       );
 
-      console.log({ InstructorResponse });
-
       if (!InstructorResponse.ok) {
         throw new Error(`HTTP error! status: ${InstructorResponse.status}`);
       }
-      console.log({ InstructorResponse });
       await fetchSessions();
       const data: MessageData = await InstructorResponse.json();
+      console.log("Raw API Response:", data);
+      setUserPrompt(message.trim());
       if (!data.json) {
         console.log({ text: data.text });
-        // TODO: Currently only works for instructor model response
+        setOffTopicResponse(data.text);
       } else {
-        setUserPrompt(message.trim());
         setResponse(data);
-        console.log("API Response:", data);
         setMessage("");
         setCurrentConversationId(data.conversation.toString());
       }
@@ -159,6 +142,7 @@ export default function Home(): React.JSX.Element {
 
   const handleSessionClick = async (session: Session) => {
     console.log("Selected session:", session);
+    setOffTopicResponse(null);
     setResponse(null);
     setUserPrompt("");
     const response = await fetch(
@@ -180,11 +164,16 @@ export default function Home(): React.JSX.Element {
       modelUsed: message.model_used,
       json: message.json,
     }));
+    console.log({ handleSesssionClick: data });
     const userPrompt =
       data.filter((message) => message.fromUser)[0]?.text || "";
     const aiMessage = data.filter((message) => !message.fromUser)[0] || "";
-    setResponse(aiMessage);
     setUserPrompt(userPrompt);
+    if (aiMessage.json) {
+      setResponse(aiMessage);
+    } else {
+      setOffTopicResponse(aiMessage.text);
+    }
     fetchSessions();
   };
 
@@ -192,7 +181,6 @@ export default function Home(): React.JSX.Element {
     setResponse(null);
     setUserPrompt("");
     setCurrentConversationId(null);
-    setIsOffTopic(false);
     setOffTopicResponse(null);
   };
 
@@ -200,7 +188,6 @@ export default function Home(): React.JSX.Element {
     setResponse(null);
     setUserPrompt("");
     setCurrentConversationId(null);
-    setIsOffTopic(false);
     setOffTopicResponse(null);
   };
 
@@ -316,41 +303,50 @@ export default function Home(): React.JSX.Element {
             </h1>
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
-           <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
-             <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
-               {isOffTopic && offTopicResponse ?
-                 <OffTopic 
-                   response={offTopicResponse}
-                   onBack={handleBackToChat}
-                   userPrompt={userPrompt}
-                   title="Off Topic"
-                   message={message}
-                   setMessage={setMessage}
-                   handleSubmit={handleSubmit}
-                   isSending={isSending}
-                   handleInputChange={handleInputChange}
-                   handleKeyDown={handleKeyDown}
-                   experienceLevel={experienceLevel}
-                   setExperienceLevel={setExperienceLevel}
-                   model={model}
-                   setModel={setModel}
-                 />
-                 : response && (response.json) ?
-                   <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} title={title} />
-                   :
-                   <div className="flex-1 flex flex-col items-center justify-center">
-                     <ChatPrompt 
-                       message={message} 
-                       setMessage={setMessage} 
-                       handleSubmit={handleSubmit} 
-                       isSending={isSending} 
-                       handleInputChange={handleInputChange} 
-                       handleKeyDown={handleKeyDown} 
-                       experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
-                   </div>
-               }
-             </div>
-           </div>
+          <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
+            <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
+              {offTopicResponse ? (
+                <OffTopic
+                  response={offTopicResponse}
+                  onBack={handleBackToChat}
+                  userPrompt={userPrompt}
+                  title="Off Topic"
+                  message={message}
+                  setMessage={setMessage}
+                  handleSubmit={handleSubmit}
+                  isSending={isSending}
+                  handleInputChange={handleInputChange}
+                  handleKeyDown={handleKeyDown}
+                  experienceLevel={experienceLevel}
+                  setExperienceLevel={setExperienceLevel}
+                  model={model}
+                  setModel={setModel}
+                />
+              ) : response && response.json ? (
+                <ResponseUI
+                  response={response.json}
+                  onBack={handleBackToChat}
+                  userPrompt={userPrompt}
+                  title={title}
+                />
+              ) : (
+                <div className="flex-1 flex flex-col items-center justify-center">
+                  <ChatPrompt
+                    message={message}
+                    setMessage={setMessage}
+                    handleSubmit={handleSubmit}
+                    isSending={isSending}
+                    handleInputChange={handleInputChange}
+                    handleKeyDown={handleKeyDown}
+                    experienceLevel={experienceLevel}
+                    setExperienceLevel={setExperienceLevel}
+                    model={model}
+                    setModel={setModel}
+                  />
+                </div>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>
