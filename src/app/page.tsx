@@ -1,11 +1,14 @@
 "use client";
 
 import React, { useCallback, useEffect, useState } from "react";
-import { ExperienceLevel, InstructorResponse, MessageData, Session } from "@/types/api";
+import { ExperienceLevel, InstructorResponse, MessageData, Session, UserPreferences } from "@/types/api";
 import ChatPrompt from "./components/ChatPrompt";
 import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
 import OffTopic from "./components/OffTopic";
+import UserProfilePopup from "./components/UserProfilePopup";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
 type RawSession = {
   id: number;
@@ -25,6 +28,8 @@ type RawMessageData = {
 };
 
 export default function Home(): React.JSX.Element {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [message, setMessage] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
@@ -39,6 +44,56 @@ export default function Home(): React.JSX.Element {
   >(null);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
   const [title, setTitle] = useState<string>("");
+  const [isProfilePopupOpen, setIsProfilePopupOpen] = useState<boolean>(false);
+  const [userPreferences, setUserPreferences] = useState<UserPreferences>({});
+  const [preferencesLoaded, setPreferencesLoaded] = useState<boolean>(false);
+
+  useEffect(() => {
+    const loadUserPreferences = async () => {
+      if (session?.user) {
+        /*
+         * Loading mock data, replace with below try catch for live use data
+         * if user data exists on backend, display user data, otherwise display data from Google.
+         */
+        setUserPreferences({
+          name: "Server Name",
+          theme: "light",
+          accentColor: "000000",
+          language: "en",
+          profileImage: "https://via.placeholder.com/150",
+        });
+
+        try {
+          //TODO: Call GET endpoint to load user preferences
+          const response = await fetch('/api/user');
+          if (response.ok) {
+            const preferences = await response.json();
+            setUserPreferences(preferences);
+            console.log('User preferences loaded in main page:', preferences);
+          }
+          setPreferencesLoaded(true);
+        } catch (error) {
+          console.error('Error loading user preferences:', error);
+          // Set default preferences if loading fails
+          setUserPreferences({
+            name: session.user.name || '',
+            theme: 'light',
+            accentColor: '000000',
+            language: 'en',
+            profileImage: session.user.image || ''
+          });
+          setPreferencesLoaded(true);
+        }
+      } else if (status === 'unauthenticated') {
+        // Clear preferences when not authenticated
+        setUserPreferences({});
+        setPreferencesLoaded(true);
+        router.push('/login?error=timeout');
+      }
+    };
+
+    loadUserPreferences();
+  }, [session?.user?.email, status, router]);
 
   const fetchSessions = useCallback(async () => {
     const response = await fetch(
@@ -58,6 +113,9 @@ export default function Home(): React.JSX.Element {
       title: session.title,
       lastActive: session.last_active,
     }));
+    /* 
+     * TODO: Save user to database after auth if new user 
+     */
     console.log("Sessions:", data);
     setSessions(sessions);
     setInitialLoading(false);
@@ -201,17 +259,46 @@ export default function Home(): React.JSX.Element {
           />
         )}
 
-        <div className="w-80 bg-white/80 rounded-r-2xl backdrop-blur-sm flex flex-col">
-          <div className="p-4 pb-0">
-            <div className="flex items-center space-x-3 bg-black/10 rounded-2xl p-4 drop-shadow-customShadow mt-2">
-              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">JD</span>
+        <div className="relative w-80 bg-white/80 rounded-r-2xl backdrop-blur-sm flex flex-col">
+          <div className="absolute z-20 bottom-4 left-0 right-2 p-4 pb-0">
+            <button
+              onClick={() => setIsProfilePopupOpen(true)}
+              className="w-full flex items-center space-x-3 bg-[#EEEEEE] rounded-2xl p-4 drop-shadow-customShadowDark mt-2 hover:bg-[#E0E0E0] transition-colors duration-200 cursor-pointer"
+            >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
+                {status === 'loading' || !preferencesLoaded ? (
+                  <div className="w-full h-full bg-black/10 rounded-full animate-pulse"></div>
+                ) : (userPreferences?.profileImage || session?.user?.image) ? (
+                  <img
+                    src={userPreferences?.profileImage || session?.user?.image || ''}
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-semibold text-sm">
+                    {(userPreferences?.name || session?.user?.name)?.charAt(0)?.toUpperCase() || 
+                     session?.user?.email?.charAt(0)?.toUpperCase() || 'U'}
+                  </span>
+                )}
               </div>
-              <div>
-                <h3 className="font-semibold text-black">Jane Doe</h3>
-                <p className="text-sm text-gray-500">Developer</p>
+              <div className="flex-1 text-left">
+                {status === 'loading' || !preferencesLoaded ? (
+                  <>
+                    <div className="h-4 bg-black/10 rounded-full animate-pulse mb-2 w-24"></div>
+                    <div className="h-4 bg-black/10 rounded-full animate-pulse w-32"></div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-semibold text-black">
+                      {userPreferences?.name || session?.user?.name || 'User'}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {session?.user?.email || 'Click to edit profile'}
+                    </p>
+                  </>
+                )}
               </div>
-            </div>
+            </button>
           </div>
 
           <div className="p-4">
@@ -304,51 +391,50 @@ export default function Home(): React.JSX.Element {
             <div className="w-10" /> {/* Spacer for centering */}
           </div>
           <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
-            <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
-              {offTopicResponse ? (
-                <OffTopic
-                  response={offTopicResponse}
-                  onBack={handleBackToChat}
-                  userPrompt={userPrompt}
-                  title="Off Topic"
-                  message={message}
-                  setMessage={setMessage}
-                  handleSubmit={handleSubmit}
-                  isSending={isSending}
-                  handleInputChange={handleInputChange}
-                  handleKeyDown={handleKeyDown}
-                  experienceLevel={experienceLevel}
-                  setExperienceLevel={setExperienceLevel}
-                  model={model}
-                  setModel={setModel}
-                />
-              ) : response && response.json ? (
-                <ResponseUI
-                  response={response.json}
-                  onBack={handleBackToChat}
-                  userPrompt={userPrompt}
-                  title={title}
-                />
-              ) : (
-                <div className="flex-1 flex flex-col items-center justify-center">
-                  <ChatPrompt
-                    message={message}
-                    setMessage={setMessage}
-                    handleSubmit={handleSubmit}
-                    isSending={isSending}
-                    handleInputChange={handleInputChange}
-                    handleKeyDown={handleKeyDown}
-                    experienceLevel={experienceLevel}
-                    setExperienceLevel={setExperienceLevel}
-                    model={model}
-                    setModel={setModel}
-                  />
-                </div>
-              )}
-            </div>
-          </div>
+             <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
+               {isOffTopic && offTopicResponse ?
+                 <OffTopic 
+                   response={offTopicResponse}
+                   onBack={handleBackToChat}
+                   userPrompt={userPrompt}
+                   title="Off Topic"
+                   message={message}
+                   setMessage={setMessage}
+                   handleSubmit={handleSubmit}
+                   isSending={isSending}
+                   handleInputChange={handleInputChange}
+                   handleKeyDown={handleKeyDown}
+                   experienceLevel={experienceLevel}
+                   setExperienceLevel={setExperienceLevel}
+                   model={model}
+                   setModel={setModel}
+                 />
+                 : response && (response.json) ?
+                   <ResponseUI response={response.json} onBack={handleBackToChat} userPrompt={userPrompt} title={title} />
+                   :
+                   <div className="flex-1 flex flex-col items-center justify-center">
+                     <ChatPrompt 
+                       message={message} 
+                       setMessage={setMessage} 
+                       handleSubmit={handleSubmit} 
+                       isSending={isSending} 
+                       handleInputChange={handleInputChange} 
+                       handleKeyDown={handleKeyDown} 
+                       experienceLevel={experienceLevel} setExperienceLevel={setExperienceLevel} model={model} setModel={setModel} />
+                   </div>
+               }
+             </div>
+           </div>
         </div>
       </div>
+      
+      {/* User Profile Popup */}
+      <UserProfilePopup 
+        isOpen={isProfilePopupOpen} 
+        userPreferences={userPreferences}
+        onClose={() => setIsProfilePopupOpen(false)} 
+        setUserPreferences={setUserPreferences}
+      />
     </div>
   );
 }
