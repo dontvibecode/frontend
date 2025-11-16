@@ -10,36 +10,16 @@ const handler = NextAuth({
   ],
   callbacks: {
     async jwt({ token, account, profile }) {
-      // Persist the OAuth access_token and or the user id to the token right after signin
+      // Persist the OAuth id_token and or the user id to the token right after signin
       if (account) {
-        token.accessToken = account.access_token
+        token.idToken = account.id_token
       }
       return token
     },
     async session({ session, token }) {
-      // Send properties to the client, like an access_token and user id from a provider.
-      (session as any).accessToken = token.accessToken
+      // Send properties to the client, like an id_token and user id from a provider.
+      (session as any).user.idToken = token.idToken
       return session
-    },
-    async signIn({ user, account, profile, email, credentials }) {
-      // Initialize user preferences when they first sign in
-      if (user.email) {
-        try {
-          /*
-           * TODO: Check if user preferences already exist by making a request to our API
-           * This will create default preferences if they don't exist
-           * The GET endpoint will automatically create default preferences if none exist
-           */
-          const response = await fetch('/api/user');
-          if (response.ok) {
-            const preferences = await response.json();
-            console.log('User preferences loaded in auth route:', preferences);
-          }
-        } catch (error) {
-          console.error('Error during sign in callback:', error);
-        }
-      }
-      return true;
     },
   },
   pages: {

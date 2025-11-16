@@ -42,7 +42,7 @@ NEXTAUTH_SECRET=your_nextauth_secret_here
 ✅ Automatic redirect after login  
 ✅ Loading states  
 ✅ Error handling  
-✅ Animated login button with mouse-following fill effect  
+✅ Animated login button with mouse-following fill effect
 
 ## 5. Usage
 

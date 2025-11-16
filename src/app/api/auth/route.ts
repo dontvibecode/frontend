@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import NextAuth from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 
 const authOptions = {
@@ -13,12 +12,12 @@ const authOptions = {
   callbacks: {
     async jwt({ token, account, profile }: any) {
       if (account) {
-        token.accessToken = account.access_token;
+        token.idToken = account.id_token;
       }
       return token;
     },
     async session({ session, token }: any) {
-      session.accessToken = token.accessToken;
+      session.user.idToken = token.idToken;
       return session;
     },
   },
@@ -37,13 +36,13 @@ export async function GET(request: NextRequest) {
     
     if (!session || !session.user?.email) {
       return NextResponse.json(
-        { error: 'Unauthorized' }, 
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
     const userEmail = session.user.email;
-    const token = session.accessToken;
+    const token = session.user.idToken;
 
     // Get user preferences from mock database or use defaults
     const savedPreferences = mockUserPreferences[userEmail];
@@ -63,7 +62,7 @@ export async function GET(request: NextRequest) {
   } catch (error) {
     console.error('Error loading user preferences:', error);
     return NextResponse.json(
-      { error: 'Failed to load preferences' }, 
+      { error: 'Failed to load preferences' },
       { status: 500 }
     );
   }
@@ -77,14 +76,14 @@ export async function POST(request: NextRequest) {
     
     if (!session || !session.user?.email) {
       return NextResponse.json(
-        { error: 'Unauthorized' }, 
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
     const userEmail = session.user.email;
     const preferences = await request.json();
-    const token = session.accessToken;
+    const token = session.user.idToken;
 
     console.log('Saving preferences for user:', userEmail, preferences);
 

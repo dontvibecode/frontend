@@ -32,7 +32,7 @@ export interface SubmitRequest {
   message: string;
 }
 
-export interface Session {
+export interface Conversation {
   id: string;
   title: string;
   lastActive: string;
@@ -41,22 +41,22 @@ export const ExperienceLevels = ['Beginner', 'Novice', 'Junior', 'Senior'] as co
 
 export type ExperienceLevel = typeof ExperienceLevels[number];
 export interface UserPreferences {
-  name?: string;
   theme?: 'light' | 'dark' | 'system';
   accentColor?: string;
   language?: string;
   profileImage?: string;
-  notifications?: {
-    email?: boolean;
-    push?: boolean;
-    inApp?: boolean;
-  };
-  privacy?: {
-    profileVisible?: boolean;
-    shareData?: boolean;
-  };
-  display?: {
-    fontSize?: 'small' | 'medium' | 'large';
-    compactMode?: boolean;
-  };
+  email_notifications?: boolean;
+  push_notifications?: boolean;
+  in_app_notifications?: boolean;
+  profileVisible?: boolean;
+  shareData?: boolean;
+  fontSize?: 'small' | 'medium' | 'large';    
+  compactMode?: boolean;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  preferences?: UserPreferences;
 }

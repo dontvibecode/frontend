@@ -5,19 +5,19 @@ import GoogleProvider from 'next-auth/providers/google';
 const authOptions = {
   providers: [
     GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+      clientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!,
+      clientSecret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET!,
     })
   ],
   callbacks: {
     async jwt({ token, account, profile }: any) {
       if (account) {
-        token.accessToken = account.access_token;
+        token.idToken = account.id_token;
       }
       return token;
     },
     async session({ session, token }: any) {
-      session.accessToken = token.accessToken;
+      session.user.idToken = token.idToken;
       return session;
     },
   },
@@ -42,7 +42,7 @@ export async function GET(request: NextRequest) {
     }
 
     const userEmail = session.user.email;
-    const token = session.accessToken;
+    const token = session.user.idToken;
 
     // Get user preferences from mock database or use defaults
     const savedPreferences = mockUserPreferences[userEmail];
@@ -82,14 +82,14 @@ export async function POST(request: NextRequest) {
     
     if (!session || !session.user?.email) {
       return NextResponse.json(
-        { error: 'Unauthorized' }, 
+        { error: 'Unauthorized' },
         { status: 401 }
       );
     }
 
     const userEmail = session.user.email;
     const preferences = await request.json();
-    const token = session.accessToken;
+    const token = session.user.idToken;
 
     console.log('Saving preferences for user:', userEmail, preferences);
 
