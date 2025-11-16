@@ -3,7 +3,7 @@ import { Session } from "@/types/api";
 
 export async function GET(): Promise<NextResponse<Session[]>> {
   try {
-    // Mock data for recent sessions
+    // Mock data for recent conversations
     const mockSessions: Session[] = [
       {
         id: "1",
@@ -411,7 +411,7 @@ interface Duck extends Animal, Flyable, Swimmable {
 
     return NextResponse.json(sortedSessions);
   } catch (error) {
-    console.error("Error fetching recent sessions:", error);
+    console.error("Error fetching recent conversations:", error);
     return NextResponse.json([] as Session[], { status: 500 });
   }
 }

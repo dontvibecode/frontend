@@ -32,8 +32,7 @@ export interface SubmitRequest {
   message: string;
 }
 
-//TODO: required id and title string to save
-export interface Session {
+export interface Conversation {
   id: string;
   title: string;
   lastActive: string;
@@ -41,3 +40,23 @@ export interface Session {
 export const ExperienceLevels = ['Beginner', 'Novice', 'Junior', 'Senior'] as const;
 
 export type ExperienceLevel = typeof ExperienceLevels[number];
+export interface UserPreferences {
+  theme?: 'light' | 'dark' | 'system';
+  accentColor?: string;
+  language?: string;
+  profileImage?: string;
+  email_notifications?: boolean;
+  push_notifications?: boolean;
+  in_app_notifications?: boolean;
+  profileVisible?: boolean;
+  shareData?: boolean;
+  fontSize?: 'small' | 'medium' | 'large';    
+  compactMode?: boolean;
+}
+
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  preferences?: UserPreferences;
+}

@@ -1,13 +1,23 @@
 "use client";
 
-import React, { useCallback, useEffect, useState } from "react";
-import { ExperienceLevel, InstructorResponse, MessageData, Session } from "@/types/api";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  Conversation,
+  ExperienceLevel,
+  InstructorResponse,
+  MessageData,
+  User,
+  UserPreferences,
+} from "@/types/api";
 import ChatPrompt from "./components/ChatPrompt";
 import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
 import OffTopic from "./components/OffTopic";
+import UserProfilePopup from "./components/UserProfilePopup";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 
-type RawSession = {
+type RawConversation = {
   id: number;
   title: string;
   user: number;
@@ -25,67 +35,145 @@ type RawMessageData = {
 };
 
 export default function Home(): React.JSX.Element {
+  const { data: session, status } = useSession();
+  const router = useRouter();
   const [message, setMessage] = useState<string>("");
   const [sidebarOpen, setSidebarOpen] = useState<boolean>(false);
   const [isSending, setIsSending] = useState<boolean>(false);
   const [response, setResponse] = useState<MessageData | null>(null);
   const [userPrompt, setUserPrompt] = useState<string>("");
-  const [experienceLevel, setExperienceLevel] = useState<ExperienceLevel>("Beginner");
+  const [experienceLevel, setExperienceLevel] =
+    useState<ExperienceLevel>("Beginner");
   const [model, setModel] = useState<string>("gemini");
   const [offTopicResponse, setOffTopicResponse] = useState<string | null>(null);
-  const [sessions, setSessions] = useState<Session[]>([]);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversationId, setCurrentConversationId] = useState<
     string | null
   >(null);
   const [initialLoading, setInitialLoading] = useState<boolean>(true);
   const [title, setTitle] = useState<string>("");
+  const [isProfilePopupOpen, setIsProfilePopupOpen] = useState<boolean>(false);
+  const [user, setUser] = useState<User | null>(null);
+  const [userAndpreferencesLoaded, setUserAndPreferencesLoaded] = useState<boolean>(false);
 
-  const fetchSessions = useCallback(async () => {
-    const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations`,
-      {
-        method: "GET",
-        headers: {
-          "Content-Type": "application/json",
-          "Access-Control-Request-Headers": "*",
-        },
+  
+  useEffect(() => {
+    const loadUser = async () => {
+      console.log({ user: session?.user})
+      if (session?.user?.email) {
+        try {
+          const response = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL}api/chat/user/${session.user.email}/`,
+            {
+              method: "GET",
+              headers: {
+                "Content-Type": "application/json",
+                "Access-Control-Request-Headers": "*",
+                "Authorization": `Bearer ${(session.user as any).idToken}`,
+              },
+            }
+          );
+          console.log({ responseStatus: response.ok });
+          if (response.ok) {
+            const userWithPreferences = await response.json();
+            console.log({ userWithPreferences });
+            
+            setUser(userWithPreferences);
+            console.log(
+              "User preferences loaded in main page:",
+              userWithPreferences
+            );
+            setUserAndPreferencesLoaded(true);
+          } else {
+            const createdUser = await fetch(
+              `${process.env.NEXT_PUBLIC_API_URL}api/chat/user/`,
+              {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  "Access-Control-Request-Headers": "*",
+                  "Authorization": `Bearer ${(session.user as any).idToken}`,
+                },
+                body: JSON.stringify({
+                  username:
+                  session.user.name || session.user.email?.split("@")[0],
+                  email: session.user.email,
+                  method: "google",
+                }),
+              }
+            );
+            const userWithPreferences = await createdUser.json();
+            setUser(userWithPreferences);
+            console.log("New user created with email:", session.user.email);
+          }
+        } catch (error) {
+          console.error("Error loading user preferences:", error);
+          // Clear preferences if loading fails
+          setUser(null);
+          setUserAndPreferencesLoaded(false);
+          router.push("/login?error=timeout");
+        }
+      } else if (status === "unauthenticated") {
+        // Clear preferences when not authenticated
+        setUser(null);
+        setUserAndPreferencesLoaded(false);
+        router.push("/login?error=timeout");
       }
-    );
-    const data = await response.json();
-    console.log({ data });
-    const sessions: Session[] = data.map((session: RawSession) => ({
-      id: session.id.toString(),
-      title: session.title,
-      lastActive: session.last_active,
-    }));
-    console.log("Sessions:", data);
-    setSessions(sessions);
-    setInitialLoading(false);
-  }, []);
-
+    };
+    loadUser();
+  }, [session?.user?.email, status, router]);
+  
+  const fetchSessions = useCallback(async () => {
+    if (user?.email) {
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/${user.email}/`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Request-Headers": "*",
+            "Authorization": `Bearer ${(session?.user as any).idToken}`,
+          },
+        }
+      );
+      const data = await response.json();
+      console.log({ data });
+      const conversations: Conversation[] = data.map((session: RawConversation) => ({
+        id: session.id.toString(),
+        title: session.title,
+        lastActive: session.last_active,
+      }));
+      
+      console.log("Sessions:", data);
+      setConversations(conversations);
+      setInitialLoading(false);
+    }
+  }, [user?.email]);
+  
   useEffect(() => {
     fetchSessions();
-  }, [fetchSessions]);
-
+  }, [fetchSessions, user]);
+  
   useEffect(() => {
     setTitle(
-      sessions.find((s) => s.id === currentConversationId)?.title || "New Chat"
+      conversations.find((s) => s.id === currentConversationId)?.title || "New Chat"
     );
     console.log("Title set to:", title);
-    console.log({ sessions });
+    console.log({ conversations });
     console.log({ currentConversationId });
-  }, [currentConversationId, sessions]);
-
+  }, [currentConversationId, conversations]);
+  
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ): Promise<void> => {
     e.preventDefault();
     if (isSending) return;
     setIsSending(true);
-
+    
     if (!message.trim()) return;
-
+    
     try {
+      console.log({ sessionBeforePost: session })
       const InstructorResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}api/chat/message/`,
         {
@@ -93,6 +181,7 @@ export default function Home(): React.JSX.Element {
           headers: {
             "Content-Type": "application/json",
             "Access-Control-Request-Headers": "*",
+            "Authorization": `Bearer ${(session?.user as any).idToken}`,
           },
           body: JSON.stringify({
             text: message.trim(),
@@ -104,7 +193,7 @@ export default function Home(): React.JSX.Element {
           }),
         }
       );
-
+      
       if (!InstructorResponse.ok) {
         throw new Error(`HTTP error! status: ${InstructorResponse.status}`);
       }
@@ -126,37 +215,38 @@ export default function Home(): React.JSX.Element {
       setIsSending(false);
     }
   };
-
+  
   const handleInputChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ): void => {
     setMessage(e.target.value);
   };
-
+  
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSubmit(e as any);
     }
   };
-
-  const handleSessionClick = async (session: Session) => {
-    console.log("Selected session:", session);
+  
+  const handleConversationClick = async (convo: Conversation) => {
+    console.log("Selected convo:", convo);
     setOffTopicResponse(null);
     setResponse(null);
     setUserPrompt("");
     const response = await fetch(
-      `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/${session.id}/`,
+      `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/messages/${convo.id}/`,
       {
         method: "GET",
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Request-Headers": "*",
+          "Authorization": `Bearer ${(session?.user as any).idToken}`,
         },
       }
     );
     const responseData: RawMessageData[] = await response.json();
-    setCurrentConversationId(session.id);
+    setCurrentConversationId(convo.id);
     const data: MessageData[] = responseData.map((message: RawMessageData) => ({
       text: message.text,
       conversation: message.conversation,
@@ -166,7 +256,7 @@ export default function Home(): React.JSX.Element {
     }));
     console.log({ handleSesssionClick: data });
     const userPrompt =
-      data.filter((message) => message.fromUser)[0]?.text || "";
+    data.filter((message) => message.fromUser)[0]?.text || "";
     const aiMessage = data.filter((message) => !message.fromUser)[0] || "";
     setUserPrompt(userPrompt);
     if (aiMessage.json) {
@@ -176,42 +266,126 @@ export default function Home(): React.JSX.Element {
     }
     fetchSessions();
   };
-
+  
   const handleBackToChat = (): void => {
     setResponse(null);
     setUserPrompt("");
     setCurrentConversationId(null);
     setOffTopicResponse(null);
   };
-
+  
   const handleNewChat = (): void => {
     setResponse(null);
     setUserPrompt("");
     setCurrentConversationId(null);
     setOffTopicResponse(null);
   };
+  
+  const onEditUser = async (updatedUserData: {
+    username?: string;
+    email?: string;
+    method?: string;
+    preferences?: UserPreferences;
+  }) => {
+    try {
+      console.log("Updating user with data:", JSON.stringify(updatedUserData));
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}api/chat/user/${user?.email}/`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Request-Headers": "*",
+            "Authorization": `Bearer ${(session?.user as any).idToken}`,
+          },
+          body: JSON.stringify(updatedUserData),
+        }
+      );
+      console.log({ responseStatus: response.ok });
+      if (response.ok) {
+        const updatedUser = await response.json();
+        console.log({ updatedUser });
+        setUser(updatedUser);
+        console.log(
+          "User updated in main page:",
+          { updatedUser }
+        );
+      } else {
+        throw new Error("Failed to update user");
+      }
+    } catch (error) {
+      console.error("Error updating user:", error);
+    }
+  }
 
+  const userProfilePopup = useMemo(() => {
+    if (user) {
+      return <UserProfilePopup 
+        isOpen={userAndpreferencesLoaded ? isProfilePopupOpen : false} 
+        user={user}
+        closePopup={() => setIsProfilePopupOpen(false)} 
+        onEditUser={onEditUser}
+      />
+    }
+  }, [user, userAndpreferencesLoaded, isProfilePopupOpen])
+  
   return (
     <div className="min-h-screen bg-[#e5e5e5]">
       <div className="flex h-screen">
         {sidebarOpen && (
           <div
-            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
-            onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
           />
         )}
 
-        <div className="w-80 bg-white/80 rounded-r-2xl backdrop-blur-sm flex flex-col">
-          <div className="p-4 pb-0">
-            <div className="flex items-center space-x-3 bg-black/10 rounded-2xl p-4 drop-shadow-customShadow mt-2">
-              <div className="w-10 h-10 bg-black rounded-full flex items-center justify-center">
-                <span className="text-white font-semibold text-sm">JD</span>
+        <div className="relative w-80 bg-white/80 rounded-r-2xl backdrop-blur-sm flex flex-col">
+          <div className="absolute z-20 bottom-4 left-0 right-2 p-4 pb-0">
+            <button
+              onClick={() => {
+                if (userAndpreferencesLoaded) {
+                  setIsProfilePopupOpen(true)
+                }
+              }}
+              className="w-full flex items-center space-x-3 bg-[#EEEEEE] rounded-2xl p-4 drop-shadow-customShadowDark mt-2 hover:bg-[#E0E0E0] transition-colors duration-200 cursor-pointer"
+              >
+              <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
+                {status === "loading" || !userAndpreferencesLoaded ? (
+                  <div className="w-full h-full bg-black/10 rounded-full animate-pulse"></div>
+                ) : user?.preferences?.profileImage || session?.user?.image ? (
+                  <img
+                  src={
+                    user?.preferences?.profileImage ||
+                    session?.user?.image ||
+                    ""
+                    }
+                    alt="Profile"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <span className="text-white font-semibold text-sm">
+                    {user?.username ?? "U"}
+                  </span>
+                )}
               </div>
-              <div>
-                <h3 className="font-semibold text-black">Jane Doe</h3>
-                <p className="text-sm text-gray-500">Developer</p>
+              <div className="flex-1 text-left">
+                {status === "loading" || !userAndpreferencesLoaded ? (
+                  <>
+                    <div className="h-4 bg-black/10 rounded-full animate-pulse mb-2 w-24"></div>
+                    <div className="h-4 bg-black/10 rounded-full animate-pulse w-32"></div>
+                  </>
+                ) : (
+                  <>
+                    <h3 className="font-semibold text-black">
+                      {user?.username || "User"}
+                    </h3>
+                    <p className="text-sm text-gray-500">
+                      {session?.user?.email || "Click to edit profile"}
+                    </p>
+                  </>
+                )}
               </div>
-            </div>
+            </button>
           </div>
 
           <div className="p-4">
@@ -241,10 +415,10 @@ export default function Home(): React.JSX.Element {
               {initialLoading ? (
                 <SessionSkeleton count={8} />
               ) : (
-                sessions.map((session, index) => (
+                conversations.map((session, index) => (
                   <button
                     key={index}
-                    onClick={() => handleSessionClick(session)}
+                    onClick={() => handleConversationClick(session)}
                     className="w-full text-left p-3 rounded-lg hover:bg-gray-200 transition-colors duration-200 group cursor-pointer"
                   >
                     <div className="flex justify-between items-start mb-1">
@@ -349,6 +523,9 @@ export default function Home(): React.JSX.Element {
           </div>
         </div>
       </div>
+
+      {/* User Profile Popup */}
+      {userProfilePopup}
     </div>
   );
 }

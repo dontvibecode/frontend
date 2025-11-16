@@ -14,7 +14,6 @@ export async function POST(request: NextRequest): Promise<NextResponse<Instructo
 
     const offTopic = body.message.includes('off topic');
     
-    // TODO: Handle off topic messages, to test, input "off topic" in the text box 
     if(offTopic) {
       const mockResponse: InstructorResponse = {
         offTopic: true,

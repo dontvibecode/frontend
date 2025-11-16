@@ -95,7 +95,6 @@ export default function ResponseUI({ response, onBack, userPrompt, title }: Resp
             <Icon icon="mingcute:square-arrow-left-line" className="w-7 h-7" />
           </button>
         )}
-        {/* TODO: Title needed for original response object */}
         <h1 className="text-2xl font-bold text-gray-900 mb-2">{title}</h1>
         <button 
           className="cursor-pointer absolute right-0 bottom-0 pb-[1px] bg-[#5B5454] rounded-xl text-white transition-colors duration-300"
