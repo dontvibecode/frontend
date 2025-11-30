@@ -201,11 +201,15 @@ export default function Home(): React.JSX.Element {
         throw new Error(`HTTP error! status: ${InstructorResponse.status}`);
       }
 
-      await fetchSessions();
-
+      const InstructorResponseData = await InstructorResponse.json();
+      
+      const conversationId = InstructorResponseData.conversation.toString() || null;
+      setCurrentConversationId(conversationId);
+      
+      console.log({ currentConversationId });
       // New logic: any number of messages
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/messages/${currentConversationId}/`,
+        `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/messages/${conversationId}/`,
         {
           method: "GET",
           headers: {
@@ -216,8 +220,6 @@ export default function Home(): React.JSX.Element {
         }
       );
       const responseData: RawMessageData[] = await response.json();
-      const conversationId = responseData[0]?.conversation.toString() || null;
-      setCurrentConversationId(conversationId);
       const data: MessageData[] = responseData.map(
         (message: RawMessageData) => ({
           text: message.text,
@@ -227,6 +229,7 @@ export default function Home(): React.JSX.Element {
           json: message.json,
         })
       );
+      await fetchSessions();
       setMessages(data);
     } catch (error) {
       console.error("Error submitting message:", error);
