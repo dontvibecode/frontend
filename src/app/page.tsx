@@ -10,11 +10,13 @@ import {
   UserPreferences,
 } from "@/types/api";
 import ChatPrompt, { ChatBox } from "./components/ChatPrompt";
+import ChatPrompt, { ChatBox } from "./components/ChatPrompt";
 import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
 import UserProfilePopup from "./components/UserProfilePopup";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import { motion, Variants } from "framer-motion";
 import { motion, Variants } from "framer-motion";
 
 type RawConversation = {
@@ -54,11 +56,16 @@ export default function Home(): React.JSX.Element {
   const [user, setUser] = useState<User | null>(null);
   const [userAndpreferencesLoaded, setUserAndPreferencesLoaded] =
     useState<boolean>(false);
+  const [userAndpreferencesLoaded, setUserAndPreferencesLoaded] =
+    useState<boolean>(false);
+
+  const [messages, setMessages] = useState<MessageData[]>([]);
 
   const [messages, setMessages] = useState<MessageData[]>([]);
 
   useEffect(() => {
     const loadUser = async () => {
+      console.log({ user: session?.user });
       console.log({ user: session?.user });
       if (session?.user?.email) {
         try {
@@ -70,6 +77,7 @@ export default function Home(): React.JSX.Element {
                 "Content-Type": "application/json",
                 "Access-Control-Request-Headers": "*",
                 Authorization: `Bearer ${(session.user as any).idToken}`,
+                Authorization: `Bearer ${(session.user as any).idToken}`,
               },
             }
           );
@@ -77,6 +85,7 @@ export default function Home(): React.JSX.Element {
           if (response.ok) {
             const userWithPreferences = await response.json();
             console.log({ userWithPreferences });
+
 
             setUser(userWithPreferences);
             console.log(
@@ -93,9 +102,11 @@ export default function Home(): React.JSX.Element {
                   "Content-Type": "application/json",
                   "Access-Control-Request-Headers": "*",
                   Authorization: `Bearer ${(session.user as any).idToken}`,
+                  Authorization: `Bearer ${(session.user as any).idToken}`,
                 },
                 body: JSON.stringify({
                   username:
+                    session.user.name || session.user.email?.split("@")[0],
                     session.user.name || session.user.email?.split("@")[0],
                   email: session.user.email,
                   method: "google",
@@ -123,6 +134,7 @@ export default function Home(): React.JSX.Element {
     loadUser();
   }, [session?.user?.email, status, router]);
 
+
   const fetchSessions = useCallback(async () => {
     if (user?.email) {
       const response = await fetch(
@@ -132,6 +144,7 @@ export default function Home(): React.JSX.Element {
           headers: {
             "Content-Type": "application/json",
             "Access-Control-Request-Headers": "*",
+            Authorization: `Bearer ${(session?.user as any).idToken}`,
             Authorization: `Bearer ${(session?.user as any).idToken}`,
           },
         }
@@ -146,18 +159,30 @@ export default function Home(): React.JSX.Element {
         })
       );
 
+      const conversations: Conversation[] = data.map(
+        (session: RawConversation) => ({
+          id: session.id.toString(),
+          title: session.title,
+          lastActive: session.last_active,
+        })
+      );
+
       console.log("Sessions:", data);
       setConversations(conversations);
       setInitialLoading(false);
     }
   }, [user?.email]);
 
+
   useEffect(() => {
     fetchSessions();
   }, [fetchSessions, user]);
 
+
   useEffect(() => {
     setTitle(
+      conversations.find((s) => s.id === currentConversationId)?.title ||
+        "New Chat"
       conversations.find((s) => s.id === currentConversationId)?.title ||
         "New Chat"
     );
@@ -166,6 +191,7 @@ export default function Home(): React.JSX.Element {
     console.log({ currentConversationId });
   }, [currentConversationId, conversations]);
 
+
   const handleSubmit = async (
     e: React.FormEvent<HTMLFormElement>
   ): Promise<void> => {
@@ -173,9 +199,12 @@ export default function Home(): React.JSX.Element {
     if (isSending) return;
     setIsSending(true);
 
+
     if (!message.trim()) return;
 
+
     try {
+      console.log({ sessionBeforePost: session });
       console.log({ sessionBeforePost: session });
       const InstructorResponse = await fetch(
         `${process.env.NEXT_PUBLIC_API_URL}api/chat/message/`,
@@ -184,6 +213,7 @@ export default function Home(): React.JSX.Element {
           headers: {
             "Content-Type": "application/json",
             "Access-Control-Request-Headers": "*",
+            Authorization: `Bearer ${(session?.user as any).idToken}`,
             Authorization: `Bearer ${(session?.user as any).idToken}`,
           },
           body: JSON.stringify({
@@ -197,11 +227,39 @@ export default function Home(): React.JSX.Element {
         }
       );
 
+
       if (!InstructorResponse.ok) {
         throw new Error(`HTTP error! status: ${InstructorResponse.status}`);
       }
 
+
       await fetchSessions();
+
+      // New logic: any number of messages
+      const response = await fetch(
+        `${process.env.NEXT_PUBLIC_API_URL}api/chat/conversations/messages/${currentConversationId}/`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Request-Headers": "*",
+            Authorization: `Bearer ${(session?.user as any).idToken}`,
+          },
+        }
+      );
+      const responseData: RawMessageData[] = await response.json();
+      const conversationId = responseData[0]?.conversation.toString() || null;
+      setCurrentConversationId(conversationId);
+      const data: MessageData[] = responseData.map(
+        (message: RawMessageData) => ({
+          text: message.text,
+          conversation: message.conversation,
+          fromUser: message.from_user,
+          modelUsed: message.model_used,
+          json: message.json,
+        })
+      );
+      setMessages(data);
 
       // New logic: any number of messages
       const response = await fetch(
@@ -235,11 +293,13 @@ export default function Home(): React.JSX.Element {
     }
   };
 
+
   const handleInputChange = (
     e: React.ChangeEvent<HTMLTextAreaElement>
   ): void => {
     setMessage(e.target.value);
   };
+
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>): void => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -247,6 +307,7 @@ export default function Home(): React.JSX.Element {
       handleSubmit(e as any);
     }
   };
+
 
   const handleConversationClick = async (convo: Conversation) => {
     console.log("Selected convo:", convo);
@@ -258,6 +319,7 @@ export default function Home(): React.JSX.Element {
         headers: {
           "Content-Type": "application/json",
           "Access-Control-Request-Headers": "*",
+          Authorization: `Bearer ${(session?.user as any).idToken}`,
           Authorization: `Bearer ${(session?.user as any).idToken}`,
         },
       }
@@ -272,15 +334,20 @@ export default function Home(): React.JSX.Element {
       json: message.json,
     }));
     setMessages(data);
+    setMessages(data);
     fetchSessions();
   };
 
 
+
+
   const handleNewChat = (): void => {
+    setMessages([]);
     setMessages([]);
     setResponse(null);
     setCurrentConversationId(null);
   };
+
 
   const onEditUser = async (updatedUserData: {
     username?: string;
@@ -298,6 +365,7 @@ export default function Home(): React.JSX.Element {
             "Content-Type": "application/json",
             "Access-Control-Request-Headers": "*",
             Authorization: `Bearer ${(session?.user as any).idToken}`,
+            Authorization: `Bearer ${(session?.user as any).idToken}`,
           },
           body: JSON.stringify(updatedUserData),
         }
@@ -308,6 +376,7 @@ export default function Home(): React.JSX.Element {
         console.log({ updatedUser });
         setUser(updatedUser);
         console.log("User updated in main page:", { updatedUser });
+        console.log("User updated in main page:", { updatedUser });
       } else {
         throw new Error("Failed to update user");
       }
@@ -315,9 +384,18 @@ export default function Home(): React.JSX.Element {
       console.error("Error updating user:", error);
     }
   };
+  };
 
   const userProfilePopup = useMemo(() => {
     if (user) {
+      return (
+        <UserProfilePopup
+          isOpen={userAndpreferencesLoaded ? isProfilePopupOpen : false}
+          user={user}
+          closePopup={() => setIsProfilePopupOpen(false)}
+          onEditUser={onEditUser}
+        />
+      );
       return (
         <UserProfilePopup
           isOpen={userAndpreferencesLoaded ? isProfilePopupOpen : false}
@@ -348,11 +426,34 @@ export default function Home(): React.JSX.Element {
 
   console.log({ msgs: messages });
 
+  }, [user, userAndpreferencesLoaded, isProfilePopupOpen]);
+
+  const itemVariants: Variants = {
+    hidden: {
+      opacity: 0,
+      y: 30,
+      filter: "blur(4px)",
+    },
+    visible: {
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+      transition: {
+        duration: 0.3,
+        ease: "easeOut",
+      },
+    },
+  };
+
+  console.log({ msgs: messages });
+
   return (
     <div className="min-h-screen bg-[#e5e5e5]">
       <div className="flex h-screen">
         {sidebarOpen && (
           <div
+            className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+            onClick={() => setSidebarOpen(false)}
             className="fixed inset-0 bg-black/50 z-40 lg:hidden"
             onClick={() => setSidebarOpen(false)}
           />
@@ -364,15 +465,21 @@ export default function Home(): React.JSX.Element {
               onClick={() => {
                 if (userAndpreferencesLoaded) {
                   setIsProfilePopupOpen(true);
+                  setIsProfilePopupOpen(true);
                 }
               }}
               className="w-full flex items-center space-x-3 bg-[#EEEEEE] rounded-2xl p-4 drop-shadow-customShadowDark mt-2 hover:bg-[#E0E0E0] transition-colors duration-200 cursor-pointer"
+            >
             >
               <div className="w-10 h-10 rounded-full flex items-center justify-center overflow-hidden">
                 {status === "loading" || !userAndpreferencesLoaded ? (
                   <div className="w-full h-full bg-black/10 rounded-full animate-pulse"></div>
                 ) : user?.preferences?.profileImage || session?.user?.image ? (
                   <img
+                    src={
+                      user?.preferences?.profileImage ||
+                      session?.user?.image ||
+                      ""
                     src={
                       user?.preferences?.profileImage ||
                       session?.user?.image ||
@@ -499,9 +606,13 @@ export default function Home(): React.JSX.Element {
           <div className="h-screen m-4 flex-1 flex flex-col bg-white/20 backdrop-blur-xs border border-black/10 shadow-[inset_0_0px_40px_rgba(0,0,0,0.1)] rounded-lg overflow-hidden">
             <div className="flex-1 overflow-y-auto flex flex-col items-center justify-start p-4 lg:p-8 main-scroll">
               {messages.length > 0 ? (
+              {messages.length > 0 ? (
                 <ResponseUI
                   onBack={handleNewChat}
+                  onBack={handleNewChat}
                   title={title}
+                  itemVariants={itemVariants}
+                  messages={messages}
                   itemVariants={itemVariants}
                   messages={messages}
                 />
@@ -518,6 +629,7 @@ export default function Home(): React.JSX.Element {
                   <ChatBox
                     handleSubmit={handleSubmit}
                     message={message}
+                    message={message}
                     isSending={isSending}
                     handleInputChange={handleInputChange}
                     handleKeyDown={handleKeyDown}
@@ -529,7 +641,11 @@ export default function Home(): React.JSX.Element {
                   <p className="text-sm text-black/40 text-center mt-2">
                     Press Enter to send, Shift+Enter for new line
                   </p>
+                  <p className="text-sm text-black/40 text-center mt-2">
+                    Press Enter to send, Shift+Enter for new line
+                  </p>
                 </div>
+              </motion.div>
               </motion.div>
             </div>
           </div>
