@@ -5,7 +5,6 @@ import { ExperienceLevel, ExperienceLevels } from "@/types";
 
 interface ChatPromptProps {
   message: string;
-  setMessage: (message: string) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
   isSending: boolean;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
@@ -20,7 +19,6 @@ export const ChatBox = ({
   handleSubmit,
   message,
   isSending,
-  setMessage,
   handleInputChange,
   handleKeyDown,
   experienceLevel,
@@ -90,7 +88,7 @@ export const ChatBox = ({
             </button>
             
               <div 
-                className={`absolute top-full left-0 mt-2 p-1 flex flex-col gap-1 bg-white/80 backdrop-blur-3xl border border-white/30 rounded-xl shadow-lg min-w-[140px] z-10 overflow-hidden transition-all duration-300 ease-out ${
+                className={`absolute bottom-full left-0 mb-2 p-1 flex flex-col gap-1 bg-white/80 backdrop-blur-3xl border border-white/30 rounded-xl shadow-lg min-w-[140px] z-10 overflow-hidden transition-all duration-300 ease-out ${
                   experienceDropdownOpen ? 'opacity-100' : 'opacity-0 pointer-events-none'
                 }`}
                 style={{
@@ -192,20 +190,7 @@ export const ChatBox = ({
   );
 };
 
-export default function ChatPrompt({ 
-  message, 
-  setMessage, 
-  handleSubmit, 
-  isSending, 
-  handleInputChange, 
-  handleKeyDown,
-  experienceLevel,
-  setExperienceLevel,
-  model,
-  setModel
-}: ChatPromptProps) {
-  const dropdownRef = useRef<HTMLDivElement>(null);
-
+export default function ChatPrompt() {
   const containerVariants: Variants = {
     hidden: { opacity: 0 },
     visible: {
@@ -257,29 +242,6 @@ export default function ChatPrompt({
         
         <p className="text-base lg:text-lg text-black font-regular px-4">
           Code like it matters. Think deeper. Build better. No AI crutches.
-        </p>
-      </motion.div>
-
-      <motion.div 
-        className="w-full max-w-2xl"
-        variants={itemVariants}
-      >
-        
-        <ChatBox 
-          handleSubmit={handleSubmit}
-          message={message}
-          isSending={isSending}
-          setMessage={setMessage}
-          handleInputChange={handleInputChange}
-          handleKeyDown={handleKeyDown}
-          experienceLevel={experienceLevel}
-          setExperienceLevel={setExperienceLevel}
-          model={model}
-          setModel={setModel}
-        />
-        
-        <p className="text-sm text-black/40 text-center">
-          Press Enter to send, Shift+Enter for new line
         </p>
       </motion.div>
     </motion.div>
