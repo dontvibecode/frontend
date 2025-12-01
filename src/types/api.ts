@@ -1,8 +1,10 @@
 export interface MessageData {
   text: string | null;
   conversation: number;
-  fromUser: boolean;
+  fromUser?: boolean;
+  from_user?: boolean;
   modelUsed: string;
+  isSending?: boolean;
   json: InstructorResponse | null;
 }
 
