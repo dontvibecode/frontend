@@ -23,6 +23,17 @@ const getAuthHeaders = (idToken?: string) => {
   return headers;
 };
 
+/**
+ * Helper function to handle API errors
+ */
+const handleApiError = async (response: Response, context: string) => {
+  const errorData = await response.json().catch(() => ({}));
+  const error: any = new Error(`${context}: ${response.status}`);
+  error.response = { data: errorData };
+  error.status = response.status;
+  throw error;
+};
+
 // ============================================================================
 // USER API
 // ============================================================================
@@ -41,7 +52,10 @@ export const userAPI = {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get user: ${response.status}`);
+      const errorData = await response.json().catch(() => ({}));
+      const error: any = new Error(`Failed to get user: ${response.status}`);
+      error.response = { data: errorData };
+      throw error;
     }
 
     return response.json();
@@ -68,7 +82,7 @@ export const userAPI = {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to create user: ${response.status}`);
+      await handleApiError(response, "Failed to create user");
     }
 
     return response.json();
@@ -97,7 +111,7 @@ export const userAPI = {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to update user: ${response.status}`);
+      await handleApiError(response, "Failed to update user");
     }
 
     return response.json();
@@ -122,7 +136,7 @@ export const conversationAPI = {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get conversations: ${response.status}`);
+      await handleApiError(response, "Failed to get conversations");
     }
 
     return response.json();
@@ -141,7 +155,7 @@ export const conversationAPI = {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get conversation: ${response.status}`);
+      await handleApiError(response, "Failed to get conversation");
     }
 
     return response.json();
@@ -163,7 +177,7 @@ export const conversationAPI = {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to get conversation messages: ${response.status}`);
+      await handleApiError(response, "Failed to get conversation messages");
     }
 
     return response.json();
@@ -199,7 +213,7 @@ export const messageAPI = {
     );
 
     if (!response.ok) {
-      throw new Error(`Failed to send message: ${response.status}`);
+      await handleApiError(response, "Failed to send message");
     }
 
     return response.json();

@@ -3,13 +3,14 @@
 import React, { useState, useEffect } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import { Conversation, MessageData } from "@/types/api";
 import Lesson from "./lesson";
+import LoginModal from "../components/LoginModal";
 
-export const AIResponse = ({ message, previousMessage, setSelectedLesson }: { message: RawMessageData, previousMessage: string, setSelectedLesson: (lesson: { originalMessage: string, response: MessageData }) => void }) => {
+export const AIResponse = ({ message, previousMessage, setSelectedLesson }: { message: MessageData, previousMessage: string, setSelectedLesson: (lesson: { originalMessage: string, response: MessageData }) => void }) => {
   const jsonData = message?.json;
   
   if (!jsonData || !message) {
@@ -129,6 +130,15 @@ export const AIResponse = ({ message, previousMessage, setSelectedLesson }: { me
   );
 };
 
+// Helper function to check if error is token-related
+const isTokenError = (error: any): boolean => {
+  const errorString = error?.response?.data?.detail || error?.message || JSON.stringify(error);
+  return errorString.includes("Token expired") || 
+         errorString.includes("Token is invalid") ||
+         errorString.includes("401") ||
+         errorString.includes("Unauthorized");
+};
+
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
@@ -138,12 +148,14 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(new Map());
+  const [showLoginModal, setShowLoginModal] = useState(false);
   
-  // Redirect to login if not authenticated
+  // Show login modal if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
-      router.push("/login");
+      setShowLoginModal(true);
     } else if (status === "authenticated" && session?.user?.email) {
+      setShowLoginModal(false);
       async function loadConversations() {
         try {
           const idToken = (session?.user as any)?.idToken;
@@ -158,8 +170,12 @@ export default function ChatPage() {
           );
           setConversations(conversationsData);
           console.log("Conversations loaded:", conversationsData);
-        } catch (error) {
+        } catch (error: any) {
           console.error("Error loading conversations:", error);
+          if (isTokenError(error)) {
+            await signOut({ redirect: false });
+            // router.push("/login?error=session_expired");
+          }
         }
       }
       loadConversations();
@@ -167,17 +183,29 @@ export default function ChatPage() {
   }, [status, router, session]);
 
   const handleConversationClick = async (conversation: Conversation) => {
-    console.log("Selected conversation:", conversation);
-    const messagesData = await api.conversation.getConversationMessages(
-      conversation.id,
-      (session?.user as any)?.idToken
-    );
-    setMessages(messagesData);
-    setSelectedLesson(null);
-    setUserPrompts(new Map());
+    try {
+      console.log("Selected conversation:", conversation);
+      const messagesData = await api.conversation.getConversationMessages(
+        conversation.id,
+        (session?.user as any)?.idToken
+      );
+      setMessages(messagesData);
+      setSelectedLesson(null);
+      setUserPrompts(new Map());
+    } catch (error: any) {
+      console.error("Error loading conversation messages:", error);
+      if (isTokenError(error)) {
+        await signOut({ redirect: false });
+        // router.push("/login?error=session_expired");
+      }
+    }
   };
 
   const sendMessage = async () => {
+    if (status === "unauthenticated") {
+      setShowLoginModal(true);
+      return;
+    }
     if (!message.trim() || !session?.user?.email) {
       console.error("Missing message or session");
       return;
@@ -234,8 +262,19 @@ export default function ChatPage() {
       setUserPrompts(newPrompts);
 
       setMessage(""); // Clear the input
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error sending message:", error);
+      
+      // Remove the "sending" message on error
+      setMessages(messages.filter(m => !m.isSending));
+      
+      if (isTokenError(error)) {
+        await signOut({ redirect: false });
+        // router.push("/login?error=session_expired");
+      } else {
+        // Show error message to user
+        alert("Failed to send message. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -255,6 +294,8 @@ export default function ChatPage() {
 
   return (
     <div className="flex h-screen bg-white">
+      {/* Login Modal */}
+      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
       {/* Left Sidebar */}
       <aside className="w-64 border-r border-gray-200 flex flex-col">
         {/* Logo */}
