@@ -1,14 +1,15 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import Image from "next/image";
 import { motion } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { Conversation, MessageData } from "@/types/api";
+import { Conversation, MessageData, User, UserPreferences } from "@/types/api";
 import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
+import UserProfilePopup from "../components/UserProfilePopup";
 
 export const AIResponse = ({ message, previousMessage, setSelectedLesson }: { message: MessageData, previousMessage: string, setSelectedLesson: (lesson: { originalMessage: string, response: MessageData }) => void }) => {
   const jsonData = message?.json;
@@ -149,7 +150,7 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(new Map());
   const [showLoginModal, setShowLoginModal] = useState(false);
-  
+  const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   // Show login modal if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -280,6 +281,15 @@ export default function ChatPage() {
     }
   };
 
+  const handleUserProfileClick = () => {
+    if (status === "unauthenticated") {
+      setShowLoginModal(true);
+      return;
+    } else {
+      setShowUserProfilePopup(true);
+    }
+  };
+
   // Show loading state while checking authentication
   if (status === "loading") {
     return (
@@ -292,10 +302,22 @@ export default function ChatPage() {
     );
   }
 
+  const onEditUser = async (updatedUserData: {
+    username?: string;
+    email?: string;
+    method?: string;
+    preferences?: UserPreferences;
+  }) => {
+    await api.user.updateUser(session?.user?.email as string, updatedUserData, (session?.user as any)?.idToken);
+    setShowUserProfilePopup(false);
+  };
+
   return (
     <div className="flex h-screen bg-white">
       {/* Login Modal */}
       <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      {/* User Profile Popup */}
+      <UserProfilePopup isOpen={showUserProfilePopup} closePopup={() => setShowUserProfilePopup(false)} user={session?.user as User} onEditUser={onEditUser} />
       {/* Left Sidebar */}
       <aside className="w-64 border-r border-gray-200 flex flex-col">
         {/* Logo */}
@@ -384,28 +406,30 @@ export default function ChatPage() {
         </div>
 
         {/* User Profile */}
-        <div className="p-4 border-t border-gray-200">
-          <div className="flex items-center gap-2">
-            {session?.user?.image ? (
-              <img 
-                src={session.user.image} 
-                alt={session.user.name || "User"} 
-                className="w-8 h-8 rounded-full"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                {session?.user?.name?.[0]?.toUpperCase() || session?.user?.email?.[0]?.toUpperCase() || "U"}
-              </div>
-            )}
-            <span className="text-sm font-medium">
-              {session?.user?.name || session?.user?.email?.split("@")[0] || "User"}
-            </span>
-          </div>
+        <div className="p-2 border-t border-gray-200">
+          <button className="w-full flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200" onClick={handleUserProfileClick}>
+            <div className="flex items-center gap-2">
+              {session?.user?.image ? (
+                <img 
+                  src={session.user.image} 
+                  alt={session.user.name || "User"} 
+                  className="w-8 h-8 rounded-full"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
+                  {session?.user?.name?.[0]?.toUpperCase() || session?.user?.email?.[0]?.toUpperCase() || "U"}
+                </div>
+              )}
+              <span className="text-sm font-medium">
+                {session?.user?.name || session?.user?.email?.split("@")[0] || "User"}
+              </span>
+            </div>
+          </button>
         </div>
       </aside>
 
       {/* Middle - Lesson Window */}
-      <main className="flex-1 bg-gray-50 overflow-y-auto scrollbar-hide">
+      <main className="flex-1 p-4 bg-gray-50 overflow-y-auto scrollbar-hide">
           {selectedLesson ? (
             <Lesson 
               message={selectedLesson.response} 
