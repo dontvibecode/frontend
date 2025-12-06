@@ -11,10 +11,21 @@ import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
 
-export const AIResponse = ({ message, previousMessage, setSelectedLesson }: { message: MessageData, previousMessage: string, setSelectedLesson: (lesson: { originalMessage: string, response: MessageData }) => void }) => {
+export const AIResponse = ({
+  message,
+  previousMessage,
+  setSelectedLesson,
+}: {
+  message: MessageData;
+  previousMessage: string;
+  setSelectedLesson: (lesson: {
+    originalMessage: string;
+    response: MessageData;
+  }) => void;
+}) => {
   const jsonData = message?.json;
-  
-  if (!jsonData || !message) {
+
+  if (!jsonData || Object.keys(jsonData).length === 0 || !message) {
     return (
       <div className="bg-white border border-gray-200 rounded-2xl p-3">
         <p className="text-sm text-gray-700">{message?.text}</p>
@@ -23,12 +34,21 @@ export const AIResponse = ({ message, previousMessage, setSelectedLesson }: { me
   }
 
   return (
-    <div onClick={() => setSelectedLesson({
-      originalMessage: previousMessage,
-      response: message,
-    })} className="cursor-pointer bg-white border border-gray-200 rounded-2xl p-3">
+    <div
+      onClick={() =>
+        setSelectedLesson({
+          originalMessage: previousMessage,
+          response: message,
+        })
+      }
+      className="cursor-pointer bg-white border border-gray-200 rounded-2xl p-3"
+    >
       {/* Breakdown */}
-      <h1 className="text-xl text-gray-700 mb-3 font-semibold">**Title here**</h1>
+      <h1 className="text-xl text-gray-700 mb-3 font-semibold">
+        {jsonData.lessonTitle ??
+          (jsonData as any).lesson_title ??
+          "No Title Available"}
+      </h1>
       {jsonData.breakdown && (
         <p className="text-sm text-gray-700 mb-3 font-regular">
           {jsonData.breakdown}
@@ -94,50 +114,64 @@ export const AIResponse = ({ message, previousMessage, setSelectedLesson }: { me
           )}
 
           {/* Recommended Readings */}
-          {jsonData.recommendedReadings && jsonData.recommendedReadings.length > 0 && (
-            <div>
-              <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
-                <span>📖</span> Reading
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {jsonData.recommendedReadings.map((reading, index) => (
-                  <a
-                    key={index}
-                    href={reading.Url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-white rounded-lg border border-gray-200 p-3 hover:border-gray-300 hover:shadow-sm transition-all group"
-                  >
-                    <h5 className="text-xs font-semibold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
-                      {reading.title}
-                    </h5>
-                    <p className="text-xs text-gray-500 mb-2 line-clamp-2">
-                      {reading.sourceDescription}
-                    </p>
-                    <div className="flex items-center gap-1 text-xs text-gray-400">
-                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                      </svg>
-                      <span>{reading.readingTime} min</span>
-                    </div>
-                  </a>
-                ))}
+          {jsonData.recommendedReadings &&
+            jsonData.recommendedReadings.length > 0 && (
+              <div>
+                <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                  <span>📖</span> Reading
+                </h4>
+                <div className="grid grid-cols-2 gap-2">
+                  {jsonData.recommendedReadings.map((reading, index) => (
+                    <a
+                      key={index}
+                      href={reading.Url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-white rounded-lg border border-gray-200 p-3 hover:border-gray-300 hover:shadow-sm transition-all group"
+                    >
+                      <h5 className="text-xs font-semibold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
+                        {reading.title}
+                      </h5>
+                      <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                        {reading.sourceDescription}
+                      </p>
+                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                        <svg
+                          className="w-3 h-3"
+                          fill="none"
+                          stroke="currentColor"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                          />
+                        </svg>
+                        <span>{reading.readingTime} min</span>
+                      </div>
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </div>
       )}
-    </div> 
+    </div>
   );
 };
 
 // Helper function to check if error is token-related
 const isTokenError = (error: any): boolean => {
-  const errorString = error?.response?.data?.detail || error?.message || JSON.stringify(error);
-  return errorString.includes("Token expired") || 
-         errorString.includes("Token is invalid") ||
-         errorString.includes("401") ||
-         errorString.includes("Unauthorized");
+  const errorString =
+    error?.response?.data?.detail || error?.message || JSON.stringify(error);
+  return (
+    errorString.includes("Token expired") ||
+    errorString.includes("Token is invalid") ||
+    errorString.includes("401") ||
+    errorString.includes("Unauthorized")
+  );
 };
 
 export default function ChatPage() {
@@ -148,9 +182,12 @@ export default function ChatPage() {
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
-  const [userPrompts, setUserPrompts] = useState<Map<number, string>>(new Map());
+  const [userPrompts, setUserPrompts] = useState<Map<number, string>>(
+    new Map()
+  );
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
+  const [conversationId, setConversationId] = useState<number | null>(null);
   // Show login modal if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -164,7 +201,7 @@ export default function ChatPage() {
             console.error("No idToken found in session");
             return;
           }
-          
+
           const conversationsData = await api.conversation.getConversations(
             session?.user?.email as string,
             idToken
@@ -187,9 +224,10 @@ export default function ChatPage() {
     try {
       console.log("Selected conversation:", conversation);
       const messagesData = await api.conversation.getConversationMessages(
-        conversation.id,
+        Number(conversation.id),
         (session?.user as any)?.idToken
       );
+      setConversationId(Number(conversation.id));
       setMessages(messagesData);
       setSelectedLesson(null);
       setUserPrompts(new Map());
@@ -216,59 +254,84 @@ export default function ChatPage() {
     setLoading(true);
     try {
       const idToken = (session.user as any)?.idToken;
-      
+
       if (!idToken) {
         console.error("No idToken found in session");
         setLoading(false);
         return;
       }
-      setMessages([...messages, { isSending: true, text: currentMessage, fromUser: true, conversation: 0, modelUsed: "gemini-2.5-pro", json: null }]);
-      
-      const response = await api.message.sendMessage({
-        text: currentMessage,
-        conversation: null,
-        from_user: true,
-        model_used: "gemini-2.5-pro",
-        json: {},
-        experience_level: "beginner",
-      }, idToken); // Pass the idToken as second parameter
+      setMessages([
+        ...messages,
+        {
+          isSending: true,
+          text: currentMessage,
+          fromUser: true,
+          conversation: 0,
+          modelUsed: "gemini-2.5-pro",
+          json: null,
+        },
+      ]);
+
+      const response = await api.message.sendMessage(
+        {
+          text: currentMessage,
+          conversation: conversationId,
+          from_user: true,
+          model_used: "gemini-2.5-pro",
+          json: {},
+          experience_level: "beginner",
+        },
+        idToken
+      ); // Pass the idToken as second parameter
 
       // if(response.error) {
       //   setMessages([
-      //     ...messages, 
+      //     ...messages,
       //     { isSending: false, text: currentMessage, fromUser: true, conversation: 0, modelUsed: "gemini-2.5-pro", json: null },
       //     { isSending: false, text: response.error, fromUser: false, conversation: 0, modelUsed: "gemini-2.5-pro", json: null }
       //   ]);
       //   return;
       // }
-      
-      const newMessages = [
-        ...messages, 
-        { isSending: false, text: currentMessage, fromUser: true, conversation: 0, modelUsed: "gemini-2.5-pro", json: null },
-        response
-      ];
 
-      if(response.json && response.json.exercises && response.json.exercises.length > 0) {
+      if (
+        response.json &&
+        response.json.exercises &&
+        response.json.exercises.length > 0
+      ) {
         setSelectedLesson({
           originalMessage: currentMessage,
           response: response,
         });
       }
-      
-      setMessages(newMessages);
-      
+
+      console.log({ response });
+
+      if (conversationId === null && response.conversation) {
+        setConversationId(Number(response.conversation));
+        console.log("Covnersation ID set to:", response.conversation);
+      }
+
+      const messagesData = await api.conversation.getConversationMessages(
+        response.conversation,
+        (session?.user as any)?.idToken
+      );
+
+      console.log({ messagesData });
+
+      setMessages(messagesData);
+
       // Track user prompt for this lesson
       const newPrompts = new Map(userPrompts);
-      newPrompts.set(newMessages.length - 1, currentMessage);
+      newPrompts.set(messagesData.length - 1, currentMessage);
       setUserPrompts(newPrompts);
 
       setMessage(""); // Clear the input
     } catch (error: any) {
       console.error("Error sending message:", error);
-      
+
       // Remove the "sending" message on error
-      setMessages(messages.filter(m => !m.isSending));
-      
+      setMessages(messages.filter((m) => !m.isSending));
+
       if (isTokenError(error)) {
         await signOut({ redirect: false });
         // router.push("/login?error=session_expired");
@@ -308,16 +371,28 @@ export default function ChatPage() {
     method?: string;
     preferences?: UserPreferences;
   }) => {
-    await api.user.updateUser(session?.user?.email as string, updatedUserData, (session?.user as any)?.idToken);
+    await api.user.updateUser(
+      session?.user?.email as string,
+      updatedUserData,
+      (session?.user as any)?.idToken
+    );
     setShowUserProfilePopup(false);
   };
 
   return (
     <div className="flex h-screen bg-white">
       {/* Login Modal */}
-      <LoginModal isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />
+      <LoginModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
       {/* User Profile Popup */}
-      <UserProfilePopup isOpen={showUserProfilePopup} closePopup={() => setShowUserProfilePopup(false)} user={session?.user as User} onEditUser={onEditUser} />
+      <UserProfilePopup
+        isOpen={showUserProfilePopup}
+        closePopup={() => setShowUserProfilePopup(false)}
+        user={session?.user as User}
+        onEditUser={onEditUser}
+      />
       {/* Left Sidebar */}
       <aside className="w-64 border-r border-gray-200 flex flex-col">
         {/* Logo */}
@@ -359,15 +434,25 @@ export default function ChatPage() {
           </h3>
           <div className="space-y-1">
             {conversations.map((conversation: Conversation, index: number) => (
-              <div key={index} onClick={() => handleConversationClick(conversation)} className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <div className="text-sm font-medium mb-1">{conversation.title}</div>
+              <div
+                key={index}
+                onClick={() => handleConversationClick(conversation)}
+                className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+              >
+                <div className="text-sm font-medium mb-1">
+                  {conversation.title}
+                </div>
                 <div className="flex flex-wrap gap-1">
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">{conversation.lastActive}</span>
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    {conversation.lastActive}
+                  </span>
                 </div>
               </div>
             ))}
             <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <div className="text-sm font-medium mb-1">Chat app with friends</div>
+              <div className="text-sm font-medium mb-1">
+                Chat app with friends
+              </div>
               <div className="flex flex-wrap gap-1">
                 <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
                   Cassandra
@@ -379,7 +464,9 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <div className="text-sm font-medium mb-1">Fitness Tracking App</div>
+              <div className="text-sm font-medium mb-1">
+                Fitness Tracking App
+              </div>
               <div className="flex flex-wrap gap-1">
                 <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
                   Firebase
@@ -391,7 +478,9 @@ export default function ChatPage() {
               </div>
             </div>
             <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <div className="text-sm font-medium mb-1">Event Ticketing Platform</div>
+              <div className="text-sm font-medium mb-1">
+                Event Ticketing Platform
+              </div>
               <div className="flex flex-wrap gap-1">
                 <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
                   Stripe
@@ -407,21 +496,28 @@ export default function ChatPage() {
 
         {/* User Profile */}
         <div className="p-2 border-t border-gray-200">
-          <button className="w-full flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200" onClick={handleUserProfileClick}>
+          <button
+            className="w-full flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200"
+            onClick={handleUserProfileClick}
+          >
             <div className="flex items-center gap-2">
               {session?.user?.image ? (
-                <img 
-                  src={session.user.image} 
-                  alt={session.user.name || "User"} 
+                <img
+                  src={session.user.image}
+                  alt={session.user.name || "User"}
                   className="w-8 h-8 rounded-full"
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                  {session?.user?.name?.[0]?.toUpperCase() || session?.user?.email?.[0]?.toUpperCase() || "U"}
+                  {session?.user?.name?.[0]?.toUpperCase() ||
+                    session?.user?.email?.[0]?.toUpperCase() ||
+                    "U"}
                 </div>
               )}
               <span className="text-sm font-medium">
-                {session?.user?.name || session?.user?.email?.split("@")[0] || "User"}
+                {session?.user?.name ||
+                  session?.user?.email?.split("@")[0] ||
+                  "User"}
               </span>
             </div>
           </button>
@@ -430,12 +526,12 @@ export default function ChatPage() {
 
       {/* Middle - Lesson Window */}
       <main className="flex-1 p-4 bg-gray-50 overflow-y-auto scrollbar-hide">
-          {selectedLesson ? (
-            <Lesson 
-              message={selectedLesson.response} 
-              userPrompt={selectedLesson.originalMessage} 
-            />
-          ) : (
+        {selectedLesson ? (
+          <Lesson
+            message={selectedLesson.response}
+            userPrompt={selectedLesson.originalMessage}
+          />
+        ) : (
           <div className="h-full flex items-center justify-center">
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
@@ -452,7 +548,7 @@ export default function ChatPage() {
               <h2 className="text-5xl md:text-6xl font-bold text-gray-300">
                 Build better. No AI crutches.
               </h2>
-              
+
               {/* Cursor Graphic */}
               <motion.div
                 className="absolute top-1/2 left-1/2"
@@ -476,53 +572,69 @@ export default function ChatPage() {
               </motion.div>
             </motion.div>
           </div>
-          )}
+        )}
       </main>
 
       <aside className="w-96 border-l border-gray-200 flex flex-col bg-white">
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message: MessageData, index: number) => (
-            message.fromUser || message.from_user ? (
+          {messages.map((message: MessageData, index: number) => {
+            return !!(message.fromUser || (message as any).from_user) ? (
               <div key={index} className="w-full flex justify-end">
-                <motion.div 
+                <motion.div
                   className="w-fit bg-gray-100 rounded-2xl p-3 self-end"
-                  animate={message.isSending ? {
-                    opacity: [0.6, 1, 0.6],
-                    scale: [0.98, 1, 0.98]
-                  } : {
-                    opacity: 1,
-                    scale: 1
-                  }}
-                  transition={message.isSending ? {
-                    duration: 1.5,
-                    repeat: Infinity,
-                    ease: "easeInOut"
-                  } : {
-                    duration: 0.2
-                  }}
+                  animate={
+                    message.isSending
+                      ? {
+                          opacity: [0.6, 1, 0.6],
+                          scale: [0.98, 1, 0.98],
+                        }
+                      : {
+                          opacity: 1,
+                          scale: 1,
+                        }
+                  }
+                  transition={
+                    message.isSending
+                      ? {
+                          duration: 1.5,
+                          repeat: Infinity,
+                          ease: "easeInOut",
+                        }
+                      : {
+                          duration: 0.2,
+                        }
+                  }
                 >
                   <p className="text-sm text-gray-800">{message.text}</p>
                 </motion.div>
               </div>
             ) : (
-              <AIResponse key={index} message={message} previousMessage={messages[index - 1]?.text || "**NO PREVIOUS MESSAGE FOUND**"} setSelectedLesson={setSelectedLesson} />
-            )))}
+              <AIResponse
+                key={index}
+                message={message}
+                previousMessage={
+                  messages[index - 1]?.text || "**NO PREVIOUS MESSAGE FOUND**"
+                }
+                setSelectedLesson={setSelectedLesson}
+              />
+            );
+          })}
         </div>
 
         <div className="p-4 border-t border-gray-200">
-          <textarea 
-            rows={4} 
-            onChange={(e) => setMessage(e.target.value)} 
+          <textarea
+            rows={4}
+            onChange={(e) => setMessage(e.target.value)}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
+              if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault();
                 sendMessage();
               }
             }}
             disabled={loading}
-            className="w-full h-20 p-2 border border-gray-200 rounded-lg text-sm resize-none text-black placeholder-gray-400 disabled:bg-gray-50" 
-            placeholder="What's not working? Let's think it through." 
-            value={message} 
+            className="w-full h-20 p-2 border border-gray-200 rounded-lg text-sm resize-none text-black placeholder-gray-400 disabled:bg-gray-50"
+            placeholder="What's not working? Let's think it through."
+            value={message}
           />
           <div className="flex items-center gap-2">
             <button className="px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
@@ -531,8 +643,8 @@ export default function ChatPage() {
             <button className="px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
               Gemini
             </button>
-            <button 
-              onClick={sendMessage} 
+            <button
+              onClick={sendMessage}
               disabled={loading || !message.trim()}
               className="ml-auto w-8 h-8 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
             >
@@ -550,4 +662,3 @@ export default function ChatPage() {
     </div>
   );
 }
-

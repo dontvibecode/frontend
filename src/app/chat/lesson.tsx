@@ -22,7 +22,7 @@ export default function Lesson({ message, userPrompt }: LessonProps) {
     <div className="max-w-4xl mx-auto p-6 bg-white mt-6 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.0.04)]">
       <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
         <h1 className="text-3xl font-bold text-gray-900">
-          {jsonData.exercises?.[0]?.filename?.replace('.java', '').replace('.py', '').replace('.js', '') || 'Lesson'}
+          {jsonData.lessonTitle ?? (jsonData as any).lesson_title ?? (jsonData.exercises?.[0]?.filename?.replace('.java', '').replace('.py', '').replace('.js', '') || 'Lesson')}
         </h1>
         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <svg

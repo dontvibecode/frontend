@@ -2,7 +2,6 @@ export interface MessageData {
   text: string | null;
   conversation: number;
   fromUser?: boolean;
-  from_user?: boolean;
   modelUsed: string;
   isSending?: boolean;
   json: InstructorResponse | null;
@@ -22,6 +21,7 @@ export interface Exercise {
 }
 
 export interface InstructorResponse {
+  lessonTitle?: string;
   offTopic?: boolean;
   offTopicMessage?: string;
   breakdown?: string;
