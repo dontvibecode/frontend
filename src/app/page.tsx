@@ -189,9 +189,7 @@ export default function Home(): React.JSX.Element {
           body: JSON.stringify({
             text: message.trim(),
             conversation: currentConversationId,
-            from_user: true,
             model_used: "gemini-2.5-pro",
-            json: {},
             experience_level: experienceLevel,
           }),
         }

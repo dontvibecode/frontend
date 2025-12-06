@@ -3,7 +3,7 @@
  * All API calls should go through this file for consistency and maintainability
  */
 
-import { UserPreferences } from "@/types";
+import { InstructorResponse, MessageData, UserPreferences } from "@/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dontvibecode.uc.r.appspot.com/';
 
@@ -165,9 +165,9 @@ export const conversationAPI = {
    * Get all messages in a conversation
    */
   getConversationMessages: async (
-    conversationId: string,
+    conversationId: number,
     idToken?: string
-  ) => {
+  ): Promise<MessageData[]> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/conversations/messages/${conversationId}/`,
       {
@@ -180,7 +180,21 @@ export const conversationAPI = {
       await handleApiError(response, "Failed to get conversation messages");
     }
 
-    return response.json();
+    const responseJson = await response.json();
+    
+    return responseJson.map((msg: any) => ({
+      text: msg.text,
+      conversation: msg.conversation,
+      fromUser: msg.from_user,
+      modelUsed: msg.model_used,
+      json: msg.json ? {
+        lessonTitle: msg.json.lesson_title,
+        breakdown: msg.json.breakdown,
+        explanation: msg.json.explanation,
+        recommendedReadings: msg.json.recommendedReadings,
+        exercises: msg.json.exercises,
+      } as InstructorResponse : {},
+    })) as MessageData[];
   },
 };
 
@@ -195,14 +209,14 @@ export const messageAPI = {
   sendMessage: async (
     messageData: {
       text: string;
-      conversation: string | null;
+      conversation: number | null;
       from_user: boolean;
       model_used: string;
       json: Record<string, any>;
       experience_level: string;
     },
     idToken?: string
-  ) => {
+  ): Promise<MessageData> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/message/`,
       {
@@ -216,7 +230,28 @@ export const messageAPI = {
       await handleApiError(response, "Failed to send message");
     }
 
-    return response.json();
+    const responseJson = await response.json();
+    
+    const instructorData = responseJson.json ? 
+      {
+        lessonTitle: responseJson.json.lesson_title,
+        breakdown: responseJson.json.breakdown,
+        explanation: responseJson.json.explanation,
+        recommendedReadings: responseJson.json.recommendedReadings,
+        exercises: responseJson.json.exercises,
+      } as InstructorResponse
+    : {};
+
+    // For the sake of consistency, we use CamelCase in the frontend and snake_case in the backend
+    const message: MessageData = {
+      text: responseJson.text,
+      conversation: responseJson.conversation,
+      fromUser: responseJson.from_user,
+      modelUsed: responseJson.model_used,
+      isSending: responseJson.is_sending,
+      json: instructorData,
+    }
+    return message;
   },
 };
 
