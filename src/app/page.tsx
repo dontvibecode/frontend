@@ -14,8 +14,8 @@ import ResponseUI from "./components/ResponseUI";
 import SessionSkeleton from "./components/SessionSkeleton";
 import UserProfilePopup from "./components/UserProfilePopup";
 import { useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
 import { motion, Variants } from "framer-motion";
+import { useRouter } from "next/navigation";
 
 type RawConversation = {
   id: number;
@@ -56,6 +56,10 @@ export default function Home(): React.JSX.Element {
     useState<boolean>(false);
 
   const [messages, setMessages] = useState<MessageData[]>([]);
+
+  useEffect(() => {
+    router.push('/chat');
+  }, []);
 
   useEffect(() => {
     const loadUser = async () => {
