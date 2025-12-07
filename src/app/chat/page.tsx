@@ -185,6 +185,7 @@ export default function ChatPage() {
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(
     new Map()
   );
+  const [lessonExpanded, setLessonExpanded] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
@@ -243,6 +244,7 @@ export default function ChatPage() {
       setConversationId(Number(conversation.id));
       setMessages(messagesData);
       setSelectedLesson(null);
+      setLessonExpanded(false);
       setUserPrompts(new Map());
     } catch (error: any) {
       console.error("Error loading conversation messages:", error);
@@ -563,11 +565,13 @@ export default function ChatPage() {
       </aside>
 
       {/* Middle - Lesson Window */}
-      <main className="flex-1 p-4 bg-gray-50 overflow-y-auto scrollbar-hide">
+      <main className="relative flex-1 p-4 bg-gray-50 overflow-y-auto overflow-x-hidden scrollbar-hide">
         {selectedLesson ? (
           <Lesson
+            setLessonExpanded={setLessonExpanded}
             message={selectedLesson.response}
             userPrompt={selectedLesson.originalMessage}
+            lessonExpanded={lessonExpanded}
           />
         ) : (
           <div className="h-full flex items-center justify-center">
@@ -613,7 +617,29 @@ export default function ChatPage() {
         )}
       </main>
 
-      <aside className="w-96 border-l border-gray-200 flex flex-col bg-white">
+      {lessonExpanded && (        
+        <aside onClick={() => setLessonExpanded(false)} className="cursor-pointer border-l px-4 py-6 border-gray-200 flex flex-col bg-gray-100 overflow-hidden justify-start items-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            className="text-black opacity-40"
+          >
+            <path
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 21.25a9.25 9.25 0 1 0-8.307-5.177c.108.22.144.468.089.706l-.816 3.536a.6.6 0 0 0 .72.72l3.535-.817a1.06 1.06 0 0 1 .706.09A9.2 9.2 0 0 0 12 21.25M7.97 9.886h8.06m-8.06 4.228h5.748"
+            ></path>
+          </svg>
+        </aside>
+      )}  
+
+      {!lessonExpanded && (
+        <aside className="w-96 border-l border-gray-200 flex flex-col bg-white">
         <div className="flex-1 overflow-y-auto p-4 space-y-4" id="chat-container">
           {messages.map((message: MessageData, index: number) => {
             return !!(message.fromUser || (message as any).from_user) ? (
@@ -710,6 +736,7 @@ export default function ChatPage() {
           </div>
         </div>
       </aside>
+      )}
     </div>
   );
 }
