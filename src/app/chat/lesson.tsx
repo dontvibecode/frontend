@@ -199,7 +199,7 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
               </SyntaxHighlighter>
             </div>
             <div className="sticky bottom-0 left-6 right-6 ml-6 mr-6 py-4">
-              <div className="bg-white/5 shadow-[inset_0_0_50px_0_rgba(244,244,244,0.2)] backdrop-blur-md border border-white/30 rounded-3xl p-4 mx-auto">
+              <div className="bg-white/0 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-md border border-white/30 rounded-3xl p-4 mx-auto">
               <button onClick={expandExercises} className="w-full flex flex-row justify-between items-center gap-2 text-white font-medium transition-colors">
                 <div className="flex items-center gap-2">
                 <svg

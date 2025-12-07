@@ -190,6 +190,7 @@ export default function ChatPage() {
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
+  const [chatMenuOpen, setChatMenuOpen] = useState(-1);
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
   const isDebouncing = useRef(false);
 
@@ -419,6 +420,10 @@ export default function ChatPage() {
     setShowUserProfilePopup(false);
   };
 
+  const chatMenuDropdown = (conversationId: number) => {
+    setChatMenuOpen(conversationId);
+  };
+
   return (
     <div className="flex h-screen bg-white">
       {/* Login Modal */}
@@ -477,16 +482,101 @@ export default function ChatPage() {
               <div
                 key={index}
                 onClick={() => handleConversationClick(conversation)}
-                className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+                className="relative p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
               >
-                <div className="text-sm font-medium mb-1">
-                  {conversation.title}
+                <div className="flex flex-row justify-between items-center">
+                  <div className="text-sm text-black font-medium mb-1">
+                    {conversation.title}
+                  </div>
+                  <div onClick={() => chatMenuDropdown(Number(conversation.id))} className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="16"
+                      height="16"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        fill="none"
+                        stroke="currentColor"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
+                      ></path>
+                    </svg>
+                  </div>
                 </div>
                 <div className="flex flex-wrap gap-1">
                   <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
                     {conversation.lastActive}
                   </span>
                 </div>
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }} 
+                  animate={{ 
+                    display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
+                    opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0, 
+                    y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                  }} 
+                  onClick={() => {
+                    setChatMenuOpen(-1);
+                    api.conversation.deleteConversation(Number(conversation.id), (session?.user as any)?.idToken);
+                  }}
+                  transition={{ type: "spring", damping: 10, stiffness: 300 }} 
+                  className="absolute -bottom-10 right-0 z-20"
+                >
+                  <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                    >
+                      <g fill="none">
+                        <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
+                        <path
+                          fill="currentColor"
+                          stroke="currentColor"
+                          strokeWidth="0.4"
+                          d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"
+                        ></path>
+                      </g>
+                    </svg>
+                  </div>
+                </motion.div>
+                <motion.div 
+                  initial={{ opacity: 0, y: -10 }} 
+                  animate={{ 
+                    display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
+                    opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0, 
+                    y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                  }} 
+                  onClick={() => {
+                    setChatMenuOpen(-1);
+                    api.conversation.pinConversation(Number(conversation.id), (session?.user as any)?.idToken);
+                  }}
+                  transition={{ type: "spring", damping: 10, stiffness: 300 }} 
+                  className="absolute -bottom-6 right-10 rotate-45 z-20"
+                >
+                  <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="20"
+                      height="20"
+                      viewBox="0 0 24 24"
+                    >
+                      <g fill="none" fillRule="evenodd">
+                        <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
+                        <path
+                          fill="currentColor"
+                          stroke="currentColor"
+                          strokeWidth="0.4"
+                          d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2zm0 2h6.266l.515 3.605c.261 1.83.98 3.565 2.09 5.045l.606.808C17.209 13.71 15.204 14 12 14s-5.21-.29-6.344-.542l.607-.808a11 11 0 0 0 2.09-5.045L8.866 4Z"
+                        ></path>
+                      </g>
+                    </svg>
+                  </div>
+                </motion.div>
               </div>
             ))}
             <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
