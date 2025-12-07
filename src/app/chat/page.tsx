@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -190,6 +190,19 @@ export default function ChatPage() {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
 
+  const [difficultyIndex, setDifficultyIndex] = useState(0);
+  const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
+  const isDebouncing = useRef(false);
+
+  const cycleDifficulty = useCallback(() => {
+    if (isDebouncing.current) return;
+    isDebouncing.current = true;
+    setDifficultyIndex((prev) => (prev + 1) % difficultyLevels.length);
+    setTimeout(() => {
+      isDebouncing.current = false;
+    }, 500);
+  }, [difficultyLevels.length]);
+
   // Show login modal if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -270,6 +283,20 @@ export default function ChatPage() {
       setShowLoginModal(true);
       return;
     }
+
+    const scrollToBottom = () => {
+      const chatContainer = document.getElementById('chat-container');
+      if (chatContainer) {
+        chatContainer.scrollTo({
+          top: chatContainer.scrollHeight,
+          behavior: 'smooth'
+        });
+      }
+    };
+    
+    // Scroll after a small delay to allow the new message to render
+    setTimeout(scrollToBottom, 100);
+    
     if (!message.trim() || !session?.user?.email) {
       console.error("Missing message or session");
       return;
@@ -304,7 +331,7 @@ export default function ChatPage() {
           from_user: true,
           model_used: "gemini-2.5-pro",
           json: {},
-          experience_level: "beginner",
+          experience_level: difficultyLevels[difficultyIndex],
         },
         idToken
       ); // Pass the idToken as second parameter
@@ -344,6 +371,17 @@ export default function ChatPage() {
       console.log({ messagesData });
 
       setMessages(messagesData);
+
+      // Scroll to bottom after response arrives
+      setTimeout(() => {
+        const chatContainer = document.getElementById('chat-container');
+        if (chatContainer) {
+          chatContainer.scrollTo({
+            top: chatContainer.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 100);
 
       // Track user prompt for this lesson
       const newPrompts = new Map(userPrompts);
@@ -431,9 +469,9 @@ export default function ChatPage() {
       <aside className="w-64 border-r border-gray-200 flex flex-col">
         {/* Logo */}
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-full" />
-            <span className="font-semibold text-lg">dontvibe</span>
+          <div onClick={() => router.push('/landing')} className="flex items-center gap-2 cursor-pointer">
+            {/* <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-full" /> */}
+            <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
           </div>
         </div>
 
@@ -604,7 +642,7 @@ export default function ChatPage() {
       </main>
 
       <aside className="w-96 border-l border-gray-200 flex flex-col bg-white">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-4" id="chat-container">
           {messages.map((message: MessageData, index: number) => {
             return !!(message.fromUser || (message as any).from_user) ? (
               <div key={index} className="w-full flex justify-end">
@@ -614,7 +652,6 @@ export default function ChatPage() {
                     message.isSending
                       ? {
                           opacity: [0.6, 1, 0.6],
-                          scale: [0.98, 1, 0.98],
                         }
                       : {
                           opacity: 1,
@@ -665,10 +702,24 @@ export default function ChatPage() {
             value={message}
           />
           <div className="flex items-center gap-2">
-            <button className="px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
-              Beginner
+            <button 
+              onClick={cycleDifficulty}
+              className="cursor-pointer font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all overflow-hidden relative h-9 min-w-18"
+            >
+              <AnimatePresence mode="popLayout" initial={false}>
+                <motion.div
+                  key={difficultyLevels[difficultyIndex]}
+                  initial={{ opacity: 0, y: -20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  whileHover={{ y: 2 }}
+                  transition={{ duration: 0.25, ease: "easeInOut", type: "spring", damping: 10, stiffness: 300 }}
+                >
+                  {difficultyLevels[difficultyIndex]}
+                </motion.div>
+              </AnimatePresence>
             </button>
-            <button className="px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
+            <button className="cursor-pointer px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
               Gemini
             </button>
             <button
