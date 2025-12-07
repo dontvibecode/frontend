@@ -435,9 +435,9 @@ export default function ChatPage() {
       <aside className="w-64 border-r border-gray-200 flex flex-col">
         {/* Logo */}
         <div className="p-4 border-b border-gray-200">
-          <div className="flex items-center gap-2">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-full" />
-            <span className="font-semibold text-lg">dontvibe</span>
+          <div onClick={() => router.push('/landing')} className="flex items-center gap-2 cursor-pointer">
+            {/* <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-full" /> */}
+            <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
           </div>
         </div>
 
