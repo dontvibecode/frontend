@@ -188,6 +188,8 @@ export default function ChatPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
   // Show login modal if not authenticated
   useEffect(() => {
     if (status === "unauthenticated") {
@@ -219,6 +221,29 @@ export default function ChatPage() {
       loadConversations();
     }
   }, [status, router, session]);
+
+  useEffect(() => {
+    const loadUser = async () => {
+      const idToken = (session?.user as any)?.idToken;
+      if (session?.user?.email && idToken) {
+        try {
+          const response = await api.user.getUser(session.user.email, idToken);
+          setUser(response);
+        } catch (error) {
+          const response = await api.user.createUser(
+            {
+              username: session.user.name || session.user.email?.split("@")[0],
+              email: session.user.email as string,
+              method: "google",
+            },
+            idToken
+          );
+          setUser(response);
+        }
+      }
+    };
+    loadUser();
+  }, [session?.user?.email]);
 
   const handleConversationClick = async (conversation: Conversation) => {
     try {
@@ -371,12 +396,21 @@ export default function ChatPage() {
     method?: string;
     preferences?: UserPreferences;
   }) => {
-    await api.user.updateUser(
-      session?.user?.email as string,
-      updatedUserData,
-      (session?.user as any)?.idToken
-    );
-    setShowUserProfilePopup(false);
+    const email = user?.email || session?.user?.email;
+    const idToken = (session?.user as any)?.idToken;
+    if (email && idToken) {
+      await api.user.updateUser(
+        session?.user?.email as string,
+        updatedUserData,
+        idToken
+      );
+
+      setShowUserProfilePopup(false);
+
+      // Refresh user data
+      const response = await api.user.getUser(email, idToken);
+      setUser(response);
+    }
   };
 
   return (
@@ -390,7 +424,7 @@ export default function ChatPage() {
       <UserProfilePopup
         isOpen={showUserProfilePopup}
         closePopup={() => setShowUserProfilePopup(false)}
-        user={session?.user as User}
+        user={user}
         onEditUser={onEditUser}
       />
       {/* Left Sidebar */}
@@ -509,16 +543,10 @@ export default function ChatPage() {
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                  {session?.user?.name?.[0]?.toUpperCase() ||
-                    session?.user?.email?.[0]?.toUpperCase() ||
-                    "U"}
+                  {user?.username}
                 </div>
               )}
-              <span className="text-sm font-medium">
-                {session?.user?.name ||
-                  session?.user?.email?.split("@")[0] ||
-                  "User"}
-              </span>
+              <span className="text-sm font-medium">{user?.username}</span>
             </div>
           </button>
         </div>
