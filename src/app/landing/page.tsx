@@ -172,8 +172,10 @@ function InfoSection() {
         />
       </div>
       <div className="w-full pl-4 flex flex-col gap-6 py-6">
-      <p className="text-6xl max-w-2xl">Next Gen Teaching</p>
-      <p className="text-base max-w-xl">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        <div className="flex flex-col ml-4 gap-4">
+          <p className="text-6xl max-w-2xl text-black/40">Next Gen Teaching</p>
+          <p className="text-base max-w-xl text-black/40">Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua.</p>
+        </div>
         {isInView && (
         <div className="flex flex-row gap-4">
           <motion.div 
@@ -390,11 +392,24 @@ export default function LandingPage() {
           <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-full" />
         </div>
         <div className="flex items-center gap-4">
-          <button className="px-6 py-2 rounded-full bg-white/10 backdrop-blur-sm text-gray-800 hover:bg-white/20 transition-all">
-            Hello
+          <button className="bg-white/0 shadow-[inset_0_0_50px_0_rgba(244,244,244,0.2)] backdrop-blur-lg border border-white/30 rounded-3xl px-6 py-2 max-w-2xl mx-auto text-black">
+            Features
           </button>
-          <button className="px-6 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-all">
-            Hello
+          <button className="px-5 pr-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-all flex items-center gap-2">
+          Chat
+          <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 16 16"
+                >
+                  <path
+                    fill="currentColor"
+                    stroke="currentColor"
+                    strokeWidth="0.4"
+                    d="M2.499 11a.5.5 0 0 1 .477.348l.256.797a1.01 1.01 0 0 0 .63.633l.789.248a.5.5 0 0 1 .001.954l-.79.252a1 1 0 0 0-.63.633l-.252.787a.5.5 0 0 1-.95.008l-.266-.79a1.03 1.03 0 0 0-.636-.639l-.781-.252a.5.5 0 0 1-.002-.95l.794-.26a1.02 1.02 0 0 0 .636-.634l.248-.786A.5.5 0 0 1 2.5 11ZM1 7.513a1 1 0 0 1 .69-.953l2.583-.844a3.95 3.95 0 0 0 2.465-2.457l.808-2.56A1 1 0 0 1 9.452.695l.832 2.598a3.9 3.9 0 0 0 2.448 2.453l2.569.811a1 1 0 0 1 .004 1.906l-2.572.823a3.9 3.9 0 0 0-2.449 2.454l-.82 2.565a1 1 0 0 1-1.9.014l-.866-2.567v-.002A3.97 3.97 0 0 0 4.24 9.284l-2.547-.821A1 1 0 0 1 1 7.513"
+                  ></path>
+                </svg>
           </button>
         </div>
       </header>
