@@ -38,6 +38,7 @@ export interface Conversation {
   id: string;
   title: string;
   lastActive: string;
+  pinned: boolean;
 }
 export const ExperienceLevels = ['Beginner', 'Novice', 'Junior', 'Senior'] as const;
 

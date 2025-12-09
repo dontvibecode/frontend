@@ -202,7 +202,7 @@ export const conversationAPI = {
    */
   deleteConversation: async (conversationId: number, idToken?: string) => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/conversations/${conversationId}/`,
+      `${API_BASE_URL}api/chat/conversations/delete/${conversationId}/`,
       {
         method: "DELETE",
         headers: getAuthHeaders(idToken),
@@ -221,7 +221,7 @@ export const conversationAPI = {
    */
   pinConversation: async (conversationId: number, idToken?: string) => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/conversations/${conversationId}/pin/`,
+      `${API_BASE_URL}api/chat/conversations/pin/${conversationId}/`,
       {
         method: "POST",
         headers: getAuthHeaders(idToken),
