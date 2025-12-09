@@ -196,6 +196,44 @@ export const conversationAPI = {
       } as InstructorResponse : {},
     })) as MessageData[];
   },
+
+  /**
+   * Delete a conversation
+   */
+  deleteConversation: async (conversationId: number, idToken?: string) => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/conversations/${conversationId}/`,
+      {
+        method: "DELETE",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to delete conversation");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Pin a conversation
+   */
+  pinConversation: async (conversationId: number, idToken?: string) => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/conversations/${conversationId}/pin/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to pin conversation");
+    }
+
+    return response.json();
+  },
 };
 
 // ============================================================================
