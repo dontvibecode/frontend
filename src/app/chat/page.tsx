@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  useCallback,
+} from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
@@ -189,6 +195,8 @@ export default function ChatPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+
   const [difficultyIndex, setDifficultyIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
@@ -235,6 +243,29 @@ export default function ChatPage() {
     }
   }, [status, router, session]);
 
+  useEffect(() => {
+    const loadUser = async () => {
+      const idToken = (session?.user as any)?.idToken;
+      if (session?.user?.email && idToken) {
+        try {
+          const response = await api.user.getUser(session.user.email, idToken);
+          setUser(response);
+        } catch (error) {
+          const response = await api.user.createUser(
+            {
+              username: session.user.name || session.user.email?.split("@")[0],
+              email: session.user.email as string,
+              method: "google",
+            },
+            idToken
+          );
+          setUser(response);
+        }
+      }
+    };
+    loadUser();
+  }, [session?.user?.email]);
+
   const handleConversationClick = async (conversation: Conversation) => {
     try {
       console.log("Selected conversation:", conversation);
@@ -263,18 +294,18 @@ export default function ChatPage() {
     }
 
     const scrollToBottom = () => {
-      const chatContainer = document.getElementById('chat-container');
+      const chatContainer = document.getElementById("chat-container");
       if (chatContainer) {
         chatContainer.scrollTo({
           top: chatContainer.scrollHeight,
-          behavior: 'smooth'
+          behavior: "smooth",
         });
       }
     };
-    
+
     // Scroll after a small delay to allow the new message to render
     setTimeout(scrollToBottom, 100);
-    
+
     if (!message.trim() || !session?.user?.email) {
       console.error("Missing message or session");
       return;
@@ -352,11 +383,11 @@ export default function ChatPage() {
 
       // Scroll to bottom after response arrives
       setTimeout(() => {
-        const chatContainer = document.getElementById('chat-container');
+        const chatContainer = document.getElementById("chat-container");
         if (chatContainer) {
           chatContainer.scrollTo({
             top: chatContainer.scrollHeight,
-            behavior: 'smooth'
+            behavior: "smooth",
           });
         }
       }, 100);
@@ -412,12 +443,21 @@ export default function ChatPage() {
     method?: string;
     preferences?: UserPreferences;
   }) => {
-    await api.user.updateUser(
-      session?.user?.email as string,
-      updatedUserData,
-      (session?.user as any)?.idToken
-    );
-    setShowUserProfilePopup(false);
+    const email = user?.email || session?.user?.email;
+    const idToken = (session?.user as any)?.idToken;
+    if (email && idToken) {
+      await api.user.updateUser(
+        session?.user?.email as string,
+        updatedUserData,
+        idToken
+      );
+
+      setShowUserProfilePopup(false);
+
+      // Refresh user data
+      const response = await api.user.getUser(email, idToken);
+      setUser(response);
+    }
   };
 
   const chatMenuDropdown = (conversationId: number) => {
@@ -435,14 +475,17 @@ export default function ChatPage() {
       <UserProfilePopup
         isOpen={showUserProfilePopup}
         closePopup={() => setShowUserProfilePopup(false)}
-        user={session?.user as User}
+        user={user}
         onEditUser={onEditUser}
       />
       {/* Left Sidebar */}
       <aside className="w-64 border-r border-gray-200 flex flex-col">
         {/* Logo */}
         <div className="p-4 border-b border-gray-200">
-          <div onClick={() => router.push('/landing')} className="flex items-center gap-2 cursor-pointer">
+          <div
+            onClick={() => router.push("/landing")}
+            className="flex items-center gap-2 cursor-pointer"
+          >
             {/* <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-full" /> */}
             <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
           </div>
@@ -478,107 +521,147 @@ export default function ChatPage() {
             Chats
           </h3>
           <div className="space-y-1">
-            {conversations.map((conversation: Conversation, index: number) => (
-              <div
-                key={index}
-                onClick={() => handleConversationClick(conversation)}
-                className="relative p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-              >
-                <div className="flex flex-row justify-between items-center">
-                  <div className="text-sm text-black font-medium mb-1">
-                    {conversation.title}
-                  </div>
-                  <div onClick={() => chatMenuDropdown(Number(conversation.id))} className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        fill="none"
-                        stroke="currentColor"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
-                      ></path>
-                    </svg>
-                  </div>
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    {conversation.lastActive}
-                  </span>
-                </div>
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }} 
-                  animate={{ 
-                    display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
-                    opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0, 
-                    y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                  }} 
-                  onClick={() => {
-                    setChatMenuOpen(-1);
-                    api.conversation.deleteConversation(Number(conversation.id), (session?.user as any)?.idToken);
-                  }}
-                  transition={{ type: "spring", damping: 10, stiffness: 300 }} 
-                  className="absolute -bottom-10 right-0 z-20"
+            {conversations
+              .sort((a, b) => {
+                if (a.pinned && !b.pinned) return -1;
+                if (!a.pinned && b.pinned) return 1;
+                return 0;
+              })
+              .map((conversation: Conversation, index: number) => (
+                <div
+                  key={index}
+                  onClick={() => handleConversationClick(conversation)}
+                  className="relative p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
                 >
-                  <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
+                  <div className="flex flex-row justify-between items-center">
+                    <div className="text-sm text-black font-medium mb-1">
+                      {conversation.title}
+                    </div>
+                    <div
+                      onClick={() => chatMenuDropdown(Number(conversation.id))}
+                      className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
                     >
-                      <g fill="none">
-                        <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                      >
                         <path
-                          fill="currentColor"
+                          fill="none"
                           stroke="currentColor"
-                          strokeWidth="0.4"
-                          d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
                         ></path>
-                      </g>
-                    </svg>
+                      </svg>
+                    </div>
                   </div>
-                </motion.div>
-                <motion.div 
-                  initial={{ opacity: 0, y: -10 }} 
-                  animate={{ 
-                    display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
-                    opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0, 
-                    y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                  }} 
-                  onClick={() => {
-                    setChatMenuOpen(-1);
-                    api.conversation.pinConversation(Number(conversation.id), (session?.user as any)?.idToken);
-                  }}
-                  transition={{ type: "spring", damping: 10, stiffness: 300 }} 
-                  className="absolute -bottom-6 right-10 rotate-45 z-20"
-                >
-                  <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                    >
-                      <g fill="none" fillRule="evenodd">
-                        <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
-                        <path
-                          fill="currentColor"
-                          stroke="currentColor"
-                          strokeWidth="0.4"
-                          d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2zm0 2h6.266l.515 3.605c.261 1.83.98 3.565 2.09 5.045l.606.808C17.209 13.71 15.204 14 12 14s-5.21-.29-6.344-.542l.607-.808a11 11 0 0 0 2.09-5.045L8.866 4Z"
-                        ></path>
-                      </g>
-                    </svg>
+                  <div className="flex flex-wrap gap-1">
+                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                      {conversation.lastActive}
+                    </span>
                   </div>
-                </motion.div>
-              </div>
-            ))}
+                  {/* Delete and Pin buttons remain the same */}
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{
+                      display:
+                        chatMenuOpen === Number(conversation.id)
+                          ? "block"
+                          : "none",
+                      opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                      y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                    }}
+                    onClick={async () => {
+                      if (user?.email) {
+                        setChatMenuOpen(-1);
+                        await api.conversation.deleteConversation(
+                          Number(conversation.id),
+                          (session?.user as any)?.idToken
+                        );
+                        const idToken = (session?.user as any)?.idToken;
+                        const conversationsData =
+                          await api.conversation.getConversations(
+                            user.email,
+                            idToken
+                          );
+                        setConversations(conversationsData);
+                      }
+                    }}
+                    transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                    className="absolute -bottom-10 right-0 z-20"
+                  >
+                    <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                      >
+                        <g fill="none">
+                          <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
+                          <path
+                            fill="currentColor"
+                            stroke="currentColor"
+                            strokeWidth="0.4"
+                            d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"
+                          ></path>
+                        </g>
+                      </svg>
+                    </div>
+                  </motion.div>
+                  <motion.div
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{
+                      display:
+                        chatMenuOpen === Number(conversation.id)
+                          ? "block"
+                          : "none",
+                      opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                      y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                    }}
+                    onClick={async () => {
+                      setChatMenuOpen(-1);
+                      await api.conversation.pinConversation(
+                        Number(conversation.id),
+                        (session?.user as any)?.idToken
+                      );
+                      if (user?.email) {
+                        const idToken = (session?.user as any)?.idToken;
+                        const conversationsData =
+                          await api.conversation.getConversations(
+                            user.email,
+                            idToken
+                          );
+                        setConversations(conversationsData);
+                      }
+                    }}
+                    transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                    className="absolute -bottom-6 right-10 rotate-45 z-20"
+                  >
+                    <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="20"
+                        height="20"
+                        viewBox="0 0 24 24"
+                      >
+                        <g fill="none" fillRule="evenodd">
+                          <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
+                          <path
+                            fill="currentColor"
+                            stroke="currentColor"
+                            strokeWidth="0.4"
+                            d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2zm0 2h6.266l.515 3.605c.261 1.83.98 3.565 2.09 5.045l.606.808C17.209 13.71 15.204 14 12 14s-5.21-.29-6.344-.542l.607-.808a11 11 0 0 0 2.09-5.045L8.866 4Z"
+                          ></path>
+                        </g>
+                      </svg>
+                    </div>
+                  </motion.div>
+                </div>
+              ))}
             <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
               <div className="text-sm font-medium mb-1">
                 Chat app with friends
@@ -639,16 +722,10 @@ export default function ChatPage() {
                 />
               ) : (
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                  {session?.user?.name?.[0]?.toUpperCase() ||
-                    session?.user?.email?.[0]?.toUpperCase() ||
-                    "U"}
+                  {user?.username}
                 </div>
               )}
-              <span className="text-sm font-medium">
-                {session?.user?.name ||
-                  session?.user?.email?.split("@")[0] ||
-                  "User"}
-              </span>
+              <span className="text-sm font-medium">{user?.username}</span>
             </div>
           </button>
         </div>
@@ -707,8 +784,11 @@ export default function ChatPage() {
         )}
       </main>
 
-      {lessonExpanded && (        
-        <aside onClick={() => setLessonExpanded(false)} className="cursor-pointer border-l px-4 py-6 border-gray-200 flex flex-col bg-gray-100 overflow-hidden justify-start items-center">
+      {lessonExpanded && (
+        <aside
+          onClick={() => setLessonExpanded(false)}
+          className="cursor-pointer border-l px-4 py-6 border-gray-200 flex flex-col bg-gray-100 overflow-hidden justify-start items-center"
+        >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
@@ -726,106 +806,115 @@ export default function ChatPage() {
             ></path>
           </svg>
         </aside>
-      )}  
+      )}
 
       {!lessonExpanded && (
         <aside className="w-96 border-l border-gray-200 flex flex-col bg-white">
-        <div className="flex-1 overflow-y-auto p-4 space-y-4" id="chat-container">
-          {messages.map((message: MessageData, index: number) => {
-            return !!(message.fromUser || (message as any).from_user) ? (
-              <div key={index} className="w-full flex justify-end">
-                <motion.div
-                  className="w-fit bg-gray-100 rounded-2xl p-3 self-end"
-                  animate={
-                    message.isSending
-                      ? {
-                          opacity: [0.6, 1, 0.6],
-                        }
-                      : {
-                          opacity: 1,
-                          scale: 1,
-                        }
-                  }
-                  transition={
-                    message.isSending
-                      ? {
-                          duration: 1.5,
-                          repeat: Infinity,
-                          ease: "easeInOut",
-                        }
-                      : {
-                          duration: 0.2,
-                        }
-                  }
-                >
-                  <p className="text-sm text-gray-800">{message.text}</p>
-                </motion.div>
-              </div>
-            ) : (
-              <AIResponse
-                key={index}
-                message={message}
-                previousMessage={
-                  messages[index - 1]?.text || "**NO PREVIOUS MESSAGE FOUND**"
-                }
-                setSelectedLesson={setSelectedLesson}
-              />
-            );
-          })}
-        </div>
-
-        <div className="p-4 border-t border-gray-200">
-          <textarea
-            rows={4}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                sendMessage();
-              }
-            }}
-            disabled={loading}
-            className="w-full h-20 p-2 border border-gray-200 rounded-lg text-sm resize-none text-black placeholder-gray-400 disabled:bg-gray-50"
-            placeholder="What's not working? Let's think it through."
-            value={message}
-          />
-          <div className="flex items-center gap-2">
-            <button 
-              onClick={cycleDifficulty}
-              className="cursor-pointer font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all overflow-hidden relative h-9 min-w-18"
-            >
-              <AnimatePresence mode="popLayout" initial={false}>
-                <motion.div
-                  key={difficultyLevels[difficultyIndex]}
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  whileHover={{ y: 2 }}
-                  transition={{ duration: 0.25, ease: "easeInOut", type: "spring", damping: 10, stiffness: 300 }}
-                >
-                  {difficultyLevels[difficultyIndex]}
-                </motion.div>
-              </AnimatePresence>
-            </button>
-            <button className="cursor-pointer px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
-              Gemini
-            </button>
-            <button
-              onClick={sendMessage}
-              disabled={loading || !message.trim()}
-              className="ml-auto w-8 h-8 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
-            >
-              {loading ? (
-                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+          <div
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+            id="chat-container"
+          >
+            {messages.map((message: MessageData, index: number) => {
+              return !!(message.fromUser || (message as any).from_user) ? (
+                <div key={index} className="w-full flex justify-end">
+                  <motion.div
+                    className="w-fit bg-gray-100 rounded-2xl p-3 self-end"
+                    animate={
+                      message.isSending
+                        ? {
+                            opacity: [0.6, 1, 0.6],
+                          }
+                        : {
+                            opacity: 1,
+                            scale: 1,
+                          }
+                    }
+                    transition={
+                      message.isSending
+                        ? {
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }
+                        : {
+                            duration: 0.2,
+                          }
+                    }
+                  >
+                    <p className="text-sm text-gray-800">{message.text}</p>
+                  </motion.div>
+                </div>
               ) : (
-                <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-                  <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-                </svg>
-              )}
-            </button>
+                <AIResponse
+                  key={index}
+                  message={message}
+                  previousMessage={
+                    messages[index - 1]?.text || "**NO PREVIOUS MESSAGE FOUND**"
+                  }
+                  setSelectedLesson={setSelectedLesson}
+                />
+              );
+            })}
           </div>
-        </div>
-      </aside>
+
+          <div className="p-4 border-t border-gray-200">
+            <textarea
+              rows={4}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              disabled={loading}
+              className="w-full h-20 p-2 border border-gray-200 rounded-lg text-sm resize-none text-black placeholder-gray-400 disabled:bg-gray-50"
+              placeholder="What's not working? Let's think it through."
+              value={message}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={cycleDifficulty}
+                className="cursor-pointer font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all overflow-hidden relative h-9 min-w-18"
+              >
+                <AnimatePresence mode="popLayout" initial={false}>
+                  <motion.div
+                    key={difficultyLevels[difficultyIndex]}
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 20 }}
+                    whileHover={{ y: 2 }}
+                    transition={{
+                      duration: 0.25,
+                      ease: "easeInOut",
+                      type: "spring",
+                      damping: 10,
+                      stiffness: 300,
+                    }}
+                  >
+                    {difficultyLevels[difficultyIndex]}
+                  </motion.div>
+                </AnimatePresence>
+              </button>
+              <button className="cursor-pointer px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
+                Gemini
+              </button>
+              <button
+                onClick={sendMessage}
+                disabled={loading || !message.trim()}
+                className="ml-auto w-8 h-8 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </aside>
       )}
     </div>
   );

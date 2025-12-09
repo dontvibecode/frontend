@@ -30,8 +30,8 @@ export default function UserProfilePopup({
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
-  const [name, setName] = useState(user?.username ?? session?.user?.name ?? "");
-  const [email, setEmail] = useState(user?.email ?? session?.user?.email ?? "");
+  const [name, setName] = useState(user?.username ?? "");
+  const [email, setEmail] = useState(user?.email ?? "");
   const [theme, setTheme] = useState<"light" | "dark" | "system">(
     user?.preferences?.theme ?? "light"
   );
@@ -39,6 +39,15 @@ export default function UserProfilePopup({
     user?.preferences?.accentColor ?? "000000"
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
+
+  useEffect(() => {
+    setName(user?.username ?? "");
+    setEmail(user?.email ?? "");
+    setTheme(user?.preferences?.theme ?? "light");
+    setAccentColor(user?.preferences?.accentColor ?? "000000");
+    setLanguage(user?.preferences?.language ?? "en");
+  }, [user]);
+
   const handleSave = async () => {
     try {
       setIsSaving(true);
