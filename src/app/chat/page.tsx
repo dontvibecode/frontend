@@ -490,223 +490,245 @@ export default function ChatPage() {
             <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
           </div>
         </div>
+        <div className="relative flex-1 overflow-y-auto">
+          {/* New Chat Button */}
+          <div className="sticky top-0 left-0 right-0 z-20 px-4 py-3">
+            <button
+              onClick={() => {
+                setConversationId(null);
+                setMessages([]);
+              }}
+              className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl p-3 mx-auto"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" className="text-black">
+              <g fill="none" stroke="black" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+                  <path d="M10.371 4.25H8.25a5 5 0 0 0-5 5v6.5a5 5 0 0 0 5 5h6.5a5 5 0 0 0 5-5v-2.121">
+                  </path>
+                  <path d="M12.299 14.75a1.86 1.86 0 0 0 1.316-.545l6.59-6.59a1.86 1.86 0 0 0 0-2.633l-1.187-1.187a1.86 1.86 0 0 0-2.633 0l-6.59 6.59a1.86 1.86 0 0 0-.545 1.316v3.049z">
+                  </path>
+                </g>
+              </svg>
+              <span className="text-sm text-black m-0 font-medium tracking-wide">New Chat</span>
+            </button>
+          </div>
 
-        {/* Sandbox Section */}
-        <div className="px-4 py-3">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-            Sandbox
-          </h3>
-          <div className="space-y-1">
-            <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <span className="text-sm">👍</span>
-              <span className="text-sm">Sorting an array</span>
-            </div>
-            <div className="px-2 py-1">
-              <div className="text-xs text-gray-500">C++ 4 exercises</div>
-            </div>
-            <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <span className="text-sm text-red-600">Debug type error</span>
-              <div className="flex gap-1 mt-1">
-                <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded">
-                  TypeScript
-                </span>
-                <span className="text-xs text-gray-500">1 exercise</span>
+          {/* Sandbox Section */}
+          <div className="px-4 py-3">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+              Sandbox
+            </h3>
+            <div className="space-y-1">
+              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <span className="text-sm">👍</span>
+                <span className="text-sm">Sorting an array</span>
+              </div>
+              <div className="px-2 py-1">
+                <div className="text-xs text-gray-500">C++ 4 exercises</div>
+              </div>
+              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <span className="text-sm text-red-600">Debug type error</span>
+                <div className="flex gap-1 mt-1">
+                  <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded">
+                    TypeScript
+                  </span>
+                  <span className="text-xs text-gray-500">1 exercise</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
 
-        <div className="px-4 py-3 flex-1 overflow-y-auto">
-          <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-            Chats
-          </h3>
-          <div className="space-y-1">
-            {conversations
-              .sort((a, b) => {
-                if (a.pinned && !b.pinned) return -1;
-                if (!a.pinned && b.pinned) return 1;
-                return 0;
-              })
-              .map((conversation: Conversation, index: number) => (
-                <div
-                  key={index}
-                  onClick={() => handleConversationClick(conversation)}
-                  className="relative p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
-                >
-                  <div className="flex flex-row justify-between items-center">
-                    <div className="text-sm text-black font-medium mb-1">
-                      {conversation.title}
-                    </div>
-                    <div
-                      onClick={() => chatMenuDropdown(Number(conversation.id))}
-                      className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
-                    >
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="16"
-                        height="16"
-                        viewBox="0 0 24 24"
+          <div className="px-4 py-3 flex-1">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+              Chats
+            </h3>
+            <div className="space-y-1">
+              {conversations.concat(conversations)
+                .sort((a, b) => {
+                  if (a.pinned && !b.pinned) return -1;
+                  if (!a.pinned && b.pinned) return 1;
+                  return 0;
+                })
+                .map((conversation: Conversation, index: number) => (
+                  <div
+                    key={index}
+                    onClick={() => handleConversationClick(conversation)}
+                    className="relative p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+                  >
+                    <p>{conversation.pinned ? "Pinned" : "Unpinned"}</p>
+                    <div className="flex flex-row justify-between items-center">
+                      <div className="text-sm text-black font-medium mb-1">
+                        {conversation.title}
+                      </div>
+                      <div
+                        onClick={() => chatMenuDropdown(Number(conversation.id))}
+                        className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
                       >
-                        <path
-                          fill="none"
-                          stroke="currentColor"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
-                        ></path>
-                      </svg>
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                        >
+                          <path
+                            fill="none"
+                            stroke="currentColor"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="2"
+                            d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
+                          ></path>
+                        </svg>
+                      </div>
                     </div>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                      {conversation.lastActive}
-                    </span>
-                  </div>
-                  {/* Delete and Pin buttons remain the same */}
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{
-                      display:
-                        chatMenuOpen === Number(conversation.id)
-                          ? "block"
-                          : "none",
-                      opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                      y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                    }}
-                    onClick={async () => {
-                      if (user?.email) {
+                    <div className="flex flex-wrap gap-1">
+                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                        {conversation.lastActive}
+                      </span>
+                    </div>
+                    {/* Delete and Pin buttons remain the same */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{
+                        display:
+                          chatMenuOpen === Number(conversation.id)
+                            ? "block"
+                            : "none",
+                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                      }}
+                      onClick={async () => {
+                        if (user?.email) {
+                          setChatMenuOpen(-1);
+                          await api.conversation.deleteConversation(
+                            Number(conversation.id),
+                            (session?.user as any)?.idToken
+                          );
+                          const idToken = (session?.user as any)?.idToken;
+                          const conversationsData =
+                            await api.conversation.getConversations(
+                              user.email,
+                              idToken
+                            );
+                          setConversations(conversationsData);
+                        }
+                      }}
+                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                      className="absolute -bottom-10 right-0 z-20"
+                    >
+                      <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                        >
+                          <g fill="none">
+                            <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
+                            <path
+                              fill="currentColor"
+                              stroke="currentColor"
+                              strokeWidth="0.4"
+                              d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"
+                            ></path>
+                          </g>
+                        </svg>
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{
+                        display:
+                          chatMenuOpen === Number(conversation.id)
+                            ? "block"
+                            : "none",
+                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                      }}
+                      onClick={async () => {
                         setChatMenuOpen(-1);
-                        await api.conversation.deleteConversation(
+                        await api.conversation.pinConversation(
                           Number(conversation.id),
                           (session?.user as any)?.idToken
                         );
-                        const idToken = (session?.user as any)?.idToken;
-                        const conversationsData =
-                          await api.conversation.getConversations(
-                            user.email,
-                            idToken
-                          );
-                        setConversations(conversationsData);
-                      }
-                    }}
-                    transition={{ type: "spring", damping: 10, stiffness: 300 }}
-                    className="absolute -bottom-10 right-0 z-20"
-                  >
-                    <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                      >
-                        <g fill="none">
-                          <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
-                          <path
-                            fill="currentColor"
-                            stroke="currentColor"
-                            strokeWidth="0.4"
-                            d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"
-                          ></path>
-                        </g>
-                      </svg>
-                    </div>
-                  </motion.div>
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{
-                      display:
-                        chatMenuOpen === Number(conversation.id)
-                          ? "block"
-                          : "none",
-                      opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                      y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                    }}
-                    onClick={async () => {
-                      setChatMenuOpen(-1);
-                      await api.conversation.pinConversation(
-                        Number(conversation.id),
-                        (session?.user as any)?.idToken
-                      );
-                      if (user?.email) {
-                        const idToken = (session?.user as any)?.idToken;
-                        const conversationsData =
-                          await api.conversation.getConversations(
-                            user.email,
-                            idToken
-                          );
-                        setConversations(conversationsData);
-                      }
-                    }}
-                    transition={{ type: "spring", damping: 10, stiffness: 300 }}
-                    className="absolute -bottom-6 right-10 rotate-45 z-20"
-                  >
-                    <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                      <svg
-                        xmlns="http://www.w3.org/2000/svg"
-                        width="20"
-                        height="20"
-                        viewBox="0 0 24 24"
-                      >
-                        <g fill="none" fillRule="evenodd">
-                          <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
-                          <path
-                            fill="currentColor"
-                            stroke="currentColor"
-                            strokeWidth="0.4"
-                            d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2zm0 2h6.266l.515 3.605c.261 1.83.98 3.565 2.09 5.045l.606.808C17.209 13.71 15.204 14 12 14s-5.21-.29-6.344-.542l.607-.808a11 11 0 0 0 2.09-5.045L8.866 4Z"
-                          ></path>
-                        </g>
-                      </svg>
-                    </div>
-                  </motion.div>
+                        if (user?.email) {
+                          const idToken = (session?.user as any)?.idToken;
+                          const conversationsData =
+                            await api.conversation.getConversations(
+                              user.email,
+                              idToken
+                            );
+                          setConversations(conversationsData);
+                        }
+                      }}
+                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                      className="absolute -bottom-6 right-10 rotate-45 z-20"
+                    >
+                      <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="20"
+                          height="20"
+                          viewBox="0 0 24 24"
+                        >
+                          <g fill="none" fillRule="evenodd">
+                            <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
+                            <path
+                              fill="currentColor"
+                              stroke="currentColor"
+                              strokeWidth="0.4"
+                              d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2zm0 2h6.266l.515 3.605c.261 1.83.98 3.565 2.09 5.045l.606.808C17.209 13.71 15.204 14 12 14s-5.21-.29-6.344-.542l.607-.808a11 11 0 0 0 2.09-5.045L8.866 4Z"
+                            ></path>
+                          </g>
+                        </svg>
+                      </div>
+                    </motion.div>
+                  </div>
+                ))}
+              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <div className="text-sm font-medium mb-1">
+                  Chat app with friends
                 </div>
-              ))}
-            <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <div className="text-sm font-medium mb-1">
-                Chat app with friends
+                <div className="flex flex-wrap gap-1">
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    Cassandra
+                  </span>
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    Sockets
+                  </span>
+                  <span className="text-xs text-gray-500">+ 4 more</span>
+                </div>
               </div>
-              <div className="flex flex-wrap gap-1">
-                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                  Cassandra
-                </span>
-                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                  Sockets
-                </span>
-                <span className="text-xs text-gray-500">+ 4 more</span>
+              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <div className="text-sm font-medium mb-1">
+                  Fitness Tracking App
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    Firebase
+                  </span>
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    Bluetooth APIs
+                  </span>
+                  <span className="text-xs text-gray-500">+ 2 more</span>
+                </div>
               </div>
-            </div>
-            <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <div className="text-sm font-medium mb-1">
-                Fitness Tracking App
-              </div>
-              <div className="flex flex-wrap gap-1">
-                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                  Firebase
-                </span>
-                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                  Bluetooth APIs
-                </span>
-                <span className="text-xs text-gray-500">+ 2 more</span>
-              </div>
-            </div>
-            <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-              <div className="text-sm font-medium mb-1">
-                Event Ticketing Platform
-              </div>
-              <div className="flex flex-wrap gap-1">
-                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                  Stripe
-                </span>
-                <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                  Supabase
-                </span>
-                <span className="text-xs text-gray-500">+ 3 more</span>
+              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <div className="text-sm font-medium mb-1">
+                  Event Ticketing Platform
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    Stripe
+                  </span>
+                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    Supabase
+                  </span>
+                  <span className="text-xs text-gray-500">+ 3 more</span>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-
+        </div>       
         {/* User Profile */}
         <div className="p-2 border-t border-gray-200">
           <button
