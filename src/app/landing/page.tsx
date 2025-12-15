@@ -4,6 +4,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
+import FluidImage from "../components/FluidImage";
 
 function ScrollingFeatures() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -27,7 +28,13 @@ function ScrollingFeatures() {
           }} 
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
-            <img src="https://cdn.dribbble.com/userupload/37247718/file/original-b5b7417148edb38744dac3c7a8be9a5d.png" alt="Info 1" className="w-full h-full object-cover" />
+            <FluidImage
+              src="https://cdn.dribbble.com/userupload/37247718/file/original-b5b7417148edb38744dac3c7a8be9a5d.png"
+              alt="Info 1"
+              className="w-full h-full object-cover"
+              fluidIntensity={0.0006}
+              cursorRadius={0.0006}
+            />
         </motion.div>
         <motion.div
           animate={{
@@ -35,7 +42,13 @@ function ScrollingFeatures() {
           }} 
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
-            <img src="https://cdn.dribbble.com/userupload/37247717/file/original-58afb4f323d9065eee4e60be093c8fbe.png" alt="Info 1" className="w-full h-full object-cover" />
+            <FluidImage
+              src="https://cdn.dribbble.com/userupload/37247717/file/original-58afb4f323d9065eee4e60be093c8fbe.png"
+              alt="Info 1"
+              className="w-full h-full object-cover"
+              fluidIntensity={0.0006}
+              cursorRadius={0.0006}
+            />
         </motion.div>
         <motion.div
           animate={{
@@ -43,7 +56,14 @@ function ScrollingFeatures() {
           }} 
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
-            <img src="https://cdn.dribbble.com/userupload/37247724/file/original-0c82c58fa89fa42e92fb89438ceaa613.png" alt="Info 1" className="w-full h-full object-cover" />
+            <FluidImage
+              src="https://cdn.dribbble.com/userupload/37247724/file/original-0c82c58fa89fa42e92fb89438ceaa613.png"
+              alt="Info 1"
+              className="w-full h-full object-cover"
+              fluidIntensity={0.0006}
+              cursorRadius={0.0006}
+            />
+        
         </motion.div>
       </motion.div>
     </div>
@@ -81,7 +101,6 @@ function PricingSection() {
           </div>
         </div>
 
-        {/* Rows */}
         {[
           { feature: "AI-powered debugging", free: true, paid: true },
           { feature: "Code explanations", free: true, paid: true },
@@ -165,11 +184,18 @@ function InfoSection() {
   return (
     <div ref={sectionRef} className="w-full grid grid-cols-[30%_70%] overflow-visible">
       <div className="relative overflow-hidden rounded-[3rem]">
-        <motion.img 
+        <motion.div 
           style={{ y: yParallax }}
-          src="https://i.ibb.co/27Nt80Lc/image.png"
-          className="w-full aspect-[2/3] bg-red-100 rounded-[3rem] object-cover"
-        />
+          className="w-full aspect-[2/3] bg-red-100 rounded-[3rem] overflow-hidden object-cover"
+        >
+          <FluidImage
+            src="https://i.ibb.co/27Nt80Lc/image.png"
+            alt="Info 1"
+            className="w-full h-full object-cover"
+            fluidIntensity={0.0006}
+            cursorRadius={0.0006}
+          />
+        </motion.div>
       </div>
       <div className="w-full pl-4 flex flex-col gap-6 py-6">
         <div className="flex flex-col ml-4 gap-4">
@@ -184,7 +210,13 @@ function InfoSection() {
             transition={{ duration: 0.4, ease: "easeOut" }}
             className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
           >
-            <img src="https://i.ibb.co/V0YCgpvF/image.png" alt="Info 1" className="w-full h-full object-cover" />
+            <FluidImage
+              src="https://i.ibb.co/V0YCgpvF/image.png"
+              alt="Info 1"
+              className="w-full h-full object-cover"
+              fluidIntensity={0.0006}
+              cursorRadius={0.0006}
+            />
           </motion.div>
           <motion.div 
             initial={{ x: 50, opacity: 0 }}
@@ -192,7 +224,13 @@ function InfoSection() {
             transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
             className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
           >
-            <img src="https://i.ibb.co/VGg0P5X/image.png" alt="Info 1" className="w-full h-full object-cover" />
+            <FluidImage
+              src="https://i.ibb.co/VGg0P5X/image.png"
+              alt="Info 1"
+              className="w-full h-full object-cover"
+              fluidIntensity={0.0006}
+              cursorRadius={0.0006}
+            />
           </motion.div>
           <motion.div 
             initial={{ x: 50, opacity: 0 }}
@@ -200,7 +238,13 @@ function InfoSection() {
             transition={{ duration: 0.4, delay: 0.4, ease: "easeOut" }}
             className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
           >
-            <img src="https://i.ibb.co/1YYDwYZ4/image.png" alt="Info 1" className="w-full h-full object-cover" />
+            <FluidImage
+              src="https://i.ibb.co/1YYDwYZ4/image.png"
+              alt="Info 1"
+              className="w-full h-full object-cover"
+              fluidIntensity={0.0006}
+              cursorRadius={0.0006}
+            />
           </motion.div>
         </div>
         )}
@@ -315,7 +359,7 @@ export default function LandingPage() {
   return (
     <div ref={containerRef} className="relative min-h-[300vh] overflow-x-hidden bg-white pt-14">
       <div className="relative inset-0 z-0 w-[calc(100%-2rem)] h-[calc(100vh-2rem-3.5rem)] rounded-3xl overflow-hidden border border-gray-200 m-[1rem]">
-        <div className="absolute inset-0 z-10 flex items-center justify-center">
+        <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <section className="relative z-10 min-h-screen flex flex-col items-center justify-center px-4">
           <motion.div
               initial={{ opacity: 0, y: 30 }}
@@ -327,11 +371,11 @@ export default function LandingPage() {
               <p className="text-xl md:text-2xl text-white/90 mb-2">
               Code like it matters. Think deeper.
               </p>
-              <p className="text-xl md:text-2xl text-white/90 mb-4">
+              <p className="relative z-30 text-xl md:text-2xl text-white/90 mb-4">
               Build better. No AI crutches.
               </p>
 
-              <div className="bg-white/5 shadow-[inset_0_0_50px_0_rgba(244,244,244,0.2)] backdrop-blur-xs border border-white/30 rounded-3xl p-5 max-w-2xl mx-auto">
+              <div className="bg-white/5 shadow-[inset_0_0_50px_0_rgba(244,244,244,0.2)] backdrop-blur-xs border border-white/30 rounded-3xl p-5 max-w-2xl mx-auto pointer-events-auto">
               <input 
                 type="text" 
                 className="placeholder:text-white/80 text-white mb-4 text-left w-full outline-none" 
@@ -353,12 +397,12 @@ export default function LandingPage() {
           </section>
 
         </div>
-        <Image
+        <FluidImage
           src="/splash.png"
           alt="Background"
-          fill
-          className="absoluteobject-cover"
-          priority
+          className="absolute inset-0 w-full h-full object-cover"
+          fluidIntensity={0.0006}
+          cursorRadius={0.0006}
         />
       </div>
 
