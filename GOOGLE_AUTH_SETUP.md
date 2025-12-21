@@ -8,7 +8,7 @@
 4. Go to "Credentials" → "Create Credentials" → "OAuth client ID"
 5. Choose "Web application"
 6. Add authorized redirect URIs:
-   - `http://localhost:3000/api/auth/callback/google` (for development)
+   - `http://localhost:3001/api/auth/callback/google` (for development)
    - `https://yourdomain.com/api/auth/callback/google` (for production)
 
 ## 2. Environment Variables
@@ -21,8 +21,11 @@ GOOGLE_CLIENT_ID=your_google_client_id_here
 GOOGLE_CLIENT_SECRET=your_google_client_secret_here
 
 # NextAuth Configuration
-NEXTAUTH_URL=http://localhost:3000
+NEXTAUTH_URL=http://localhost:3001
 NEXTAUTH_SECRET=your_nextauth_secret_here
+
+# API Configuration
+NEXT_PUBLIC_API_URL=https://dontvibecode.uc.r.appspot.com/
     
 # Generate a secret with: openssl rand -base64 32
 ```

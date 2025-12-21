@@ -1,8 +1,9 @@
 export interface MessageData {
   text: string | null;
   conversation: number;
-  fromUser: boolean;
+  fromUser?: boolean;
   modelUsed: string;
+  isSending?: boolean;
   json: InstructorResponse | null;
 }
 
@@ -20,6 +21,7 @@ export interface Exercise {
 }
 
 export interface InstructorResponse {
+  lessonTitle?: string;
   offTopic?: boolean;
   offTopicMessage?: string;
   breakdown?: string;
@@ -36,6 +38,7 @@ export interface Conversation {
   id: string;
   title: string;
   lastActive: string;
+  pinned: boolean;
 }
 export const ExperienceLevels = ['Beginner', 'Novice', 'Junior', 'Senior'] as const;
 

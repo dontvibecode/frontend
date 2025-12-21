@@ -1,10 +1,10 @@
 "use client";
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { signIn, useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 function Button({ children, onClick }: { children: React.ReactNode, onClick: () => void }) {
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
@@ -97,6 +97,18 @@ function Button({ children, onClick }: { children: React.ReactNode, onClick: () 
 export default function Login() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  // Check for error in URL
+  useEffect(() => {
+    const error = searchParams.get('error');
+    if (error === 'session_expired') {
+      setErrorMessage('Your session has expired. Please log in again.');
+    } else if (error) {
+      setErrorMessage('An error occurred. Please log in again.');
+    }
+  }, [searchParams]);
 
   // Redirect if already authenticated
   React.useEffect(() => {
@@ -195,6 +207,13 @@ export default function Login() {
                >
                  <div className="bg-white py-8 px-4 drop-shadow-customShadow border border-gray-200 rounded-2xl sm:px-10">
                   <div>
+                    {/* Error Message */}
+                    {errorMessage && (
+                      <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                        <p className="text-sm text-red-800 text-center">{errorMessage}</p>
+                      </div>
+                    )}
+
                     <div className="relative">
                       <div className="absolute inset-0 flex items-center">
                         <div className="w-full border-t border-gray-300" />
