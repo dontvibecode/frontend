@@ -5,6 +5,17 @@ import { motion, AnimatePresence } from "framer-motion";
 import { MessageData } from "@/types";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import CodeMirror from "@uiw/react-codemirror";
+import { vscodeDark } from "@uiw/codemirror-theme-vscode";
+import { javascript } from "@codemirror/lang-javascript";
+import { python } from "@codemirror/lang-python";
+import { java } from "@codemirror/lang-java";
+
+const getLanguageExtension = (filename: string) => {
+  if (filename.endsWith('.py')) return python();
+  if (filename.endsWith('.java')) return java();
+  return javascript();
+};
 
 interface LessonProps {
   message: MessageData;
@@ -16,6 +27,7 @@ interface LessonProps {
 export default function Lesson({ message, userPrompt, setLessonExpanded, lessonExpanded }: LessonProps) {
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
+  const [editedCode, setEditedCode] = useState<Record<string, string>>({});
 
   if (!jsonData) return null;
 
@@ -49,6 +61,28 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
           <div className="p-8 pt-16">
             <h1 className="text-2xl font-bold text-gray-900 mb-4">Expanded Lesson View</h1>
             <p className="text-gray-600">Lesson content goes here...</p>
+
+            {jsonData.exercises && jsonData.exercises.length > 0 && jsonData.exercises.map((exercise) => (
+              <div key={exercise.filename} className="text-sm mb-4">
+                <div className="bg-[#2D2D2D] px-4 py-2 rounded-t-lg">
+                  <span className="text-gray-300 text-sm">{exercise.filename}</span>
+                </div>
+                <CodeMirror
+                  value={editedCode[exercise.filename] ?? exercise.code}
+                  onChange={(value: string) => setEditedCode(prev => ({ ...prev, [exercise.filename]: value }))}
+                  theme={vscodeDark}
+                  extensions={[getLanguageExtension(exercise.filename)]}
+                  style={{ fontSize: '14px' }}
+                  basicSetup={{
+                    lineNumbers: true,
+                    foldGutter: true,
+                    highlightActiveLineGutter: true,
+                    highlightActiveLine: true,
+                  }}
+                />
+              </div>
+            ))}
+
           </div>
         </motion.div>
       ) : (
