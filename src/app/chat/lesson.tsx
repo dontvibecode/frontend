@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageData } from "@/types";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -10,6 +10,8 @@ import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { java } from "@codemirror/lang-java";
+import api from "@/lib/api";
+import { useSession } from "next-auth/react";
 
 const getLanguageExtension = (filename: string) => {
   if (filename.endsWith('.py')) return python();
@@ -22,28 +24,69 @@ interface LessonProps {
   userPrompt?: string;
   setLessonExpanded: (expanded: boolean) => void;
   lessonExpanded: boolean;
+  abilityLevel: string;
 }
 
-type FeedbackState = 'correct' | 'incorrect' | null;
+type FeedbackState = 'correct' | 'partially_correct' | 'incorrect' | null;
 
-export function ExerciseModule({ exercise }: { exercise: any }) {
+interface ExerciseModuleProps {
+  data: any;
+  messageId?: number;
+  abilityLevel?: string;
+  index?: number;
+}
+
+export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [feedbackState, setFeedbackState] = useState<FeedbackState>(null);
+  const [feedbackData, setFeedbackData] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
+  const { data: session } = useSession();
 
-  // Demo: toggle between states on submit
-  const handleSubmit = () => {
-    setFeedbackState(prev => {
-      if (prev === null) return 'incorrect';
-      if (prev === 'incorrect') return 'correct';
-      return null;
-    });
+  const currentExercise = data.exercises?.[activeExerciseIndex];
+
+  const handleSubmit = async () => {
+    if (!messageId || !abilityLevel || !currentExercise) return;
+    
+    const idToken = (session?.user as any)?.idToken;
+    if (!idToken) {
+      console.error('No idToken found in session');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const userCode = editedCode[currentExercise.filename] ?? currentExercise.code;
+      const response = await api.exercise.submitExercise({
+        ability_level: abilityLevel,
+        message_id: messageId,
+        exercise_id: currentExercise.id ?? activeExerciseIndex,
+        user_submission: userCode,
+      }, idToken);
+
+      console.log('Exercise submission response:', response);
+      setFeedbackData(response);
+      
+      // Map correctness score to feedback state
+      if (response.correctness === 2) {
+        setFeedbackState('correct');
+      } else if (response.correctness === 1) {
+        setFeedbackState('partially_correct');
+      } else {
+        setFeedbackState('incorrect');
+      }
+    } catch (error) {
+      console.error('Failed to submit exercise:', error);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
-    <div key={exercise.filename} className="text-sm mb-4">
-
+    <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-semibold text-gray-900">{`<Exercise Name Here>`}</h2>
+        <h2 className="text-xl font-semibold text-gray-900">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
         <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <svg
             className="w-5 h-5 text-gray-600"
@@ -60,15 +103,59 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
           </svg>
         </button>
       </div>
-      <p className="text-black font-medium text-lg mb-4">{exercise.text}</p>
+      <p className="text-black font-medium text-lg mb-4">{currentExercise.text || 'Exercise ' + (index + 1)}</p>
       <div className="bg-[#2D2D2D] px-4 py-2 rounded-t-lg">
-        <span className="text-gray-300 text-sm">{exercise.filename}</span>
+        <span className="text-gray-300 text-sm">{currentExercise.filename}</span>
       </div>
+      {data.exercises && data.exercises.length > 1 && (
+        <div className="bg-[#252526] flex items-center overflow-x-auto border-b border-[#1E1E1E]">
+          {data.exercises.map((exercise: any, index: number) => {
+            const ext = exercise.filename.split('.').pop() || '';
+            const iconColors: Record<string, string> = {
+              'py': 'text-yellow-400',
+              'java': 'text-orange-500', 
+              'js': 'text-yellow-300',
+              'ts': 'text-blue-400',
+              'tsx': 'text-blue-400',
+              'jsx': 'text-blue-300',
+            };
+            const iconColor = iconColors[ext] || 'text-gray-400';
+            
+            return (
+              <button
+                key={index}
+                onClick={() => setActiveExerciseIndex(index)}
+                className={`cursor-pointer group relative flex items-center gap-2 px-3 py-2 text-[13px] font-normal transition-colors duration-150 border-r border-[#1E1E1E] min-w-max ${
+                  activeExerciseIndex === index
+                    ? 'bg-[#1E1E1E] text-white'
+                    : 'bg-[#2D2D2D] text-gray-400 hover:bg-[#2A2A2A] hover:text-gray-300'
+                }`}
+              >
+                {/* Active tab top accent */}
+                {activeExerciseIndex === index && (
+                  <span className="absolute top-0 left-0 right-0 h-[2px] bg-[#007ACC]" />
+                )}
+                {/* File type icon */}
+                <svg className={`w-4 h-4 flex-shrink-0 ${iconColor}`} viewBox="0 0 24 24" fill="currentColor">
+                  {ext === 'py' ? (
+                    <path d="M12 0C5.4 0 5.8 2.8 5.8 2.8v2.9h6.4v.9H3.8S0 6.2 0 12.1s3.3 5.7 3.3 5.7h2v-2.7s-.1-3.3 3.2-3.3h5.5s3.1 0 3.1-3v-5S17.5 0 12 0zm-3.1 1.7c.6 0 1 .5 1 1s-.5 1-1 1c-.6 0-1-.5-1-1s.5-1 1-1z M12 24c6.6 0 6.2-2.8 6.2-2.8v-2.9h-6.4v-.9h8.4s3.8.4 3.8-5.5-3.3-5.7-3.3-5.7h-2v2.7s.1 3.3-3.2 3.3H10s-3.1 0-3.1 3v5s-.4 3.8 5.1 3.8zm3.1-1.7c-.6 0-1-.5-1-1s.5-1 1-1c.6 0 1 .5 1 1s-.5 1-1 1z"/>
+                  ) : ext === 'java' ? (
+                    <path d="M8.9 18.6s-1 .6.7.8c2.1.3 3.2.2 5.5-.3 0 0 .6.4 1.5.7-5.2 2.3-11.9-.1-7.7-1.2m-.6-2.8s-1.2.9.6 1c2.2.2 4 .2 7-.3 0 0 .4.4 1.1.7-6.4 1.9-13.5.1-8.7-1.4m5.1-4.7c1.3 1.5-.3 2.8-.3 2.8s3.3-1.7 1.8-3.8c-1.4-2-2.5-3 3.3-6.4 0 0-9.1 2.3-4.8 7.4m7.6 11s.7.6-.8 1.1c-2.9.9-12.1 1.2-14.6 0-.9-.4.8-.9 1.3-1 .5-.1.8-.1.8-.1-1-.7-6.2 1.3-2.6 1.9 9.6 1.6 17.5-.7 15.9-1.9m-10.9-7.9s-4.4 1-1.6 1.4c1.2.2 3.6.1 5.8-.1 1.8-.1 3.6-.4 3.6-.4s-.6.3-1.1.6c-4.4 1.2-12.9.6-10.5-.5 2.1-1 3.8-1 3.8-1m7.8 4.4c4.5-2.3 2.4-4.6.9-4.3-.4.1-.5.2-.5.2s.1-.2.4-.3c2.8-1 5 3-1 4.5 0 0 .1-.1.2-.1"/>
+                  ) : (
+                    <path d="M3 3h18v18H3V3zm16.5 15.5v-11h-15v11h15zM6.5 8.5h4v4h-4v-4z"/>
+                  )}
+                </svg>
+                <span>{currentExercise.filename}</span>
+              </button>
+            );
+          })}
+        </div>
+      )}
       <CodeMirror
-        value={editedCode[exercise.filename] ?? exercise.code}
-        onChange={(value: string) => setEditedCode(prev => ({ ...prev, [exercise.filename]: value }))}
+        value={editedCode[currentExercise.filename] ?? currentExercise.code}
+        onChange={(value: string) => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: value }))}
         theme={vscodeDark}
-        extensions={[getLanguageExtension(exercise.filename)]}
+        extensions={[getLanguageExtension(currentExercise.filename)]}
         style={{ fontSize: '14px' }}
         basicSetup={{
           lineNumbers: true,
@@ -80,12 +167,23 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
       <div className="flex items-center justify-between mt-3">
         <button 
           onClick={handleSubmit}
-          className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl py-3 px-5"
+          disabled={submitting}
+          className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl py-3 px-5"
         >
-          <span className="text-sm text-black m-0 font-medium tracking-wide">Submit</span>
+          {submitting ? (
+            <>
+              <svg className="animate-spin w-4 h-4 text-black" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              <span className="text-sm text-black m-0 font-medium tracking-wide">Checking...</span>
+            </>
+          ) : (
+            <span className="text-sm text-black m-0 font-medium tracking-wide">Submit</span>
+          )}
         </button>
         <button 
-          onClick={() => setEditedCode(prev => ({ ...prev, [exercise.filename]: exercise.code }))}
+          onClick={() => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: currentExercise.code }))}
           className="flex cursor-pointer items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors group"
         >
           <svg 
@@ -107,7 +205,7 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
 
       {/* Feedback Dialogs */}
       <AnimatePresence mode="wait">
-        {feedbackState === 'correct' && (
+        {feedbackState === 'correct' && feedbackData && (
           <motion.div
             key="correct"
             initial={{ opacity: 0, y: 20 }}
@@ -116,12 +214,10 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
             transition={{ duration: 0.3 }}
             className="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 to-lime-50 border border-emerald-200/60 p-5"
           >
-            {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200/30 to-lime-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-green-200/20 to-emerald-200/20 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
             
             <div className="relative">
-              {/* Header with icon */}
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-lime-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -130,31 +226,17 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-emerald-900 mb-1">
-                    Great job! Your solution is correct.
+                    {feedbackData.heading}
                   </h3>
-                  <p className="text-sm text-emerald-700/80 leading-relaxed">
-                    You successfully implemented the function using proper syntax and logic. The loop iterates through each element exactly as expected.
+                  <p className="text-sm text-emerald-700/80 leading-relaxed whitespace-pre-wrap">
+                    {feedbackData.summary}
                   </p>
                 </div>
               </div>
 
-              {/* Improvement suggestions */}
-              <div className="mt-4 pt-4 border-t border-emerald-200/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-4 h-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                  </svg>
-                  <span className="text-sm font-medium text-emerald-800">Pro tip</span>
-                </div>
-                <p className="text-sm text-emerald-700/70 leading-relaxed">
-                  Consider using a list comprehension for a more Pythonic approach. It would make your code more concise while maintaining readability.
-                </p>
-              </div>
-
-              {/* Action buttons */}
               <div className="mt-4 flex items-center gap-3">
                 <button 
-                  onClick={() => setFeedbackState(null)}
+                  onClick={() => { setFeedbackState(null); setFeedbackData(null); }}
                   className="cursor-pointer px-4 py-2 text-sm font-medium text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100/50 rounded-lg transition-colors"
                 >
                   Dismiss
@@ -164,7 +246,107 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
           </motion.div>
         )}
 
-        {feedbackState === 'incorrect' && (
+        {feedbackState === 'partially_correct' && feedbackData && (
+          <motion.div
+            key="partially_correct"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.3 }}
+            className="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200/60 p-5"
+          >
+            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-orange-200/20 to-amber-200/20 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
+            
+            <div className="relative">
+              <div className="flex items-start gap-4">
+                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
+                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-amber-900 mb-1">
+                    {feedbackData.heading}
+                  </h3>
+                  <p className="text-sm text-amber-700/80 leading-relaxed whitespace-pre-wrap">
+                    {feedbackData.summary}
+                  </p>
+                </div>
+              </div>
+
+              {/* Code diffs */}
+              {feedbackData.corrections?.diffs?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-amber-200/50 space-y-4">
+                  {feedbackData.corrections.diffs.map((diff: any, idx: number) => (
+                    <div key={idx}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span className="text-sm font-medium text-amber-800">{diff.headline}</span>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-rose-600 mb-1 flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          Your code:
+                        </div>
+                        <div className="rounded-lg overflow-hidden border border-rose-200/50">
+                          <SyntaxHighlighter
+                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
+                            style={vscDarkPlus}
+                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
+                          >
+                            {diff.incorrect_code}
+                          </SyntaxHighlighter>
+                        </div>
+                      </div>
+
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-emerald-600 mb-1 flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          Suggested fix:
+                        </div>
+                        <div className="rounded-lg overflow-hidden border border-emerald-200/50">
+                          <SyntaxHighlighter
+                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
+                            style={vscDarkPlus}
+                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
+                          >
+                            {diff.correct_code}
+                          </SyntaxHighlighter>
+                        </div>
+                      </div>
+
+                      <p className="text-sm text-amber-700/70 leading-relaxed">{diff.comment}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Statements */}
+              {feedbackData.corrections?.statements?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-amber-200/50">
+                  {feedbackData.corrections.statements.map((statement: string, idx: number) => (
+                    <p key={idx} className="text-sm text-amber-700/70 leading-relaxed mb-2">{statement}</p>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 flex items-center gap-3">
+                <button 
+                  onClick={() => { setFeedbackState(null); setFeedbackData(null); }}
+                  className="cursor-pointer px-4 py-2 text-sm font-medium text-amber-700 hover:text-amber-900 hover:bg-amber-100/50 rounded-lg transition-colors"
+                >
+                  Dismiss
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+
+        {feedbackState === 'incorrect' && feedbackData && (
           <motion.div
             key="incorrect"
             initial={{ opacity: 0, y: 20 }}
@@ -173,12 +355,10 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
             transition={{ duration: 0.3 }}
             className="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-50 to-orange-50 border border-rose-200/60 p-5"
           >
-            {/* Decorative background elements */}
             <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-200/30 to-orange-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
             <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-red-200/20 to-rose-200/20 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
             
             <div className="relative">
-              {/* Header with icon */}
               <div className="flex items-start gap-4">
                 <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center shadow-lg shadow-rose-500/25">
                   <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -187,90 +367,80 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-rose-900 mb-1">
-                    Not quite right — let&apos;s take another look.
+                    {feedbackData.heading}
                   </h3>
-                  <p className="text-sm text-rose-700/80 leading-relaxed">
-                    There&apos;s an issue with your loop logic. The condition doesn&apos;t properly handle the edge case when the list is empty.
+                  <p className="text-sm text-rose-700/80 leading-relaxed whitespace-pre-wrap">
+                    {feedbackData.summary}
                   </p>
                 </div>
               </div>
 
-              {/* Error explanation with code */}
-              <div className="mt-4 pt-4 border-t border-rose-200/50">
-                <div className="flex items-center gap-2 mb-3">
-                  <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                  </svg>
-                  <span className="text-sm font-medium text-rose-800">Issue found on line 3</span>
-                </div>
-                
-                {/* Your code snippet */}
-                <div className="mb-3">
-                  <div className="text-xs font-medium text-rose-600 mb-1 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                    Your code:
-                  </div>
-                  <div className="rounded-lg overflow-hidden border border-rose-200/50">
-                    <SyntaxHighlighter
-                      language="python"
-                      style={vscDarkPlus}
-                      customStyle={{
-                        margin: 0,
-                        padding: '0.75rem 1rem',
-                        background: '#1E1E1E',
-                        fontSize: '13px',
-                      }}
-                      wrapLines
-                      lineProps={(lineNumber) => ({
-                        style: lineNumber === 1 ? { backgroundColor: 'rgba(239, 68, 68, 0.2)', display: 'block' } : { display: 'block' }
-                      })}
-                    >
-{`for i in range(len(items)):  # ← Issue here
-    print(items[i])`}
-                    </SyntaxHighlighter>
-                  </div>
-                </div>
+              {/* Code diffs */}
+              {feedbackData.corrections?.diffs?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-rose-200/50 space-y-4">
+                  {feedbackData.corrections.diffs.map((diff: any, idx: number) => (
+                    <div key={idx}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        </svg>
+                        <span className="text-sm font-medium text-rose-800">{diff.headline}</span>
+                      </div>
+                      
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-rose-600 mb-1 flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                          Your code:
+                        </div>
+                        <div className="rounded-lg overflow-hidden border border-rose-200/50">
+                          <SyntaxHighlighter
+                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
+                            style={vscDarkPlus}
+                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
+                          >
+                            {diff.incorrect_code}
+                          </SyntaxHighlighter>
+                        </div>
+                      </div>
 
-                {/* Correct code snippet */}
-                <div>
-                  <div className="text-xs font-medium text-emerald-600 mb-1 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Suggested fix:
-                  </div>
-                  <div className="rounded-lg overflow-hidden border border-emerald-200/50">
-                    <SyntaxHighlighter
-                      language="python"
-                      style={vscDarkPlus}
-                      customStyle={{
-                        margin: 0,
-                        padding: '0.75rem 1rem',
-                        background: '#1E1E1E',
-                        fontSize: '13px',
-                      }}
-                      wrapLines
-                      lineProps={(lineNumber) => ({
-                        style: lineNumber === 1 ? { backgroundColor: 'rgba(34, 197, 94, 0.2)', display: 'block' } : { display: 'block' }
-                      })}
-                    >
-{`if items:  # Check if list is not empty
-    for item in items:  # Use direct iteration
-        print(item)`}
-                    </SyntaxHighlighter>
-                  </div>
-                </div>
-              </div>
+                      <div className="mb-3">
+                        <div className="text-xs font-medium text-emerald-600 mb-1 flex items-center gap-1">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          Suggested fix:
+                        </div>
+                        <div className="rounded-lg overflow-hidden border border-emerald-200/50">
+                          <SyntaxHighlighter
+                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
+                            style={vscDarkPlus}
+                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
+                          >
+                            {diff.correct_code}
+                          </SyntaxHighlighter>
+                        </div>
+                      </div>
 
-              {/* Explanation */}
-              <div className="mt-4 pt-4 border-t border-rose-200/50">
-                <div className="flex items-center gap-2 mb-2">
-                  <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-                  </svg>
-                  <span className="text-sm font-medium text-rose-800">Why this matters</span>
+                      <p className="text-sm text-rose-700/70 leading-relaxed">{diff.comment}</p>
+                    </div>
+                  ))}
                 </div>
-                <p className="text-sm text-rose-700/70 leading-relaxed">
-                  Using <code className="px-1.5 py-0.5 bg-rose-100 rounded text-rose-800 text-xs font-mono">range(len(items))</code> works, but iterating directly over the list is more Pythonic and avoids potential index errors. Always check for empty lists when your logic depends on having elements.
-                </p>
+              )}
+
+              {/* Statements */}
+              {feedbackData.corrections?.statements?.length > 0 && (
+                <div className="mt-4 pt-4 border-t border-rose-200/50">
+                  {feedbackData.corrections.statements.map((statement: string, idx: number) => (
+                    <p key={idx} className="text-sm text-rose-700/70 leading-relaxed mb-2">{statement}</p>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 flex items-center gap-3">
+                <button 
+                  onClick={() => { setFeedbackState(null); setFeedbackData(null); }}
+                  className="cursor-pointer px-4 py-2 text-sm font-medium text-rose-700 hover:text-rose-900 hover:bg-rose-100/50 rounded-lg transition-colors"
+                >
+                  Dismiss
+                </button>
               </div>
             </div>
           </motion.div>
@@ -280,18 +450,37 @@ export function ExerciseModule({ exercise }: { exercise: any }) {
   );
 }
 
-export default function Lesson({ message, userPrompt, setLessonExpanded, lessonExpanded }: LessonProps) {
+export default function Lesson({ message, userPrompt, setLessonExpanded, lessonExpanded, abilityLevel }: LessonProps) {
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
-  const [selectedExercise, setSelectedExercise] = useState<string>('Hello World');
-
+  const [additionalExercises, setAdditionalExercises] = useState<any[] | null>(null);
+  const [loadingExercises, setLoadingExercises] = useState(false);
+  const { data: session } = useSession();
+  const [generatingExercises, setGeneratingExercises] = useState(false);
+  
   if (!jsonData) return null;
 
   const currentExercise = jsonData.exercises?.[activeExerciseIndex];
 
   const expandExercises = () => {
     setLessonExpanded(true);
+  };
+
+  useEffect(() => {
+  }, [lessonExpanded, message.id, abilityLevel, session]);
+
+  const generateExercises = async () => {
+    setGeneratingExercises(true);
+    const idToken = (session?.user as any)?.idToken;
+    if (!idToken) {
+      console.error('No idToken found in session');
+      return;
+    }
+    const response = await api.exercise.getNewExercise(message.id!, abilityLevel, idToken);
+    console.log('New exercises:', response);
+    setAdditionalExercises(prev => prev ? [...prev, response] : [response]);
+    setGeneratingExercises(false);
   };
 
   return (
@@ -315,23 +504,54 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
             </svg>
           </button>
 
-          <div className="p-8 pt-16 flex flex-col gap-2">
+          <div className="p-8 pb-0 pt-16 flex flex-col gap-2">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Expanded Lesson View</h1>
-            <div className="flex flex-row gap-4">
-              {[
-                'Hello World',
-                'Looping',
-                'Creating a Function',
-              ].map((exercise) => (
-                <button onClick={() => setSelectedExercise(exercise)} className={`${selectedExercise !== exercise ? 'bg-gray-100' : 'bg-gray-600'} cursor-pointer rounded-xl py-2 px-4 transition-all duration-200`}>
-                  <p className={`text-sm font-medium ${selectedExercise !== exercise ? 'text-gray-600' : 'text-white'} transition-all duration-200`}>{exercise}</p>
-                </button>
-              ))}
-            </div>
-            {jsonData.exercises && jsonData.exercises.length > 0 && jsonData.exercises.map((exercise) => (
-              <ExerciseModule key={exercise.filename} exercise={exercise} />
+            <ExerciseModule data={jsonData} messageId={message.id} abilityLevel={abilityLevel} index={0} />
+            {additionalExercises && additionalExercises.length > 0 && additionalExercises.map((exercise, idx) => (
+              <ExerciseModule key={exercise.filename || idx} index={idx + 1} data={exercise} messageId={message.id} abilityLevel={abilityLevel} />
             ))}
 
+            <div className="relative rounded-t-xl overflow-hidden">
+            <div className="absolute inset-0 z-10 backdrop-blur-xs bg-white/0 flex items-end justify-center">
+              <div className="rounded-t-xl bg-white py-4 w-[80%] flex items-center justify-center">
+                <button 
+                  className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl py-3 px-5"
+                  onClick={generateExercises}
+                  disabled={generatingExercises}
+                > 
+                  {generatingExercises ? (
+                    <>
+                      <svg className="animate-spin w-4 h-4 text-black" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      <span className="text-sm text-black m-0 font-medium tracking-wide">Generating...</span>
+                    </>
+                  ) : (
+                    <span className="text-sm text-black m-0 font-medium tracking-wide">Unlock more exercises</span>
+                  )}
+                </button>
+              </div>
+            </div>
+            <div className="bg-[#2D2D2D]">
+                <div className="flex flex-row items-center justify-between">
+                  <span className="mx-4 my-2">Java.java</span>
+                </div>
+            <SyntaxHighlighter
+              language={'java'}
+              style={vscDarkPlus}
+              showLineNumbers
+              customStyle={{ margin: 0, padding: '0 1rem', background: '#1E1E1E', fontSize: '13px' }}
+            >
+              {`
+public class PlaceholderService {
+    private final String serviceName;
+    private final Instant initializedAt;
+    private boolean enabled;
+              `}
+            </SyntaxHighlighter>
+              </div>
+            </div>
           </div>
         </motion.div>
       ) : (
@@ -460,6 +680,50 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
                 </svg>
               </button>
             </div>
+            {jsonData.exercises && jsonData.exercises.length > 1 && (
+              <div className="bg-[#252526] flex items-center overflow-x-auto border-b border-[#1E1E1E]">
+                {jsonData.exercises.map((exercise, index) => {
+                  const ext = exercise.filename.split('.').pop() || '';
+                  const iconColors: Record<string, string> = {
+                    'py': 'text-yellow-400',
+                    'java': 'text-orange-500', 
+                    'js': 'text-yellow-300',
+                    'ts': 'text-blue-400',
+                    'tsx': 'text-blue-400',
+                    'jsx': 'text-blue-300',
+                  };
+                  const iconColor = iconColors[ext] || 'text-gray-400';
+                  
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setActiveExerciseIndex(index)}
+                      className={`cursor-pointer group relative flex items-center gap-2 px-3 py-2 text-[13px] font-normal transition-colors duration-150 border-r border-[#1E1E1E] min-w-max ${
+                        activeExerciseIndex === index
+                          ? 'bg-[#1E1E1E] text-white'
+                          : 'bg-[#2D2D2D] text-gray-400 hover:bg-[#2A2A2A] hover:text-gray-300'
+                      }`}
+                    >
+                      {/* Active tab top accent */}
+                      {activeExerciseIndex === index && (
+                        <span className="absolute top-0 left-0 right-0 h-[2px] bg-[#007ACC]" />
+                      )}
+                      {/* File type icon */}
+                      <svg className={`w-4 h-4 flex-shrink-0 ${iconColor}`} viewBox="0 0 24 24" fill="currentColor">
+                        {ext === 'py' ? (
+                          <path d="M12 0C5.4 0 5.8 2.8 5.8 2.8v2.9h6.4v.9H3.8S0 6.2 0 12.1s3.3 5.7 3.3 5.7h2v-2.7s-.1-3.3 3.2-3.3h5.5s3.1 0 3.1-3v-5S17.5 0 12 0zm-3.1 1.7c.6 0 1 .5 1 1s-.5 1-1 1c-.6 0-1-.5-1-1s.5-1 1-1z M12 24c6.6 0 6.2-2.8 6.2-2.8v-2.9h-6.4v-.9h8.4s3.8.4 3.8-5.5-3.3-5.7-3.3-5.7h-2v2.7s.1 3.3-3.2 3.3H10s-3.1 0-3.1 3v5s-.4 3.8 5.1 3.8zm3.1-1.7c-.6 0-1-.5-1-1s.5-1 1-1c.6 0 1 .5 1 1s-.5 1-1 1z"/>
+                        ) : ext === 'java' ? (
+                          <path d="M8.9 18.6s-1 .6.7.8c2.1.3 3.2.2 5.5-.3 0 0 .6.4 1.5.7-5.2 2.3-11.9-.1-7.7-1.2m-.6-2.8s-1.2.9.6 1c2.2.2 4 .2 7-.3 0 0 .4.4 1.1.7-6.4 1.9-13.5.1-8.7-1.4m5.1-4.7c1.3 1.5-.3 2.8-.3 2.8s3.3-1.7 1.8-3.8c-1.4-2-2.5-3 3.3-6.4 0 0-9.1 2.3-4.8 7.4m7.6 11s.7.6-.8 1.1c-2.9.9-12.1 1.2-14.6 0-.9-.4.8-.9 1.3-1 .5-.1.8-.1.8-.1-1-.7-6.2 1.3-2.6 1.9 9.6 1.6 17.5-.7 15.9-1.9m-10.9-7.9s-4.4 1-1.6 1.4c1.2.2 3.6.1 5.8-.1 1.8-.1 3.6-.4 3.6-.4s-.6.3-1.1.6c-4.4 1.2-12.9.6-10.5-.5 2.1-1 3.8-1 3.8-1m7.8 4.4c4.5-2.3 2.4-4.6.9-4.3-.4.1-.5.2-.5.2s.1-.2.4-.3c2.8-1 5 3-1 4.5 0 0 .1-.1.2-.1"/>
+                        ) : (
+                          <path d="M3 3h18v18H3V3zm16.5 15.5v-11h-15v11h15zM6.5 8.5h4v4h-4v-4z"/>
+                        )}
+                      </svg>
+                      <span>{exercise.filename}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
             <div className="text-sm">
               <SyntaxHighlighter
                 language={

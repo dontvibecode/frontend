@@ -761,6 +761,7 @@ export default function ChatPage() {
             message={selectedLesson.response}
             userPrompt={selectedLesson.originalMessage}
             lessonExpanded={lessonExpanded}
+            abilityLevel={difficultyLevels[difficultyIndex]}
           />
         ) : (
           <div className="h-full flex items-center justify-center">

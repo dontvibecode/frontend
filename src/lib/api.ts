@@ -183,6 +183,7 @@ export const conversationAPI = {
     const responseJson = await response.json();
     
     return responseJson.map((msg: any) => ({
+      id: msg.id,
       text: msg.text,
       conversation: msg.conversation,
       fromUser: msg.from_user,
@@ -282,6 +283,7 @@ export const messageAPI = {
 
     // For the sake of consistency, we use CamelCase in the frontend and snake_case in the backend
     const message: MessageData = {
+      id: responseJson.id,
       text: responseJson.text,
       conversation: responseJson.conversation,
       fromUser: responseJson.from_user,
@@ -294,6 +296,87 @@ export const messageAPI = {
 };
 
 // ============================================================================
+// EXERCISE API
+// ============================================================================
+
+export interface NewExerciseResponse {
+  exercises: {
+    filename: string;
+    text: string;
+    code: string;
+  }[];
+}
+
+export interface ExerciseSubmissionResponse {
+  correctness: 0 | 1 | 2;
+  heading: string;
+  summary: string;
+  corrections: {
+    diffs: {
+      headline: string;
+      incorrect_code: string;
+      correct_code: string;
+      comment: string;
+    }[];
+    statements: string[];
+  };
+}
+
+export const exerciseAPI = {
+  /**
+   * Get new exercises for a message
+   */
+  getNewExercise: async (
+    messageId: number,
+    abilityLevel: string,
+    idToken?: string
+  ): Promise<NewExerciseResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/new/${messageId}`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify({ ability_level: abilityLevel }),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get new exercise");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Submit an exercise attempt for marking
+   */
+  submitExercise: async (
+    submissionData: {
+      ability_level: string;
+      message_id: number;
+      exercise_id: number;
+      user_submission: string;
+    },
+    idToken?: string
+  ): Promise<ExerciseSubmissionResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/submit`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify(submissionData),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to submit exercise");
+    }
+
+    return response.json();
+  },
+};
+
+// ============================================================================
 // COMBINED API OBJECT (for convenience)
 // ============================================================================
 
@@ -301,6 +384,7 @@ const api = {
   user: userAPI,
   conversation: conversationAPI,
   message: messageAPI,
+  exercise: exerciseAPI,
 };
 
 export default api;

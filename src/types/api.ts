@@ -1,4 +1,5 @@
 export interface MessageData {
+  id?: number;
   text: string | null;
   conversation: number;
   fromUser?: boolean;
