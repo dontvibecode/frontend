@@ -27,8 +27,6 @@ interface LessonProps {
   abilityLevel: string;
 }
 
-type FeedbackState = 'correct' | 'partially_correct' | 'incorrect' | null;
-
 interface ExerciseModuleProps {
   data: any;
   messageId?: number;
@@ -38,7 +36,6 @@ interface ExerciseModuleProps {
 
 export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
-  const [feedbackState, setFeedbackState] = useState<FeedbackState>(null);
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
@@ -46,8 +43,23 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
 
   const currentExercise = data.exercises?.[activeExerciseIndex];
 
+  // Initialize editedCode with user_submission values if they exist
+  useEffect(() => {
+    if (data.exercises) {
+      const initialCode: Record<string, string> = {};
+      data.exercises.forEach((exercise: any) => {
+        if (exercise.user_submission) {
+          initialCode[exercise.filename] = exercise.user_submission;
+        }
+      });
+      if (Object.keys(initialCode).length > 0) {
+        setEditedCode(prev => ({ ...initialCode, ...prev }));
+      }
+    }
+  }, [data.exercises]);
+
   const handleSubmit = async () => {
-    if (!messageId || !abilityLevel || !currentExercise) return;
+    if (!messageId || !abilityLevel || !data.exercises?.length) return;
     
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
@@ -57,25 +69,34 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
 
     setSubmitting(true);
     try {
-      const userCode = editedCode[currentExercise.filename] ?? currentExercise.code;
+      const exerciseFileIds: number[] = [];
+      const userSubmissions: string[] = [];
+      
+      data.exercises.forEach((exercise: any, idx: number) => {
+        exerciseFileIds.push(exercise.id ?? idx);
+        userSubmissions.push(editedCode[exercise.filename] ?? exercise.code);
+      });
+
+      console.log({
+          ability_level: abilityLevel.toLowerCase(),
+          message_id: messageId,
+          exercise_id: data.exercise_id ?? data.exercises[activeExerciseIndex]?.exercise_id,
+          exercise_file_ids: exerciseFileIds,
+          user_submissions: userSubmissions,
+      });
+
       const response = await api.exercise.submitExercise({
-        ability_level: abilityLevel,
+        ability_level: abilityLevel.toLowerCase(),
         message_id: messageId,
-        exercise_id: currentExercise.id ?? activeExerciseIndex,
-        user_submission: userCode,
+        exercise_id: data.exercise_id ?? data.exercises[activeExerciseIndex]?.exercise_id,
+        exercise_file_ids: exerciseFileIds,
+        user_submissions: userSubmissions,
       }, idToken);
 
-      console.log('Exercise submission response:', response);
-      setFeedbackData(response);
+      const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      console.log('Parsed feedback:', parsedResponse);
+      setFeedbackData(parsedResponse);
       
-      // Map correctness score to feedback state
-      if (response.correctness === 2) {
-        setFeedbackState('correct');
-      } else if (response.correctness === 1) {
-        setFeedbackState('partially_correct');
-      } else {
-        setFeedbackState('incorrect');
-      }
     } catch (error) {
       console.error('Failed to submit exercise:', error);
     } finally {
@@ -145,7 +166,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
                     <path d="M3 3h18v18H3V3zm16.5 15.5v-11h-15v11h15zM6.5 8.5h4v4h-4v-4z"/>
                   )}
                 </svg>
-                <span>{currentExercise.filename}</span>
+                <span>{data.exercises[index].filename}</span>
               </button>
             );
           })}
@@ -205,7 +226,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
 
       {/* Feedback Dialogs */}
       <AnimatePresence mode="wait">
-        {feedbackState === 'correct' && feedbackData && (
+        {feedbackData?.correctness === 2 && feedbackData && (
           <motion.div
             key="correct"
             initial={{ opacity: 0, y: 20 }}
@@ -234,19 +255,19 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-3">
+              {/* <div className="mt-4 flex items-center gap-3">
                 <button 
-                  onClick={() => { setFeedbackState(null); setFeedbackData(null); }}
+                  onClick={() => { setFeedbackData(null); }}
                   className="cursor-pointer px-4 py-2 text-sm font-medium text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100/50 rounded-lg transition-colors"
                 >
                   Dismiss
                 </button>
-              </div>
+              </div> */}
             </div>
           </motion.div>
         )}
 
-        {feedbackState === 'partially_correct' && feedbackData && (
+        {feedbackData?.correctness === 1 && feedbackData && (
           <motion.div
             key="partially_correct"
             initial={{ opacity: 0, y: 20 }}
@@ -334,19 +355,19 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
                 </div>
               )}
 
-              <div className="mt-4 flex items-center gap-3">
+              {/* <div className="mt-4 flex items-center gap-3">
                 <button 
-                  onClick={() => { setFeedbackState(null); setFeedbackData(null); }}
+                  onClick={() => { setFeedbackData(null); }}
                   className="cursor-pointer px-4 py-2 text-sm font-medium text-amber-700 hover:text-amber-900 hover:bg-amber-100/50 rounded-lg transition-colors"
                 >
                   Dismiss
                 </button>
-              </div>
+              </div> */}
             </div>
           </motion.div>
         )}
 
-        {feedbackState === 'incorrect' && feedbackData && (
+        {feedbackData?.correctness === 0 && feedbackData && (
           <motion.div
             key="incorrect"
             initial={{ opacity: 0, y: 20 }}
@@ -433,15 +454,15 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
                   ))}
                 </div>
               )}
-
+{/* 
               <div className="mt-4 flex items-center gap-3">
                 <button 
-                  onClick={() => { setFeedbackState(null); setFeedbackData(null); }}
+                  onClick={() => { setFeedbackData(null); }}
                   className="cursor-pointer px-4 py-2 text-sm font-medium text-rose-700 hover:text-rose-900 hover:bg-rose-100/50 rounded-lg transition-colors"
                 >
                   Dismiss
                 </button>
-              </div>
+              </div> */}
             </div>
           </motion.div>
         )}
@@ -454,8 +475,8 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
-  const [additionalExercises, setAdditionalExercises] = useState<any[] | null>(null);
   const [loadingExercises, setLoadingExercises] = useState(false);
+  const [fetchedExercises, setFetchedExercises] = useState<any>(null);
   const { data: session } = useSession();
   const [generatingExercises, setGeneratingExercises] = useState(false);
   
@@ -465,22 +486,70 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
 
   const expandExercises = () => {
     setLessonExpanded(true);
+    fetchExercises();
   };
 
-  useEffect(() => {
-  }, [lessonExpanded, message.id, abilityLevel, session]);
+  const fetchExercises = async () => {
+    const idToken = (session?.user as any)?.idToken;
+    if (!idToken) {
+      console.error('No idToken found in session');
+      return;
+    }
+    
+    setLoadingExercises(true);
+    try {
+      const response = await api.exercise.getExercises(message.id!, idToken);
+      console.log('Fetched exercises:', response);
+      setFetchedExercises(response);
+    } catch (error) {
+      console.error('Failed to fetch exercises:', error);
+    } finally {
+      setLoadingExercises(false);
+    }
+  };
 
   const generateExercises = async () => {
     setGeneratingExercises(true);
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
       console.error('No idToken found in session');
+      setGeneratingExercises(false);
       return;
     }
-    const response = await api.exercise.getNewExercise(message.id!, abilityLevel, idToken);
-    console.log('New exercises:', response);
-    setAdditionalExercises(prev => prev ? [...prev, response] : [response]);
-    setGeneratingExercises(false);
+    try {
+      const response = await api.exercise.getNewExercise(message.id!, abilityLevel.toLowerCase(), idToken);
+      console.log('New exercises:', response);
+      
+      // Transform and add to fetchedExercises
+      const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      
+      // Generate a new unique key based on existing numeric keys
+      const existingKeys = fetchedExercises 
+        ? Object.keys(fetchedExercises).filter(key => !isNaN(Number(key))).map(Number)
+        : [];
+      const newKey = existingKeys.length > 0 ? Math.max(...existingKeys) + 1 : 1;
+      
+      // Transform exercises array to files format
+      const newExerciseData = {
+        correctness: null,
+        files: parsedResponse.exercises.map((exercise: any, idx: number) => ({
+          ...exercise,
+          id: idx,
+          exercise_id: newKey,
+          user_submission: null
+        }))
+      };
+      
+      // Add to fetchedExercises
+      setFetchedExercises((prev: any) => ({
+        ...prev,
+        [newKey]: newExerciseData
+      }));
+    } catch (error) {
+      console.error('Failed to generate exercises:', error);
+    } finally {
+      setGeneratingExercises(false);
+    }
   };
 
   return (
@@ -506,10 +575,35 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
 
           <div className="p-8 pb-0 pt-16 flex flex-col gap-2">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Expanded Lesson View</h1>
-            <ExerciseModule data={jsonData} messageId={message.id} abilityLevel={abilityLevel} index={0} />
-            {additionalExercises && additionalExercises.length > 0 && additionalExercises.map((exercise, idx) => (
-              <ExerciseModule key={exercise.filename || idx} index={idx + 1} data={exercise} messageId={message.id} abilityLevel={abilityLevel} />
-            ))}
+            {/* Render exercises from numeric keys in fetchedExercises */}
+            {fetchedExercises && Object.keys(fetchedExercises)
+              .filter(key => !isNaN(Number(key))) // Get only numeric keys (exercise IDs)
+              .map((exerciseId, idx) => {
+                const exerciseData = fetchedExercises[exerciseId];
+                return (
+                  <ExerciseModule 
+                    key={exerciseId} 
+                    index={idx} 
+                    data={{ 
+                      exercises: exerciseData.files,
+                      exercise_id: Number(exerciseId),
+                      correctness: exerciseData.correctness
+                    }} 
+                    messageId={message.id} 
+                    abilityLevel={abilityLevel} 
+                  />
+                );
+              })
+            }
+            {/* Fallback: render from jsonData.exercises if no fetchedExercises with numeric keys */}
+            {(!fetchedExercises || Object.keys(fetchedExercises).filter(key => !isNaN(Number(key))).length === 0) && jsonData.exercises && (
+              <ExerciseModule 
+                data={jsonData} 
+                messageId={message.id} 
+                abilityLevel={abilityLevel} 
+                index={0} 
+              />
+            )}
 
             <div className="relative rounded-t-xl overflow-hidden">
             <div className="absolute inset-0 z-10 backdrop-blur-xs bg-white/0 flex items-end justify-center">

@@ -497,6 +497,7 @@ export default function ChatPage() {
               onClick={() => {
                 setConversationId(null);
                 setMessages([]);
+                setSelectedLesson(null);
               }}
               className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl p-3 mx-auto"
             >

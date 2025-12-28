@@ -307,6 +307,23 @@ export interface NewExerciseResponse {
   }[];
 }
 
+export interface ExerciseFile {
+  exercise: string;
+  filename: string;
+  text: string;
+  code: string;
+  user_submission: string;
+}
+
+export interface ExerciseData {
+  correctness: 0 | 1 | 2 | null;
+  files: ExerciseFile[];
+}
+
+export interface GetExercisesResponse {
+  [exerciseId: string]: ExerciseData;
+}
+
 export interface ExerciseSubmissionResponse {
   correctness: 0 | 1 | 2;
   heading: string;
@@ -323,6 +340,28 @@ export interface ExerciseSubmissionResponse {
 }
 
 export const exerciseAPI = {
+  /**
+   * Get all exercises for a message
+   */
+  getExercises: async (
+    messageId: number,
+    idToken?: string
+  ): Promise<GetExercisesResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/${messageId}/`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get exercises");
+    }
+
+    return response.json();
+  },
+
   /**
    * Get new exercises for a message
    */
@@ -355,12 +394,14 @@ export const exerciseAPI = {
       ability_level: string;
       message_id: number;
       exercise_id: number;
-      user_submission: string;
+      exercise_file_ids: number[];
+      user_submissions: string[];
     },
+    
     idToken?: string
   ): Promise<ExerciseSubmissionResponse> => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/exercise/submit`,
+      `${API_BASE_URL}api/chat/exercise/submit/`,
       {
         method: "POST",
         headers: getAuthHeaders(idToken),

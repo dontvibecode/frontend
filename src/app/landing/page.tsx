@@ -401,8 +401,8 @@ export default function LandingPage() {
           src="/splash.png"
           alt="Background"
           className="absolute inset-0 w-full h-full object-cover"
-          fluidIntensity={0.0006}
-          cursorRadius={0.0006}
+          fluidIntensity={0.0001}
+          cursorRadius={0.0002}
         />
       </div>
 
