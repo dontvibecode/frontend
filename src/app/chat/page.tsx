@@ -162,6 +162,20 @@ export const AIResponse = ({
                 </div>
               </div>
             )}
+          <div>
+            <h4 className="text-xs font-semibold text-gray-700 my-2 flex items-center gap-1">
+              <span>🏷️</span> Tags
+            </h4>
+            {jsonData.tags && jsonData.tags.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {jsonData.tags.map((tag) => (
+                  <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -553,7 +567,7 @@ export default function ChatPage() {
                   <div
                     key={index}
                     onClick={() => handleConversationClick(conversation)}
-                    className="relative p-2 rounded-lg hover:bg-gray-100 cursor-pointer"
+                    className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer"
                   >
                     <p>{conversation.pinned ? "Pinned" : "Unpinned"}</p>
                     <div className="flex flex-row justify-between items-center">
@@ -582,9 +596,22 @@ export default function ChatPage() {
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1">
-                      <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                        {conversation.lastActive}
-                      </span>
+                      {
+                        conversation?.tags && conversation?.tags?.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            {conversation.tags.slice(0, 2).map((tag) => (
+                              <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200">
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )
+                      }
+                      {conversation?.tags && conversation?.tags?.length > 2 && (
+                        <div className="flex flex-wrap gap-1">
+                          <span className="text-xs text-gray-500">+ {conversation.tags.length - 3} more</span>
+                        </div>
+                      )}
                     </div>
                     {/* Delete and Pin buttons remain the same */}
                     <motion.div

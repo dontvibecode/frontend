@@ -523,27 +523,24 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
       // Transform and add to fetchedExercises
       const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
       
-      // Generate a new unique key based on existing numeric keys
-      const existingKeys = fetchedExercises 
-        ? Object.keys(fetchedExercises).filter(key => !isNaN(Number(key))).map(Number)
-        : [];
-      const newKey = existingKeys.length > 0 ? Math.max(...existingKeys) + 1 : 1;
+      // Use exercise_id from response
+      const exerciseId = parsedResponse.exercise_id;
       
-      // Transform exercises array to files format
+      // Transform exercise_files array to files format
       const newExerciseData = {
         correctness: null,
-        files: parsedResponse.exercises.map((exercise: any, idx: number) => ({
+        files: parsedResponse.exercise_files.map((exercise: any, idx: number) => ({
           ...exercise,
           id: idx,
-          exercise_id: newKey,
+          exercise_id: exerciseId,
           user_submission: null
         }))
       };
       
-      // Add to fetchedExercises
+      // Add to fetchedExercises using exercise_id as key
       setFetchedExercises((prev: any) => ({
         ...prev,
-        [newKey]: newExerciseData
+        [exerciseId]: newExerciseData
       }));
     } catch (error) {
       console.error('Failed to generate exercises:', error);

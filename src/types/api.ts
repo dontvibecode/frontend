@@ -29,6 +29,7 @@ export interface InstructorResponse {
   explanation?: string;
   recommendedReadings?: RecommendedReading[];
   exercises?: Exercise[];
+  tags?: string[];
 }
 
 export interface SubmitRequest {
@@ -37,6 +38,7 @@ export interface SubmitRequest {
 
 export interface Conversation {
   id: string;
+  tags?: string[];
   title: string;
   lastActive: string;
   pinned: boolean;
