@@ -17,7 +17,7 @@ function ScrollingFeatures() {
   const xOffset = useTransform(scrollYProgress, [0, 1], ["-50px", "50px"]);
 
   return (
-    <div ref={containerRef} className="overflow-hidden w-full">
+    <div ref={containerRef} className="relative overflow-hidden w-full border-r border-l border-gray-300 py-12">
       <motion.div 
         style={{ x: xOffset }}
         className="grid grid-cols-3 -ml-[30px] w-[calc(100%+60px)] gap-4"
@@ -182,7 +182,7 @@ function InfoSection() {
   const yParallax = useTransform(scrollYProgress, [0, 1], ["100px", "-150px"]);
 
   return (
-    <div ref={sectionRef} className="w-full grid grid-cols-[30%_70%] overflow-visible">
+    <div ref={sectionRef} className="w-full grid grid-cols-[30%_70%] max-w-7xl overflow-visible">
       <div className="relative overflow-hidden rounded-[3rem]">
         <motion.div 
           style={{ y: yParallax }}
@@ -479,9 +479,12 @@ export default function LandingPage() {
         </div>
       </section>
 
-      <section className="relative z-10 flex items-start justify-center py-10">
-        
-        <ScrollingFeatures />
+      <section className="relative  z-10 flex items-start justify-center mx-auto">
+        <div className="h-[1px] bg-gray-300 w-full absolute bottom-0 left-0 right-0"/>
+        <div className="h-[1px] bg-gray-300 w-full absolute top-0 left-0 right-0"/>
+        <div className="max-w-7xl ">
+          <ScrollingFeatures />
+        </div>
       </section>
 
       <section className="my-10 min-h-[100vh] flex flex-col items-center justify-center gap-20">
@@ -514,7 +517,7 @@ export default function LandingPage() {
           </defs>
         </svg>
         
-        <div className="flex flex-col gap-4 mx-4">
+        <div className="flex flex-col gap-4 mx-4 max-w-7xl">
           <div className="w-full grid grid-cols-2 gap-4">
             <BoxInView className="border border-gray-100 bg-white"/>
             <BoxInView>
