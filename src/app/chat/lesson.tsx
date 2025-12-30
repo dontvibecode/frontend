@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { MessageData } from "@/types";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -39,24 +39,102 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
+  const [saving, setSaving] = useState(false);
+  const [showSaveReminder, setShowSaveReminder] = useState(false);
   const { data: session } = useSession();
+  
+  const lastSavedCodeRef = useRef<Record<string, string>>({});
+  const saveReminderTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const SAVE_REMINDER_DELAY = 10000; // Auto remind to save after 10 seconds
 
   const currentExercise = data.exercises?.[activeExerciseIndex];
+  
+  const hasUnsavedChanges = useCallback(() => {
+    if (!data.exercises) return false;
+    return data.exercises.some((exercise: any) => {
+      const currentCode = editedCode[exercise.filename] ?? exercise.code;
+      const savedCode = lastSavedCodeRef.current[exercise.filename] ?? exercise.user_submission ?? exercise.code;
+      return currentCode !== savedCode;
+    });
+  }, [editedCode, data.exercises]);
 
-  // Initialize editedCode with user_submission values if they exist
   useEffect(() => {
     if (data.exercises) {
       const initialCode: Record<string, string> = {};
+      const initialSaved: Record<string, string> = {};
       data.exercises.forEach((exercise: any) => {
         if (exercise.user_submission) {
           initialCode[exercise.filename] = exercise.user_submission;
+          initialSaved[exercise.filename] = exercise.user_submission;
+        } else {
+          initialSaved[exercise.filename] = exercise.code;
         }
       });
+      lastSavedCodeRef.current = initialSaved;
       if (Object.keys(initialCode).length > 0) {
         setEditedCode(prev => ({ ...initialCode, ...prev }));
       }
     }
   }, [data.exercises]);
+
+  useEffect(() => {
+    if (saveReminderTimerRef.current) {
+      clearTimeout(saveReminderTimerRef.current);
+    }
+    
+    if (!hasUnsavedChanges()) {
+      setShowSaveReminder(false);
+      return;
+    }
+    
+    saveReminderTimerRef.current = setTimeout(() => {
+      if (hasUnsavedChanges()) {
+        setShowSaveReminder(true);
+      }
+    }, SAVE_REMINDER_DELAY);
+    
+    return () => {
+      if (saveReminderTimerRef.current) {
+        clearTimeout(saveReminderTimerRef.current);
+      }
+    };
+  }, [editedCode, hasUnsavedChanges]);
+
+  const saveCodeProgress = async () => {
+    const idToken = (session?.user as any)?.idToken;
+    if (!idToken) {
+      console.error('No idToken found in session');
+      return;
+    }
+    
+    setSaving(true);
+    try {
+      // TODO: Save code progress to database
+      // const response = await api.exercise.saveCodeProgress({
+      //   exercise_id: data.exercise_id ?? data.exercises[activeExerciseIndex]?.exercise_id,
+      //   user_submissions: editedCode,
+      // }, idToken);
+      
+      // Simulate save delay (remove when API is implemented)
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Update last saved state
+      const savedState: Record<string, string> = {};
+      data.exercises?.forEach((exercise: any) => {
+        savedState[exercise.filename] = editedCode[exercise.filename] ?? exercise.code;
+      });
+      lastSavedCodeRef.current = savedState;
+      
+      // Hide reminder
+      setShowSaveReminder(false);
+      
+      console.log('Code progress saved');
+    } catch (error) {
+      console.error('Failed to save code progress:', error);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   const handleSubmit = async () => {
     if (!messageId || !abilityLevel || !data.exercises?.length) return;
@@ -185,24 +263,74 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
           highlightActiveLine: true,
         }}
       />
-      <div className="flex items-center justify-between mt-3">
-        <button 
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl py-3 px-5"
-        >
-          {submitting ? (
-            <>
-              <svg className="animate-spin w-4 h-4 text-black" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+      {/* Save Reminder Banner */}
+      <AnimatePresence>
+        {showSaveReminder && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mt-2"
+          >
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <span className="text-sm text-black m-0 font-medium tracking-wide">Checking...</span>
-            </>
-          ) : (
-            <span className="text-sm text-black m-0 font-medium tracking-wide">Submit</span>
-          )}
-        </button>
+              <span className="text-sm text-amber-800">You have unsaved changes</span>
+            </div>
+            <button
+              onClick={saveCodeProgress}
+              disabled={saving}
+              className="cursor-pointer text-sm font-medium text-amber-700 hover:text-amber-900 hover:bg-amber-100 px-3 py-1 rounded-md transition-colors"
+            >
+              {saving ? 'Saving...' : 'Save now'}
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={handleSubmit}
+            disabled={submitting}
+            className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl py-3 px-5"
+          >
+            {submitting ? (
+              <>
+                <svg className="animate-spin w-4 h-4 text-black" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span className="text-sm text-black m-0 font-medium tracking-wide">Checking...</span>
+              </>
+            ) : (
+              <span className="text-sm text-black m-0 font-medium tracking-wide">Submit</span>
+            )}
+          </button>
+          <button 
+            onClick={saveCodeProgress}
+            disabled={saving || !hasUnsavedChanges()}
+            className="cursor-pointer flex items-center gap-2 px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors group border border-gray-200"
+          >
+            {saving ? (
+              <>
+                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+                <span className="text-sm font-medium">Saving...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                </svg>
+                <span className="text-sm font-medium">Save</span>
+              </>
+            )}
+          </button>
+        </div>
         <button 
           onClick={() => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: currentExercise.code }))}
           className="flex cursor-pointer items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors group"
