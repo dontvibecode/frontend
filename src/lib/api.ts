@@ -415,8 +415,31 @@ export const exerciseAPI = {
 
     return response.json();
   },
-};
 
+  /**
+   * Save code progress
+   */
+  saveCodeProgress: async (submissionData: {
+      user_submissions: string[];
+      exercise_file_ids: number[];
+    },
+    idToken?: string
+  ): Promise<void> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/save/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify(submissionData),
+      })
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to save code progress");
+    }
+
+    return response.json();
+  },
+  }
 // ============================================================================
 // COMBINED API OBJECT (for convenience)
 // ============================================================================
