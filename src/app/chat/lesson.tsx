@@ -274,13 +274,10 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
         value={editedCode[currentExercise.filename] ?? currentExercise.code}
         onChange={(value: string) => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: value }))}
         theme={vscodeDark}
-        extensions={[
-          getLanguageExtension(currentExercise.filename),
-          indentUnit.of(' '.repeat(tabSize)),
-          EditorState.tabSize.of(tabSize),
-        ]}
+        extensions={[getLanguageExtension(currentExercise.filename)]}
         style={{ fontSize: '14px' }}
         basicSetup={{
+          tabSize: tabSize,
           lineNumbers: true,
           foldGutter: true,
           highlightActiveLineGutter: true,

@@ -39,7 +39,7 @@ export default function UserProfilePopup({
     user?.preferences?.accentColor ?? "000000"
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
-  const [tabSize, setTabSize] = useState(user?.preferences?.tabSize ?? 2);
+  const [tabSize, setTabSize] = useState(user?.preferences?.tab_size ?? 2);
 
   useEffect(() => {
     setName(user?.username ?? "");
@@ -47,7 +47,7 @@ export default function UserProfilePopup({
     setTheme(user?.preferences?.theme ?? "light");
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tabSize ?? 2);
+    setTabSize(user?.preferences?.tab_size ?? 2);
   }, [user]);
 
   const handleSave = async () => {
@@ -61,7 +61,7 @@ export default function UserProfilePopup({
           theme,
           accentColor,
           language,
-          tabSize,
+          tab_size: tabSize,
         },
       });
 
@@ -125,7 +125,7 @@ export default function UserProfilePopup({
     setTheme(user?.preferences?.theme ?? "light");
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tabSize ?? 2);
+    setTabSize(user?.preferences?.tab_size ?? 2);
   };
 
   const onClose = () => {

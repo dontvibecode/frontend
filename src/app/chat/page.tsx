@@ -860,7 +860,7 @@ export default function ChatPage() {
             userPrompt={selectedLesson.originalMessage}
             lessonExpanded={lessonExpanded}
             abilityLevel={difficultyLevels[difficultyIndex]}
-            tabSize={user?.preferences?.tabSize ?? 2}
+            tabSize={user?.preferences?.tab_size ?? 2}
             initialExpandedLesson={lessonExpanded}
           />
         ) : (
