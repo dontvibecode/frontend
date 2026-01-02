@@ -10,6 +10,8 @@ import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { java } from "@codemirror/lang-java";
+import { indentUnit } from "@codemirror/language";
+import { EditorState } from "@codemirror/state";
 import api from "@/lib/api";
 import { useSession } from "next-auth/react";
 import { Markdown } from "@/lib/markdownParser";
@@ -26,6 +28,8 @@ interface LessonProps {
   setLessonExpanded: (expanded: boolean) => void;
   lessonExpanded: boolean;
   abilityLevel: string;
+  tabSize?: number;
+  initialExpandedLesson?: boolean;
 }
 
 interface ExerciseModuleProps {
@@ -35,9 +39,10 @@ interface ExerciseModuleProps {
   index?: number;
   bookmarkExercise: (exerciseId: number) => void;
   isBookmarked: boolean;
+  tabSize?: number;
 }
 
-export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise, isBookmarked }: ExerciseModuleProps) {
+export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise, isBookmarked, tabSize = 2 }: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -189,6 +194,8 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
     }
   };
 
+  if(!currentExercise) return null;
+
   return (
     <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
@@ -267,7 +274,11 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
         value={editedCode[currentExercise.filename] ?? currentExercise.code}
         onChange={(value: string) => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: value }))}
         theme={vscodeDark}
-        extensions={[getLanguageExtension(currentExercise.filename)]}
+        extensions={[
+          getLanguageExtension(currentExercise.filename),
+          indentUnit.of(' '.repeat(tabSize)),
+          EditorState.tabSize.of(tabSize),
+        ]}
         style={{ fontSize: '14px' }}
         basicSetup={{
           lineNumbers: true,
@@ -612,7 +623,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   );
 }
 
-export default function Lesson({ message, userPrompt, setLessonExpanded, lessonExpanded, abilityLevel }: LessonProps) {
+export default function Lesson({ message, userPrompt, initialExpandedLesson, setLessonExpanded, lessonExpanded, abilityLevel, tabSize = 2 }: LessonProps) {
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
   const [loadingExercises, setLoadingExercises] = useState(false);
@@ -620,7 +631,15 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
   const { data: session } = useSession();
   const [generatingExercises, setGeneratingExercises] = useState(false);
 
+  useEffect(() => {
+    if (initialExpandedLesson) {
+      expandExercises();
+    }
+  }, [initialExpandedLesson]);
+
   if (!jsonData) return null;
+
+  console.log({ message })
 
   const currentExercise = jsonData.exercises?.[activeExerciseIndex];
 
@@ -767,6 +786,7 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
                     isBookmarked={exerciseData.bookmarked}
                     key={exerciseId}
                     index={idx}
+                    tabSize={tabSize}
                     data={{
                       exercises: exerciseData.files,
                       exercise_id: Number(exerciseId),

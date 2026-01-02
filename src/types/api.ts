@@ -58,6 +58,7 @@ export interface UserPreferences {
   shareData?: boolean;
   fontSize?: 'small' | 'medium' | 'large';    
   compactMode?: boolean;
+  tabSize?: number; // 1-8, default 2
 }
 
 export interface User {

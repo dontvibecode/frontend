@@ -305,6 +305,63 @@ export default function ChatPage() {
     }
   };
 
+  const handleBookmarkedExerciseClick = async (exercise: any) => {
+    try {
+      const idToken = (session?.user as any)?.idToken;
+      if (!idToken) {
+        console.error("No idToken found");
+        return;
+      }
+
+      // Fetch the conversation messages using the conversation id from the exercise
+      const conversationId = exercise.message__conversation_id;
+      console.log("Conversation ID:", conversationId);
+      const messagesData = await api.conversation.getConversationMessages(
+        conversationId,
+        idToken
+      );
+
+      // Find the message that contains this exercise
+      const exerciseMessage = messagesData.find(
+        (msg: MessageData) => msg.id === exercise.message_id
+      );
+
+      if (exerciseMessage) {
+        // Set the conversation context
+        setConversationId(conversationId);
+        setMessages(messagesData);
+        setSelectedLesson({
+          originalMessage: "",
+          response: messagesData,
+        });
+
+        // Find the user's prompt (previous message from user)
+        const messageIndex = messagesData.findIndex(
+          (msg: MessageData) => msg.id === exercise.message_id
+        );
+        const userPrompt = messageIndex > 0 
+          ? messagesData[messageIndex - 1]?.text || ""
+          : "";
+
+        // Set the selected lesson with the exercise message
+        setSelectedLesson({
+          originalMessage: userPrompt,
+          response: exerciseMessage,
+        });
+
+        // Expand the lesson view
+        setLessonExpanded(true);
+      } else {
+        console.error("Exercise message not found in conversation");
+      }
+    } catch (error: any) {
+      console.error("Error loading bookmarked exercise:", error);
+      if (isTokenError(error)) {
+        await signOut({ redirect: false });
+      }
+    }
+  };
+
   const sendMessage = async () => {
     if (status === "unauthenticated") {
       setShowLoginModal(true);
@@ -537,13 +594,31 @@ export default function ChatPage() {
               Bookmarked Exercises
             </h3>
             <div className="space-y-1">
-            {bookmarkedExercises.map((exercise: Exercise, idx: number) => (
-              <button key={idx} onClick={() => setLessonExpanded(true)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <div key={idx} className="flex w-full">
-                  <span className="text-xs text-black overflow-wrap break-words whitespace-pre-wrap">{JSON.stringify(exercise)}</span>
+            {bookmarkedExercises.map((exercise: any, idx: number) => (
+              <button 
+                key={idx} 
+                onClick={() => handleBookmarkedExerciseClick(exercise)} 
+                className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left"
+              >
+                <div className="flex flex-col w-full">
+                  <span className="text-xs text-black font-medium overflow-wrap break-words whitespace-pre-wrap">
+                    {exercise.title || `Exercise ${exercise.id}`}
+                  </span>
+                  {exercise.tags && exercise.tags.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-1">
+                      {exercise.tags.slice(0, 3).map((tag: string) => (
+                        <span 
+                          key={tag} 
+                          className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </button>
-                ))}
+            ))}
             </div>
           </div>
 
@@ -785,6 +860,8 @@ export default function ChatPage() {
             userPrompt={selectedLesson.originalMessage}
             lessonExpanded={lessonExpanded}
             abilityLevel={difficultyLevels[difficultyIndex]}
+            tabSize={user?.preferences?.tabSize ?? 2}
+            initialExpandedLesson={lessonExpanded}
           />
         ) : (
           <div className="h-full flex items-center justify-center">

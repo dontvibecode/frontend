@@ -213,6 +213,7 @@ export const conversationAPI = {
         explanation: msg.json.explanation,
         recommendedReadings: msg.json.recommendedReadings,
         exercises: msg.json.exercises,
+        tags: msg.json.tags,
       } as InstructorResponse : {},
     })) as MessageData[];
   },
@@ -297,6 +298,7 @@ export const messageAPI = {
         explanation: responseJson.json.explanation,
         recommendedReadings: responseJson.json.recommendedReadings,
         exercises: responseJson.json.exercises,
+        tags: responseJson.json.tags,
       } as InstructorResponse
     : {};
 

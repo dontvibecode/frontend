@@ -39,6 +39,7 @@ export default function UserProfilePopup({
     user?.preferences?.accentColor ?? "000000"
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
+  const [tabSize, setTabSize] = useState(user?.preferences?.tabSize ?? 2);
 
   useEffect(() => {
     setName(user?.username ?? "");
@@ -46,6 +47,7 @@ export default function UserProfilePopup({
     setTheme(user?.preferences?.theme ?? "light");
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
+    setTabSize(user?.preferences?.tabSize ?? 2);
   }, [user]);
 
   const handleSave = async () => {
@@ -59,6 +61,7 @@ export default function UserProfilePopup({
           theme,
           accentColor,
           language,
+          tabSize,
         },
       });
 
@@ -122,6 +125,7 @@ export default function UserProfilePopup({
     setTheme(user?.preferences?.theme ?? "light");
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
+    setTabSize(user?.preferences?.tabSize ?? 2);
   };
 
   const onClose = () => {
@@ -313,6 +317,34 @@ export default function UserProfilePopup({
                     <option value="ko">Korean</option>
                     <option value="zh">Chinese</option>
                   </select>
+                </div>
+
+                {/* Editor Settings Section */}
+                <div className="pt-4 border-t border-gray-200">
+                  <h3 className="text-sm font-semibold text-gray-900 mb-4">Editor Settings</h3>
+                  
+                  {/* Tab Size */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Tab Size
+                    </label>
+                    <div className="flex items-center gap-4">
+                      <input
+                        type="range"
+                        min="1"
+                        max="8"
+                        value={tabSize}
+                        onChange={(e) => setTabSize(Number(e.target.value))}
+                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                      />
+                      <span className="w-8 text-center text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                        {tabSize}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-gray-500">
+                      Number of spaces for each tab in the code editor
+                    </p>
+                  </div>
                 </div>
               </div>
 
