@@ -143,6 +143,25 @@ export const conversationAPI = {
   },
 
   /**
+   * Get all bookmarked exercises for a user
+   */
+  getBookmarkedExercises: async (idToken?: string) => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/bookmark/`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get bookmarked exercises");
+    }
+
+    return response.json();
+  },
+
+  /**
    * Get a specific conversation by ID
    */
   getConversationById: async (conversationId: string, idToken?: string) => {
@@ -339,6 +358,15 @@ export interface ExerciseSubmissionResponse {
   };
 }
 
+export interface BookmarkExerciseResponse {
+  id: number;
+  message: number;
+  correctness: number;
+  bookmarked: boolean;
+  title: string;
+  tags: string[];
+}
+
 export const exerciseAPI = {
   /**
    * Get all exercises for a message
@@ -439,7 +467,29 @@ export const exerciseAPI = {
 
     return response.json();
   },
-  }
+
+  /**
+   * Bookmark an exercise
+   */
+  bookmarkExercise: async (
+    exerciseId: number,
+    idToken?: string
+  ): Promise<BookmarkExerciseResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/bookmark/${exerciseId}`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to bookmark exercise");
+    }
+
+    return response.json();
+  },
+}
 // ============================================================================
 // COMBINED API OBJECT (for convenience)
 // ============================================================================

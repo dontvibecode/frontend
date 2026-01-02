@@ -12,7 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { Conversation, MessageData, User, UserPreferences } from "@/types/api";
+import { Conversation, Exercise, MessageData, User, UserPreferences } from "@/types/api";
 import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
@@ -210,7 +210,7 @@ export default function ChatPage() {
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
-
+  const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>([]);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
@@ -244,7 +244,11 @@ export default function ChatPage() {
             idToken
           );
           setConversations(conversationsData);
-          console.log("Conversations loaded:", conversationsData);
+
+          const bookmarkedExercises = await api.conversation.getBookmarkedExercises(
+            idToken
+          );
+          setBookmarkedExercises(bookmarkedExercises);
         } catch (error: any) {
           console.error("Error loading conversations:", error);
           if (isTokenError(error)) {
@@ -530,25 +534,16 @@ export default function ChatPage() {
           {/* Sandbox Section */}
           <div className="px-4 py-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-              Sandbox
+              Bookmarked Exercises
             </h3>
             <div className="space-y-1">
-              <div className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <span className="text-sm">👍</span>
-                <span className="text-sm">Sorting an array</span>
-              </div>
-              <div className="px-2 py-1">
-                <div className="text-xs text-gray-500">C++ 4 exercises</div>
-              </div>
-              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <span className="text-sm text-red-600">Debug type error</span>
-                <div className="flex gap-1 mt-1">
-                  <span className="text-xs px-2 py-0.5 bg-red-100 text-red-700 rounded">
-                    TypeScript
-                  </span>
-                  <span className="text-xs text-gray-500">1 exercise</span>
+            {bookmarkedExercises.map((exercise: Exercise, idx: number) => (
+              <button key={idx} onClick={() => setLessonExpanded(true)} className="flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
+                <div key={idx} className="flex w-full">
+                  <span className="text-xs text-black overflow-wrap break-words whitespace-pre-wrap">{JSON.stringify(exercise)}</span>
                 </div>
-              </div>
+              </button>
+                ))}
             </div>
           </div>
 

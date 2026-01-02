@@ -34,9 +34,10 @@ interface ExerciseModuleProps {
   abilityLevel?: string;
   index?: number;
   bookmarkExercise: (exerciseId: number) => void;
+  isBookmarked: boolean;
 }
 
-export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise }: ExerciseModuleProps) {
+export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise, isBookmarked }: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -50,8 +51,6 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   const SAVE_REMINDER_DELAY = 10000; // Auto remind to save after 10 seconds
 
   const currentExercise = data.exercises?.[activeExerciseIndex];
-
-  console.log({ exercises: data.exercises })
 
   const hasUnsavedChanges = useCallback(() => {
     if (!data.exercises) return false;
@@ -194,7 +193,12 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
     <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-semibold text-gray-900">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
-        <button onClick={() => bookmarkExercise(currentExercise.id)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <motion.button 
+          onClick={() => bookmarkExercise(data.id)} 
+          whileHover={{ scale: 1 }}
+          whileTap={{ scale: 0.95 }}
+          className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
+        >
           <svg
             className="w-5 h-5 text-gray-600"
             fill="none"
@@ -205,10 +209,12 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
+              className={isBookmarked ? "text-blue-500" : "text-gray-600"}
+              fill={isBookmarked ? "currentColor" : "transparent"}
               d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
             />
           </svg>
-        </button>
+        </motion.button>
       </div>
       <p className="text-black font-medium text-lg mb-4">{currentExercise.text || 'Exercise ' + (index + 1)}</p>
       <div className="bg-[#2D2D2D] px-4 py-2 rounded-t-lg">
@@ -609,7 +615,6 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
 export default function Lesson({ message, userPrompt, setLessonExpanded, lessonExpanded, abilityLevel }: LessonProps) {
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
-  const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [loadingExercises, setLoadingExercises] = useState(false);
   const [fetchedExercises, setFetchedExercises] = useState<any>(null);
   const { data: session } = useSession();
@@ -663,12 +668,16 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
 
       // Transform exercise_files array to files format
       const newExerciseData = {
+        id: exerciseId,
         correctness: null,
+        bookmarked: false,
+        title: null,
+        tags: [],
         files: parsedResponse.exercise_files.map((exercise: any, idx: number) => ({
           ...exercise,
           id: idx,
           exercise_id: exerciseId,
-          user_submission: null
+          user_submission: null,
         }))
       };
 
@@ -684,10 +693,47 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
     }
   };
 
-  const bookmarkExercise = (exerciseId: number) => {
-    console.log('Bookmarking exercise:', exerciseId);
+  const bookmarkExercise = async (exerciseId: number) => {
+    const idToken = (session?.user as any)?.idToken;
+    if (!idToken) {
+      console.error('No idToken found in session');
+      return false;
+    }
+    
+    try {
+      const response = await api.exercise.bookmarkExercise(exerciseId, idToken);
+      console.log('Bookmark response:', response);
+      
+      // Update fetchedExercises with the new bookmark state
+      setFetchedExercises((prev: any) => {
+        if (!prev) return prev;
+        
+        // Find the key that matches this exercise id
+        const exerciseKey = Object.keys(prev).find(
+          key => !isNaN(Number(key)) && prev[key].id === exerciseId
+        );
+        
+        if (exerciseKey) {
+          return {
+            ...prev,
+            [exerciseKey]: {
+              ...prev[exerciseKey],
+              bookmarked: response.bookmarked,
+              title: response.title,
+              tags: response.tags,
+            }
+          };
+        }
+        return prev;
+      });
+      
+      return response.bookmarked;
+    } catch (error) {
+      console.error('Failed to bookmark exercise:', error);
+      return false;
+    }
   };
-
+  
   return (
     <AnimatePresence mode="popLayout">
       {lessonExpanded ? (
@@ -711,20 +757,24 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
 
           <div className="p-8 pb-0 pt-16 flex flex-col gap-2">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Expanded Lesson View</h1>
-            {/* Render exercises from numeric keys in fetchedExercises */}
             {fetchedExercises && Object.keys(fetchedExercises)
-              .filter(key => !isNaN(Number(key))) // Get only numeric keys (exercise IDs)
+              .filter(key => !isNaN(Number(key))) 
               .map((exerciseId, idx) => {
                 const exerciseData = fetchedExercises[exerciseId];
                 return (
                   <ExerciseModule
                     bookmarkExercise={bookmarkExercise}
+                    isBookmarked={exerciseData.bookmarked}
                     key={exerciseId}
                     index={idx}
                     data={{
                       exercises: exerciseData.files,
                       exercise_id: Number(exerciseId),
-                      correctness: exerciseData.correctness
+                      id: exerciseData.id,
+                      correctness: exerciseData.correctness,
+                      bookmarked: exerciseData.bookmarked,
+                      title: exerciseData.title,
+                      tags: exerciseData.tags,
                     }}
                     messageId={message.id}
                     abilityLevel={abilityLevel}
@@ -733,15 +783,15 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
               })
             }
             {/* Fallback: render from jsonData.exercises if no fetchedExercises with numeric keys */}
-            {(!fetchedExercises || Object.keys(fetchedExercises).filter(key => !isNaN(Number(key))).length === 0) && jsonData.exercises && (
+            {/* {(!fetchedExercises || Object.keys(fetchedExercises).filter(key => !isNaN(Number(key))).length === 0) && jsonData.exercises && (
               <ExerciseModule
-                bookmarkExercise={bookmarkExercise}
+                isBookmarked={false}
                 data={jsonData}
                 messageId={message.id}
                 abilityLevel={abilityLevel}
                 index={0}
               />
-            )}
+            )} */}
 
             <div className="relative rounded-t-xl overflow-hidden">
               <div className="absolute inset-0 z-10 backdrop-blur-xs bg-white/0 flex items-end justify-center">
@@ -867,7 +917,7 @@ public class PlaceholderService {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-semibold text-gray-900">Activity:</h2>
-                <button onClick={() => bookmarkExercise(currentExercise.id)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                   <svg
                     className="w-5 h-5 text-gray-600"
                     fill="none"
@@ -881,7 +931,7 @@ public class PlaceholderService {
                       d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
                     />
                   </svg>
-                </button>
+                </button> */}
               </div>
 
               <p className="text-gray-700 mb-4 leading-relaxed">
@@ -976,7 +1026,7 @@ public class PlaceholderService {
                 </div>
                 <div className="sticky bottom-0 left-6 right-6 ml-6 mr-6 py-4">
                   <div className="bg-white/0 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-md border border-white/30 rounded-3xl p-4 mx-auto">
-                    <button onClick={expandExercises} className="w-full flex flex-row justify-between items-center gap-2 text-white font-medium transition-colors">
+                    <button onClick={expandExercises} className="cursor-pointer group w-full flex flex-row justify-between items-center gap-2 text-white font-medium transition-colors">
                       <div className="flex items-center gap-2">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -998,7 +1048,7 @@ public class PlaceholderService {
                         width="24"
                         height="24"
                         viewBox="0 0 24 24"
-                        className="text-white cursor-pointer hover:scale-110 transition-transform"
+                        className="text-white cursor-pointer group-hover:scale-110 transition-transform"
                       >
                         <path
                           fill="currentColor"
