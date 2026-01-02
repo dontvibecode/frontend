@@ -12,6 +12,7 @@ import { python } from "@codemirror/lang-python";
 import { java } from "@codemirror/lang-java";
 import api from "@/lib/api";
 import { useSession } from "next-auth/react";
+import { Markdown } from "@/lib/markdownParser";
 
 const getLanguageExtension = (filename: string) => {
   if (filename.endsWith('.py')) return python();
@@ -32,9 +33,10 @@ interface ExerciseModuleProps {
   messageId?: number;
   abilityLevel?: string;
   index?: number;
+  bookmarkExercise: (exerciseId: number) => void;
 }
 
-export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: ExerciseModuleProps) {
+export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise }: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -192,7 +194,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0 }: Exe
     <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
         <h2 className="text-xl font-semibold text-gray-900">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
-        <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+        <button onClick={() => bookmarkExercise(currentExercise.id)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
           <svg
             className="w-5 h-5 text-gray-600"
             fill="none"
@@ -682,6 +684,10 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
     }
   };
 
+  const bookmarkExercise = (exerciseId: number) => {
+    console.log('Bookmarking exercise:', exerciseId);
+  };
+
   return (
     <AnimatePresence mode="popLayout">
       {lessonExpanded ? (
@@ -712,6 +718,7 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
                 const exerciseData = fetchedExercises[exerciseId];
                 return (
                   <ExerciseModule
+                    bookmarkExercise={bookmarkExercise}
                     key={exerciseId}
                     index={idx}
                     data={{
@@ -728,6 +735,7 @@ export default function Lesson({ message, userPrompt, setLessonExpanded, lessonE
             {/* Fallback: render from jsonData.exercises if no fetchedExercises with numeric keys */}
             {(!fetchedExercises || Object.keys(fetchedExercises).filter(key => !isNaN(Number(key))).length === 0) && jsonData.exercises && (
               <ExerciseModule
+                bookmarkExercise={bookmarkExercise}
                 data={jsonData}
                 messageId={message.id}
                 abilityLevel={abilityLevel}
@@ -791,7 +799,7 @@ public class PlaceholderService {
             <h1 className="text-3xl font-bold text-gray-900">
               {jsonData.lessonTitle ?? (jsonData as any).lesson_title ?? (jsonData.exercises?.[0]?.filename?.replace('.java', '').replace('.py', '').replace('.js', '') || 'Lesson')}
             </h1>
-            <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+            {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <svg
                 className="w-6 h-6 text-gray-600"
                 fill="none"
@@ -805,7 +813,7 @@ public class PlaceholderService {
                   d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
                 />
               </svg>
-            </button>
+            </button> */}
           </div>
 
           {/* User Prompt */}
@@ -819,13 +827,13 @@ public class PlaceholderService {
           {/* Breakdown/Explanation */}
           {jsonData.breakdown && (
             <div className="mb-6 leading-relaxed text-gray-800">
-              {jsonData.breakdown}
+              <Markdown>{jsonData.breakdown}</Markdown>
             </div>
           )}
 
           {jsonData.explanation && (
             <div className="mb-8 leading-relaxed text-gray-700">
-              {jsonData.explanation}
+              <Markdown>{jsonData.explanation}</Markdown>
             </div>
           )}
 
@@ -859,7 +867,7 @@ public class PlaceholderService {
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
                 <h2 className="text-xl font-semibold text-gray-900">Activity:</h2>
-                <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <button onClick={() => bookmarkExercise(currentExercise.id)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                   <svg
                     className="w-5 h-5 text-gray-600"
                     fill="none"
