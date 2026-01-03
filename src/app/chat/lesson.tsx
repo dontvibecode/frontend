@@ -30,6 +30,7 @@ interface LessonProps {
   abilityLevel: string;
   tabSize?: number;
   initialExpandedLesson?: boolean;
+  onBookmarkChange?: (exerciseId: number, bookmarked: boolean, exerciseData: any) => void;
 }
 
 interface ExerciseModuleProps {
@@ -56,6 +57,15 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   const SAVE_REMINDER_DELAY = 10000; // Auto remind to save after 10 seconds
 
   const currentExercise = data.exercises?.[activeExerciseIndex];
+
+  const correctnessColor = (correctness: number) => {
+    console.log({ correctness });
+    if (correctness === null) return 'bg-gray-300';
+    if (correctness === 2) return 'bg-emerald-500';
+    if (correctness === 1) return 'bg-amber-500';
+    if (correctness === 0) return 'bg-red-500';
+    return 'bg-gray-300';
+  };
 
   const hasUnsavedChanges = useCallback(() => {
     if (!data.exercises) return false;
@@ -84,6 +94,15 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
       }
     }
   }, [data.exercises]);
+
+  useEffect(() => {
+    if(data.feedback) {
+      setFeedbackData({
+        ...data.feedback,
+        correctness: data.correctness,
+      });
+    }
+  }, [data.feedback]);
 
   useEffect(() => {
     if (saveReminderTimerRef.current) {
@@ -128,8 +147,6 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
         exercise_file_ids: exerciseFileIds,
       }, idToken);
 
-      console.log({ saveResponse: response })
-
       // Update last saved state
       const savedState: Record<string, string> = {};
       data.exercises?.forEach((exercise: any) => {
@@ -149,6 +166,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   };
 
   const handleSubmit = async () => {
+    setShowSaveReminder(false);
     if (!messageId || !abilityLevel || !data.exercises?.length) return;
 
     const idToken = (session?.user as any)?.idToken;
@@ -199,7 +217,10 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   return (
     <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-xl font-semibold text-gray-900">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
+        <div className="flex items-center gap-2 ml-2"> 
+          <div className={`${correctnessColor(data.correctness)} w-2 h-2 rounded-full`}/>
+          <h2 className="text-xl font-semibold text-gray-900">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
+        </div>
         <motion.button 
           onClick={() => bookmarkExercise(data.id)} 
           whileHover={{ scale: 1 }}
@@ -286,7 +307,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
       />
       {/* Save Reminder Banner */}
       <AnimatePresence>
-        {showSaveReminder && (
+        {showSaveReminder && !saving && (
           <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
@@ -620,7 +641,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   );
 }
 
-export default function Lesson({ message, userPrompt, initialExpandedLesson, setLessonExpanded, lessonExpanded, abilityLevel, tabSize = 2 }: LessonProps) {
+export default function Lesson({ message, userPrompt, initialExpandedLesson, setLessonExpanded, lessonExpanded, abilityLevel, tabSize = 2, onBookmarkChange }: LessonProps) {
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
   const [loadingExercises, setLoadingExercises] = useState(false);
@@ -743,6 +764,19 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
         return prev;
       });
       
+      // Notify parent about bookmark change
+      if (onBookmarkChange) {
+        onBookmarkChange(exerciseId, response.bookmarked, {
+          id: response.id,
+          message_id: message.id,
+          message__conversation_id: message.conversation,
+          correctness: response.correctness,
+          bookmarked: response.bookmarked,
+          title: response.title,
+          tags: response.tags,
+        });
+      }
+      
       return response.bookmarked;
     } catch (error) {
       console.error('Failed to bookmark exercise:', error);
@@ -773,6 +807,215 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
           <div className="p-8 pb-0 pt-16 flex flex-col gap-2">
             <h1 className="text-2xl font-bold text-gray-900 mb-2">Expanded Lesson View</h1>
+
+            {/* Progress Stats Component */}
+            {fetchedExercises && (() => {
+              const exercises = Object.keys(fetchedExercises)
+                .filter(key => !isNaN(Number(key)))
+                .map(key => fetchedExercises[key]);
+              
+              const total = exercises.length;
+              const completed = exercises.filter((ex: any) => ex.correctness === 2).length;
+              const partial = exercises.filter((ex: any) => ex.correctness === 1).length;
+              const incorrect = exercises.filter((ex: any) => ex.correctness === 0).length;
+              const notStarted = exercises.filter((ex: any) => ex.correctness === null).length;
+              
+              // Get language stats from files
+              const languageCount: Record<string, number> = {};
+              exercises.forEach((ex: any) => {
+                ex.files?.forEach((file: any) => {
+                  const ext = file.filename?.split('.').pop()?.toLowerCase() || 'other';
+                  const langMap: Record<string, string> = {
+                    'js': 'JavaScript',
+                    'ts': 'TypeScript', 
+                    'tsx': 'TypeScript',
+                    'jsx': 'JavaScript',
+                    'py': 'Python',
+                    'java': 'Java',
+                    'json': 'JSON',
+                    'html': 'HTML',
+                    'css': 'CSS',
+                  };
+                  const lang = langMap[ext] || ext.toUpperCase();
+                  languageCount[lang] = (languageCount[lang] || 0) + 1;
+                });
+              });
+              
+              const totalFiles = Object.values(languageCount).reduce((a, b) => a + b, 0);
+              const topLanguages = Object.entries(languageCount)
+                .sort((a, b) => b[1] - a[1])
+                .slice(0, 3);
+              
+              const completionPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
+              const partialPercent = total > 0 ? Math.round((partial / total) * 100) : 0;
+              const incorrectPercent = total > 0 ? Math.round((incorrect / total) * 100) : 0;
+              
+              return (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-5 mb-4 border border-gray-200/60"
+                >
+                  {/* Main Progress Section */}
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-3">
+                      <div className="relative">
+                        <svg className="w-16 h-16 transform -rotate-90">
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="#e5e7eb"
+                            strokeWidth="6"
+                            fill="none"
+                          />
+                          {/* Completed - Green */}
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="#10b981"
+                            strokeWidth="6"
+                            fill="none"
+                            strokeDasharray={`${completionPercent * 1.76} 176`}
+                            strokeLinecap="round"
+                            className="transition-all duration-700"
+                          />
+                          {/* Partial - Amber */}
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="#fbbf24"
+                            strokeWidth="6"
+                            fill="none"
+                            strokeDasharray={`${partialPercent * 1.76} 176`}
+                            strokeDashoffset={`-${completionPercent * 1.76}`}
+                            strokeLinecap="round"
+                            className="transition-all duration-700"
+                          />
+                          {/* Incorrect - Red */}
+                          <circle
+                            cx="32"
+                            cy="32"
+                            r="28"
+                            stroke="#f87171"
+                            strokeWidth="6"
+                            fill="none"
+                            strokeDasharray={`${incorrectPercent * 1.76} 176`}
+                            strokeDashoffset={`-${(completionPercent + partialPercent) * 1.76}`}
+                            strokeLinecap="round"
+                            className="transition-all duration-700"
+                          />
+                        </svg>
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <span className="text-lg font-bold text-gray-900">{completionPercent}%</span>
+                        </div>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">Exercise Progress</h3>
+                        <p className="text-sm text-gray-500">{completed} of {total} completed</p>
+                      </div>
+                    </div>
+                    
+                    {/* Quick Stats */}
+                    <div className="flex gap-4">
+                      <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                          <span className="text-xl font-bold text-gray-900">{completed}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">Completed</span>
+                      </div>
+                      <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                          <span className="text-xl font-bold text-gray-900">{partial}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">Meh</span>
+                      </div>
+                      <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-red-400"></span>
+                          <span className="text-xl font-bold text-gray-900">{incorrect}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">Incorrect</span>
+                      </div>
+                      <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="flex items-center justify-center gap-1.5">
+                          <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                          <span className="text-xl font-bold text-gray-900">{notStarted}</span>
+                        </div>
+                        <span className="text-xs text-gray-500">Not Started</span>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Full Width Progress Bar */}
+                  {/* <div className="mb-4">
+                    <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden flex">
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${completionPercent}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut" }}
+                        className="bg-gradient-to-r from-emerald-400 to-emerald-500 h-full"
+                      />
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${partialPercent}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.2 }}
+                        className="bg-gradient-to-r from-amber-300 to-amber-400 h-full"
+                      />
+                      <motion.div 
+                        initial={{ width: 0 }}
+                        animate={{ width: `${incorrectPercent}%` }}
+                        transition={{ duration: 0.8, ease: "easeOut", delay: 0.4 }}
+                        className="bg-gradient-to-r from-red-300 to-red-400 h-full"
+                      />
+                    </div>
+                  </div> */}
+                  
+                  {/* Language Stats */}
+                  {topLanguages.length > 0 && (
+                    <div className="flex items-center gap-3 pt-3 border-t-1 border-gray-300">
+                      <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Languages:</span>
+                      <div className="flex gap-2 flex-wrap">
+                        {topLanguages.map(([lang, count]) => {
+                          const percent = Math.round((count / totalFiles) * 100);
+                          const colors: Record<string, string> = {
+                            'JavaScript': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                            'TypeScript': 'bg-blue-100 text-blue-800 border-blue-200',
+                            'Python': 'bg-green-100 text-green-800 border-green-200',
+                            'Java': 'bg-orange-100 text-orange-800 border-orange-200',
+                            'JSON': 'bg-gray-100 text-gray-700 border-gray-200',
+                            'HTML': 'bg-red-100 text-red-800 border-red-200',
+                            'CSS': 'bg-purple-100 text-purple-800 border-purple-200',
+                          };
+                          const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200';
+                          return (
+                            <span 
+                              key={lang}
+                              className={`text-xs px-2 py-1 rounded-lg border ${colorClass} font-medium`}
+                            >
+                              {lang} <span className="opacity-60">({percent}%)</span>
+                            </span>
+                          );
+                        })}
+                      </div>
+                      {exercises.some((ex: any) => ex.bookmarked) && (
+                        <span className="ml-auto flex items-center gap-1 text-sm text-blue-600">
+                          <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                          </svg>
+                          {exercises.filter((ex: any) => ex.bookmarked).length} bookmarked
+                        </span>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              );
+            })()}
+
             {fetchedExercises && Object.keys(fetchedExercises)
               .filter(key => !isNaN(Number(key))) 
               .map((exerciseId, idx) => {
@@ -792,6 +1035,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                       bookmarked: exerciseData.bookmarked,
                       title: exerciseData.title,
                       tags: exerciseData.tags,
+                      feedback: exerciseData.feedback,
                     }}
                     messageId={message.id}
                     abilityLevel={abilityLevel}

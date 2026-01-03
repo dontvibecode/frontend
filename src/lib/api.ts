@@ -145,9 +145,9 @@ export const conversationAPI = {
   /**
    * Get all bookmarked exercises for a user
    */
-  getBookmarkedExercises: async (idToken?: string) => {
+  getBookmarkedExercises: async (email: string, idToken?: string) => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/exercise/bookmark/`,
+      `${API_BASE_URL}api/chat/exercise/bookmark/${email}`,
       {
         method: "GET",
         headers: getAuthHeaders(idToken),

@@ -45,6 +45,12 @@ import React from 'react';
  * --- Horizontal Rule
  *   - Syntax: --- or *** or ___ (alone on line)
  *   - Example: --- → <hr />
+ * 
+ * ```language
+ * Code Block
+ * ```
+ *   - Syntax: ```language ... ``` (language optional)
+ *   - Example: ```python\nprint("hi")\n``` → <pre><code>print("hi")</code></pre>
  */
 
 type ParsedElement = string | React.ReactElement;
@@ -161,6 +167,7 @@ export function parseMarkdown(markdown: string): React.ReactElement {
   const lines = markdown.split('\n');
   const elements: React.ReactElement[] = [];
   let currentList: { type: 'ul' | 'ol'; items: React.ReactElement[] } | null = null;
+  let codeBlock: { language: string; lines: string[]; startIndex: number } | null = null;
   let lineIndex = 0;
 
   const flushList = () => {
@@ -178,9 +185,44 @@ export function parseMarkdown(markdown: string): React.ReactElement {
     }
   };
 
+  const flushCodeBlock = () => {
+    if (codeBlock) {
+      const code = codeBlock.lines.join('\n');
+      elements.push(
+        <pre
+          key={`code-${codeBlock.startIndex}`}
+          className="bg-gray-100 border border-gray-200 rounded-lg p-3 my-3 overflow-x-auto"
+        >
+          <code className="text-sm font-mono text-black whitespace-pre">{code}</code>
+        </pre>
+      );
+      codeBlock = null;
+    }
+  };
+
   for (const line of lines) {
     const trimmedLine = line.trim();
     lineIndex++;
+
+    // Check for code block start/end
+    if (trimmedLine.startsWith('```')) {
+      if (codeBlock) {
+        // End of code block
+        flushCodeBlock();
+      } else {
+        // Start of code block
+        flushList();
+        const language = trimmedLine.slice(3).trim();
+        codeBlock = { language, lines: [], startIndex: lineIndex };
+      }
+      continue;
+    }
+
+    // If inside code block, collect lines (preserve original indentation)
+    if (codeBlock) {
+      codeBlock.lines.push(line);
+      continue;
+    }
 
     // Empty line
     if (trimmedLine === '') {
@@ -209,7 +251,7 @@ export function parseMarkdown(markdown: string): React.ReactElement {
         5: 'text-sm font-semibold mt-2 mb-1',
         6: 'text-sm font-medium mt-2 mb-1',
       };
-      const HeadingTag = `h${level}` as keyof JSX.IntrinsicElements;
+      const HeadingTag = `h${level}` as 'h1' | 'h2' | 'h3' | 'h4' | 'h5' | 'h6';
       elements.push(
         React.createElement(
           HeadingTag,
@@ -270,8 +312,9 @@ export function parseMarkdown(markdown: string): React.ReactElement {
     );
   }
 
-  // Flush any remaining list
+  // Flush any remaining list or code block
   flushList();
+  flushCodeBlock();
 
   return <div className="markdown-content">{elements}</div>;
 }

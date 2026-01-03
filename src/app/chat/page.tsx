@@ -246,6 +246,7 @@ export default function ChatPage() {
           setConversations(conversationsData);
 
           const bookmarkedExercises = await api.conversation.getBookmarkedExercises(
+            session?.user?.email as string,
             idToken
           );
           setBookmarkedExercises(bookmarkedExercises);
@@ -359,6 +360,24 @@ export default function ChatPage() {
       if (isTokenError(error)) {
         await signOut({ redirect: false });
       }
+    }
+  };
+
+  const handleBookmarkChange = (exerciseId: number, bookmarked: boolean, exerciseData: any) => {
+    if (bookmarked) {
+      // Add to bookmarked exercises list
+      setBookmarkedExercises((prev) => {
+        // Check if already exists
+        if (prev.some((ex: any) => ex.id === exerciseId)) {
+          return prev;
+        }
+        return [...prev, exerciseData];
+      });
+    } else {
+      // Remove from bookmarked exercises list
+      setBookmarkedExercises((prev) => 
+        prev.filter((ex: any) => ex.id !== exerciseId)
+      );
     }
   };
 
@@ -572,6 +591,7 @@ export default function ChatPage() {
               onClick={() => {
                 setConversationId(null);
                 setMessages([]);
+                setLessonExpanded(false);
                 setSelectedLesson(null);
               }}
               className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl p-3 mx-auto"
@@ -862,6 +882,7 @@ export default function ChatPage() {
             abilityLevel={difficultyLevels[difficultyIndex]}
             tabSize={user?.preferences?.tab_size ?? 2}
             initialExpandedLesson={lessonExpanded}
+            onBookmarkChange={handleBookmarkChange}
           />
         ) : (
           <div className="h-full flex items-center justify-center">
