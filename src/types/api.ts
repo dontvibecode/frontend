@@ -66,4 +66,5 @@ export interface User {
   username: string;
   email: string;
   preferences?: UserPreferences;
+  tokens?: number;
 }

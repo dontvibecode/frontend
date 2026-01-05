@@ -16,6 +16,152 @@ import { Conversation, Exercise, MessageData, User, UserPreferences } from "@/ty
 import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
+import SearchModal from "../components/SearchModal";
+
+const GeneratingLessonAnimation = () => {
+  const steps = [
+    { text: "Generating Lesson", icon: "✦" },
+    { text: "Understanding problem", icon: "◈" },
+    { text: "Creating exercises", icon: "◇" },
+    { text: "Finding sources", icon: "○" },
+  ];
+  const stepDuration = 1.2;
+  const totalDuration = steps.length * stepDuration + 0.5;
+
+  return (
+    <motion.div
+      className="h-fit w-full flex flex-col items-start justify-start gap-3 py-4 px-4"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+    >
+      {steps.map((step, idx) => (
+        <motion.div
+          key={idx}
+          className="flex items-center gap-3"
+          initial={{ opacity: 0, y: 10, x: 0 }}
+          animate={{ opacity: [0, 0, 1, 1], y: [20, 20, 0, 0] }}
+          transition={{
+            duration: totalDuration,
+            repeat: Infinity,
+            times: [
+              0,
+              (idx * stepDuration) / totalDuration,
+              (idx * stepDuration + 0.2) / totalDuration,
+              1
+            ],
+            ease: "easeOut",
+          }}
+        >
+          <div className="relative overflow-hidden">
+            <span 
+              className="text-sm font-medium text-gray-400 tracking-wide"
+              style={{ fontFamily: "'SF Mono', 'Fira Code', monospace" }}
+            >
+              {step.text}
+            </span>
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
+              style={{ 
+                maskImage: "linear-gradient(to right, transparent, black, transparent)",
+                WebkitMaskImage: "linear-gradient(to right, transparent, black, transparent)",
+              }}
+              initial={{ x: "-100%" }}
+              animate={{ x: "200%" }}
+              transition={{
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: idx * stepDuration,
+              }}
+            />
+          </div>
+          
+          <div className="flex gap-0.5">
+            {[0, 1, 2].map((dotIdx) => (
+              <motion.span
+                key={dotIdx}
+                className="w-1 h-1 rounded-full bg-indigo-300"
+                animate={{ 
+                  opacity: [0.2, 1, 0.2],
+                  scale: [0.8, 1, 0.8],
+                }}
+                transition={{
+                  duration: 0.8,
+                  repeat: Infinity,
+                  ease: "easeInOut",
+                  delay: idx * stepDuration + dotIdx * 0.15,
+                }}
+              />
+            ))}
+          </div>
+        </motion.div>
+      ))}
+    </motion.div>
+  );
+};
+
+const ThinkingAnimation = () => {
+    const fillDuration = 0.5;
+    const lines = [
+      { width: "74%" },
+      { width: "78%" },
+      { width: "65%" },
+      { width: "45%" },
+    ];
+    const totalFillTime = lines.length * fillDuration;
+    const cycleDuration = totalFillTime + 1; // Extra time to hold before reset
+    
+    return (
+      <motion.div 
+        key={Date.now()} // Force remount to restart animation cycle
+        className="h-fit w-full flex flex-col items-start justify-start gap-2 py-2"
+        animate={{ opacity: [0, 1, 1, 0] }}
+        transition={{ 
+          duration: cycleDuration, 
+          repeat: Infinity,
+          times: [0, 0.1, 0.8, 1],
+          ease: "easeInOut"
+        }}
+      >
+        {lines.map((line, idx) => (
+          <div 
+            key={idx} 
+            className="h-3 rounded bg-white overflow-hidden relative"
+            style={{ width: line.width }}
+          >
+            <motion.div
+              className="absolute inset-0 bg-gradient-to-r from-transparent to-transparent"
+              initial={{ x: "-100%" }}
+              animate={{ x: "200%" }}
+              transition={{
+                duration: 1,
+                repeat: Infinity,
+                ease: "easeInOut",
+                delay: idx * fillDuration,
+              }}
+            />
+            <motion.div
+              className="h-full bg-gray-200/60 rounded"
+              initial={{ width: "0%" }}
+              animate={{ width: ["0%", "0%", "100%", "100%"] }}
+              transition={{
+                duration: cycleDuration,
+                repeat: Infinity,
+                times: [
+                  0,
+                  (idx * fillDuration) / cycleDuration,
+                  ((idx + 1) * fillDuration) / cycleDuration,
+                  1
+                ],
+                ease: "easeOut",
+              }}
+            />
+          </div>
+        ))}
+      </motion.div>
+    );
+};
 
 export const AIResponse = ({
   message,
@@ -213,6 +359,8 @@ export default function ChatPage() {
   const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>([]);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
+  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
   const isDebouncing = useRef(false);
 
@@ -284,6 +432,24 @@ export default function ChatPage() {
     };
     loadUser();
   }, [session?.user?.email]);
+
+  // Global Ctrl+K listener for search
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === "k") {
+        e.preventDefault();
+        setSearchOpen(prev => !prev);
+        setSearchQuery("");
+      }
+      if (e.key === "Escape") {
+        setSearchOpen(false);
+        setSearchQuery("");
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const handleConversationClick = async (conversation: Conversation) => {
     try {
@@ -558,6 +724,16 @@ export default function ChatPage() {
     setChatMenuOpen(conversationId);
   };
 
+  const openSearch = () => {
+    setSearchOpen(true);
+    setSearchQuery("");
+  };
+
+  const closeSearch = () => {
+    setSearchOpen(false);
+    setSearchQuery("");
+  };
+
   return (
     <div className="flex h-screen bg-white">
       {/* Login Modal */}
@@ -565,6 +741,25 @@ export default function ChatPage() {
         isOpen={showLoginModal}
         onClose={() => setShowLoginModal(false)}
       />
+      
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={closeSearch}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        conversations={conversations}
+        bookmarkedExercises={bookmarkedExercises}
+        onSelectConversation={(conversation) => {
+          handleConversationClick(conversation);
+          closeSearch();
+        }}
+        onSelectExercise={(exercise) => {
+          handleBookmarkedExerciseClick(exercise);
+          closeSearch();
+        }}
+      />
+
       {/* User Profile Popup */}
       <UserProfilePopup
         isOpen={showUserProfilePopup}
@@ -586,7 +781,28 @@ export default function ChatPage() {
         </div>
         <div className="relative flex-1 overflow-y-auto">
           {/* New Chat Button */}
-          <div className="sticky top-0 left-0 right-0 z-20 px-4 py-3">
+          <div className="sticky top-0 left-0 right-0 z-20 px-4 py-3 flex flex-col items-center gap-2">
+            <button
+              onClick={openSearch}
+              className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-black/10 rounded-2xl p-3 mx-auto"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="text-black">
+                <g fill="none" fill-rule="evenodd" stroke="black" strokeWidth={0}>
+                  <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/>
+                  <path fill="currentColor" d="M10.5 2a8.5 8.5 0 1 0 5.262 15.176l3.652 3.652a1 1 0 0 0 1.414-1.414l-3.652-3.652A8.5 8.5 0 0 0 10.5 2M4 10.5a6.5 6.5 0 1 1 13 0a6.5 6.5 0 0 1-13 0"/>
+                </g>
+              </svg>              
+              <span className="text-sm text-black m-0 font-medium tracking-wide">Search</span>
+              <div className="absolute top-0 bottom-0 right-0 flex items-center justify-center px-2">
+                <span className="flex items-center gap-1">
+                <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">Ctrl</kbd>
+                <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">K</kbd>
+                </span>              
+              </div>
+
+
+
+            </button>
             <button
               onClick={() => {
                 setConversationId(null);
@@ -594,10 +810,10 @@ export default function ChatPage() {
                 setLessonExpanded(false);
                 setSelectedLesson(null);
               }}
-              className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl p-3 mx-auto"
+              className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-black/10 rounded-2xl p-3 mx-auto"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width={24} height={24} viewBox="0 0 24 24" className="text-black">
-              <g fill="none" stroke="black" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5}>
+              <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" className="text-black">
+                <g fill="none" stroke="black" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}>
                   <path d="M10.371 4.25H8.25a5 5 0 0 0-5 5v6.5a5 5 0 0 0 5 5h6.5a5 5 0 0 0 5-5v-2.121">
                   </path>
                   <path d="M12.299 14.75a1.86 1.86 0 0 0 1.316-.545l6.59-6.59a1.86 1.86 0 0 0 0-2.633l-1.187-1.187a1.86 1.86 0 0 0-2.633 0l-6.59 6.59a1.86 1.86 0 0 0-.545 1.316v3.049z">
@@ -618,7 +834,7 @@ export default function ChatPage() {
               <button 
                 key={idx} 
                 onClick={() => handleBookmarkedExerciseClick(exercise)} 
-                className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left"
+                className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left duration-200 ease-in-out"
               >
                 <div className="flex flex-col w-full">
                   <span className="text-xs text-black font-medium overflow-wrap break-words whitespace-pre-wrap">
@@ -629,7 +845,7 @@ export default function ChatPage() {
                       {exercise.tags.slice(0, 3).map((tag: string) => (
                         <span 
                           key={tag} 
-                          className="text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded"
+                          className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200"
                         >
                           {tag}
                         </span>
@@ -642,24 +858,117 @@ export default function ChatPage() {
             </div>
           </div>
 
+          {/* Pinned Section */}
+          {conversations.filter(c => c.pinned).length > 0 && (
+            <div className="px-4 py-3">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1.5">
+                Pinned
+              </h3>
+              <div className="space-y-1">
+                {conversations.filter(c => c.pinned).map((conversation: Conversation, index: number) => (
+                  <div
+                    key={`pinned-${index}`}
+                    onClick={() => handleConversationClick(conversation)}
+                    className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer duration-200 ease-in-out"
+                  >
+                    <div className="flex flex-row justify-between items-center">
+                      <div className="text-sm text-black font-medium mb-1">
+                        {conversation.title}
+                      </div>
+                      <div
+                        onClick={(e) => { e.stopPropagation(); chatMenuDropdown(Number(conversation.id)); }}
+                        className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                          <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"></path>
+                        </svg>
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap gap-1">
+                      {conversation?.tags && conversation?.tags?.length > 0 && (
+                        <div className="flex flex-wrap gap-1">
+                          {conversation.tags.slice(0, 2).map((tag) => (
+                            <span key={tag} className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded group-hover:bg-amber-200 transition-colors duration-200">
+                              {tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {conversation?.tags && conversation?.tags?.length > 2 && (
+                        <span className="text-xs text-gray-500">+ {conversation.tags.length - 2} more</span>
+                      )}
+                    </div>
+                    {/* Delete and Unpin buttons */}
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{
+                        display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
+                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                      }}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        if (user?.email) {
+                          setChatMenuOpen(-1);
+                          await api.conversation.deleteConversation(Number(conversation.id), (session?.user as any)?.idToken);
+                          const idToken = (session?.user as any)?.idToken;
+                          const conversationsData = await api.conversation.getConversations(user.email, idToken);
+                          setConversations(conversationsData);
+                        }
+                      }}
+                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                      className="absolute -bottom-10 right-0 z-20"
+                    >
+                      <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                          <path fill="currentColor" stroke="currentColor" strokeWidth="0.4" d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"></path>
+                        </svg>
+                      </div>
+                    </motion.div>
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{
+                        display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
+                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                      }}
+                      onClick={async (e) => {
+                        e.stopPropagation();
+                        setChatMenuOpen(-1);
+                        await api.conversation.pinConversation(Number(conversation.id), (session?.user as any)?.idToken);
+                        if (user?.email) {
+                          const idToken = (session?.user as any)?.idToken;
+                          const conversationsData = await api.conversation.getConversations(user.email, idToken);
+                          setConversations(conversationsData);
+                        }
+                      }}
+                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                      className="absolute -bottom-6 right-10 z-20"
+                    >
+                      <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
+                          <path fill="currentColor" d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2z"/>
+                        </svg>
+                      </div>
+                    </motion.div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Regular Chats Section */}
           <div className="px-4 py-3 flex-1">
             <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
               Chats
             </h3>
             <div className="space-y-1">
-              {conversations.concat(conversations)
-                .sort((a, b) => {
-                  if (a.pinned && !b.pinned) return -1;
-                  if (!a.pinned && b.pinned) return 1;
-                  return 0;
-                })
-                .map((conversation: Conversation, index: number) => (
+              {conversations.filter(c => !c.pinned).map((conversation: Conversation, index: number) => (
                   <div
-                    key={index}
+                    key={`chat-${index}`}
                     onClick={() => handleConversationClick(conversation)}
-                    className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer"
+                    className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer duration-200 ease-in-out"
                   >
-                    <p>{conversation.pinned ? "Pinned" : "Unpinned"}</p>
                     <div className="flex flex-row justify-between items-center">
                       <div className="text-sm text-black font-medium mb-1">
                         {conversation.title}
@@ -849,6 +1158,33 @@ export default function ChatPage() {
         </div>       
         {/* User Profile */}
         <div className="p-2 border-t border-gray-200">
+          {/* Tokens Display */}
+          <div className="mb-2 p-2 bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg border border-violet-100">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-pink-300 flex items-center justify-center text-white">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20"><path fill="currentColor" fill-rule="evenodd" d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38" clip-rule="evenodd" stroke-width="0.4" stroke="currentColor"/></svg>                
+                </div>
+                <span className="text-xs font-medium text-gray-600">Tokens</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-bold text-gray-900">{user?.tokens?.toLocaleString() ?? 0}</span>
+                <span className="text-xs text-gray-400">remaining</span>
+              </div>
+            </div>
+            {user?.tokens !== undefined && (
+              <div className="mt-2">
+                <div className="h-1.5 bg-violet-200 rounded-full overflow-hidden">
+                  <motion.div 
+                    initial={{ width: 0 }}
+                    animate={{ width: `${Math.min((user.tokens / 10000) * 100, 100)}%` }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-violet-400 to-purple-500"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
           <button
             className="w-full flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200"
             onClick={handleUserProfileClick}
@@ -999,6 +1335,8 @@ export default function ChatPage() {
                 />
               );
             })}
+            <ThinkingAnimation />
+            <GeneratingLessonAnimation />
           </div>
 
           <div className="p-4 border-t border-gray-200">
