@@ -34,6 +34,20 @@ const handleApiError = async (response: Response, context: string) => {
   throw error;
 };
 
+// Add this type above the messageAPI object
+export type StreamStage = 
+  | 'routing' 
+  | 'routing_thought' 
+  | 'instructor' 
+  | 'instructor_thought' 
+  | 'complete' 
+  | 'error';
+
+export interface StreamEvent {
+  stage: StreamStage;
+  data: string | MessageData | null;
+}
+
 // ============================================================================
 // USER API
 // ============================================================================
@@ -314,6 +328,100 @@ export const messageAPI = {
     }
     return message;
   },
+
+  /**
+   * Send a message with real-time streaming of AI thoughts
+   */
+  sendMessageStreaming: async (
+    messageData: {
+      text: string;
+      conversation: number | null;
+      from_user: boolean;
+      model_used: string;
+      json: Record<string, unknown>;
+      experience_level: string;
+    },
+    onEvent: (event: StreamEvent) => void,
+    idToken?: string
+  ): Promise<MessageData> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/message/stream/`, {
+      method: 'POST',
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify(messageData),
+    });
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to send message");
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    const decoder = new TextDecoder();
+    let finalMessage: MessageData | null = null;
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
+
+      for (const eventText of events) {
+        if (!eventText.trim()) continue;
+
+        const lines = eventText.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event: StreamEvent = JSON.parse(line.slice(6));
+              onEvent(event);
+
+              if (event.stage === 'complete' && event.data) {
+                const responseJson = event.data as any;
+                const instructorData = responseJson.json
+                  ? {
+                      lessonTitle: responseJson.json.lesson_title,
+                      breakdown: responseJson.json.breakdown,
+                      explanation: responseJson.json.explanation,
+                      recommendedReadings: responseJson.json.recommendedReadings,
+                      exercises: responseJson.json.exercises,
+                      tags: responseJson.json.tags,
+                    } as InstructorResponse
+                  : {};
+
+                finalMessage = {
+                  id: responseJson.id,
+                  text: responseJson.text,
+                  conversation: responseJson.conversation,
+                  fromUser: responseJson.from_user,
+                  modelUsed: responseJson.model_used,
+                  isSending: false,
+                  json: instructorData,
+                };
+              }
+
+              if (event.stage === 'error') {
+                throw new Error(event.data as string);
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE event:', line, e);
+            }
+          }
+        }
+      }
+    }
+
+    if (!finalMessage) {
+      throw new Error('Stream ended without complete message');
+    }
+
+    return finalMessage;
+  }, 
 };
 
 // ============================================================================

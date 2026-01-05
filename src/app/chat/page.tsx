@@ -17,6 +17,7 @@ import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
 import SearchModal from "../components/SearchModal";
+import { StreamingThoughts } from "../components/StreamingThoughts";
 
 const GeneratingLessonAnimation = () => {
   const steps = [
@@ -101,67 +102,6 @@ const GeneratingLessonAnimation = () => {
   );
 };
 
-const ThinkingAnimation = () => {
-    const fillDuration = 0.5;
-    const lines = [
-      { width: "74%" },
-      { width: "78%" },
-      { width: "65%" },
-      { width: "45%" },
-    ];
-    const totalFillTime = lines.length * fillDuration;
-    const cycleDuration = totalFillTime + 1; // Extra time to hold before reset
-    
-    return (
-      <motion.div 
-        key={Date.now()} // Force remount to restart animation cycle
-        className="h-fit w-full flex flex-col items-start justify-start gap-2 py-2"
-        animate={{ opacity: [0, 1, 1, 0] }}
-        transition={{ 
-          duration: cycleDuration, 
-          repeat: Infinity,
-          times: [0, 0.1, 0.8, 1],
-          ease: "easeInOut"
-        }}
-      >
-        {lines.map((line, idx) => (
-          <div 
-            key={idx} 
-            className="h-3 rounded bg-white overflow-hidden relative"
-            style={{ width: line.width }}
-          >
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent to-transparent"
-              initial={{ x: "-100%" }}
-              animate={{ x: "200%" }}
-              transition={{
-                duration: 1,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: idx * fillDuration,
-              }}
-            />
-            <motion.div
-              className="h-full bg-gray-200/60 rounded"
-              initial={{ width: "0%" }}
-              animate={{ width: ["0%", "0%", "100%", "100%"] }}
-              transition={{
-                duration: cycleDuration,
-                repeat: Infinity,
-                times: [
-                  0,
-                  (idx * fillDuration) / cycleDuration,
-                  ((idx + 1) * fillDuration) / cycleDuration,
-                  1
-                ],
-                ease: "easeOut",
-              }}
-            />
-          </div>
-        ))}
-      </motion.div>
-    );
-};
 
 export const AIResponse = ({
   message,
@@ -344,6 +284,10 @@ export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const [message, setMessage] = useState("");
+  const [streamStage, setStreamStage] = useState<
+    'routing' | 'routing_thought' | 'instructor' | 'instructor_thought' | 'complete' | 'error' | null
+  >(null);
+  const [thoughtStream, setThoughtStream] = useState<string>('');
   const [loading, setLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
@@ -593,26 +537,32 @@ export default function ChatPage() {
         },
       ]);
 
-      const response = await api.message.sendMessage(
-        {
-          text: currentMessage,
-          conversation: conversationId,
-          from_user: true,
-          model_used: "gemini-2.5-pro",
-          json: {},
-          experience_level: difficultyLevels[difficultyIndex],
-        },
-        idToken
-      ); // Pass the idToken as second parameter
+      // Use streaming API
+    const response = await api.message.sendMessageStreaming(
+      {
+        text: currentMessage,
+        conversation: conversationId,
+        from_user: true,
+        model_used: "placeholder",
+        json: {},
+        experience_level: difficultyLevels[difficultyIndex],
+      },
+      (event) => {
+        // Update stage
+        setStreamStage(event.stage);
 
-      // if(response.error) {
-      //   setMessages([
-      //     ...messages,
-      //     { isSending: false, text: currentMessage, fromUser: true, conversation: 0, modelUsed: "gemini-2.5-pro", json: null },
-      //     { isSending: false, text: response.error, fromUser: false, conversation: 0, modelUsed: "gemini-2.5-pro", json: null }
-      //   ]);
-      //   return;
-      // }
+        // Handle thought streams - append new thoughts
+        if (event.stage === 'routing_thought' || event.stage === 'instructor_thought') {
+          setThoughtStream((prev) => prev + (event.data as string));
+        }
+
+        // Clear thoughts when moving from routing to instructor
+        if (event.stage === 'instructor') {
+          setThoughtStream('');
+        }
+      },
+      idToken
+    );
 
       if (
         response.json &&
@@ -673,6 +623,8 @@ export default function ChatPage() {
       }
     } finally {
       setLoading(false);
+      setStreamStage(null);
+      setThoughtStream('');
     }
   };
 
@@ -1335,8 +1287,17 @@ export default function ChatPage() {
                 />
               );
             })}
-            <ThinkingAnimation />
-            <GeneratingLessonAnimation />
+            {/* <ThinkingAnimation />
+            <GeneratingLessonAnimation /> */}
+            <AnimatePresence mode="wait">
+              {loading && streamStage && (
+                <StreamingThoughts 
+                  key="streaming"
+                  stage={streamStage} 
+                  thoughts={thoughtStream} 
+                />
+              )}
+            </AnimatePresence>
           </div>
 
           <div className="p-4 border-t border-gray-200">
