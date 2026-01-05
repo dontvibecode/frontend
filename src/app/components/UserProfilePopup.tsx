@@ -84,7 +84,7 @@ export default function UserProfilePopup({
       console.error("Error during logout cleanup:", error);
     }
 
-    signOut({ callbackUrl: "/login" });
+    signOut({ callbackUrl: "/" });
   };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

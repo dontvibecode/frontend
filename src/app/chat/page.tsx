@@ -782,31 +782,34 @@ export default function ChatPage() {
               Bookmarked Exercises
             </h3>
             <div className="space-y-1">
-            {bookmarkedExercises.map((exercise: any, idx: number) => (
-              <button 
-                key={idx} 
-                onClick={() => handleBookmarkedExerciseClick(exercise)} 
-                className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left duration-200 ease-in-out"
-              >
-                <div className="flex flex-col w-full">
-                  <span className="text-xs text-black font-medium overflow-wrap break-words whitespace-pre-wrap">
-                    {exercise.title || `Exercise ${exercise.id}`}
-                  </span>
-                  {exercise.tags && exercise.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {exercise.tags.slice(0, 3).map((tag: string) => (
-                        <span 
-                          key={tag} 
-                          className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </button>
-            ))}
+              {bookmarkedExercises.map((exercise: any, idx: number) => (
+                <button 
+                  key={idx} 
+                  onClick={() => handleBookmarkedExerciseClick(exercise)} 
+                  className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left duration-200 ease-in-out"
+                >
+                  <div className="flex flex-col w-full">
+                    <span className="text-xs text-black font-medium overflow-wrap break-words whitespace-pre-wrap">
+                      {exercise.title || `Exercise ${exercise.id}`}
+                    </span>
+                    {exercise.tags && exercise.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-1">
+                        {exercise.tags.slice(0, 3).map((tag: string) => (
+                          <span 
+                            key={tag} 
+                            className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </button>
+              ))}
+              <div>
+                <p className="text-xs text-gray-400 text-semibold hover:text-gray-500 mt-2 cursor-pointer underline text-center transition-colors duration-200">View More</p>
+              </div>
             </div>
           </div>
 
@@ -840,7 +843,7 @@ export default function ChatPage() {
                       {conversation?.tags && conversation?.tags?.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {conversation.tags.slice(0, 2).map((tag) => (
-                            <span key={tag} className="text-xs px-2 py-0.5 bg-amber-100 text-amber-800 rounded group-hover:bg-amber-200 transition-colors duration-200">
+                            <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200">
                               {tag}
                             </span>
                           ))}
