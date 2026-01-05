@@ -217,6 +217,7 @@ export const conversationAPI = {
     
     return responseJson.map((msg: any) => ({
       id: msg.id,
+      created_at: msg.created_at,
       text: msg.text,
       conversation: msg.conversation,
       fromUser: msg.from_user,
@@ -281,6 +282,7 @@ export const messageAPI = {
    */
   sendMessage: async (
     messageData: {
+      created_at: string;
       text: string;
       conversation: number | null;
       from_user: boolean;
@@ -319,6 +321,7 @@ export const messageAPI = {
     // For the sake of consistency, we use CamelCase in the frontend and snake_case in the backend
     const message: MessageData = {
       id: responseJson.id,
+      created_at: responseJson.created_at,
       text: responseJson.text,
       conversation: responseJson.conversation,
       fromUser: responseJson.from_user,
@@ -334,6 +337,7 @@ export const messageAPI = {
    */
   sendMessageStreaming: async (
     messageData: {
+      created_at: string;
       text: string;
       conversation: number | null;
       from_user: boolean;
@@ -396,6 +400,7 @@ export const messageAPI = {
 
                 finalMessage = {
                   id: responseJson.id,
+                  created_at: responseJson.created_at,
                   text: responseJson.text,
                   conversation: responseJson.conversation,
                   fromUser: responseJson.from_user,

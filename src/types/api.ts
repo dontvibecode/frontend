@@ -1,6 +1,7 @@
 export interface MessageData {
   id?: number;
   text: string | null;
+  created_at: string;
   conversation: number;
   fromUser?: boolean;
   modelUsed: string;

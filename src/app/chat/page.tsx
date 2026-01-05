@@ -261,6 +261,7 @@ export const AIResponse = ({
                 ))}
               </div>
             )}
+            <p className="text-xs font-semibold text-gray-300 uppercase mt-3">{new Date(message.created_at).toLocaleString().split(',')[0]}</p>
           </div>
         </div>
       )}
@@ -301,6 +302,7 @@ export default function ChatPage() {
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>([]);
+  const [bookmarksExpanded, setBookmarksExpanded] = useState(false);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
   const [searchOpen, setSearchOpen] = useState(false);
@@ -540,6 +542,7 @@ export default function ChatPage() {
       // Use streaming API
     const response = await api.message.sendMessageStreaming(
       {
+        created_at: new Date().toISOString(),
         text: currentMessage,
         conversation: conversationId,
         from_user: true,
@@ -782,7 +785,7 @@ export default function ChatPage() {
               Bookmarked Exercises
             </h3>
             <div className="space-y-1">
-              {bookmarkedExercises.map((exercise: any, idx: number) => (
+              {(bookmarksExpanded ? bookmarkedExercises : bookmarkedExercises.slice(0, 2)).map((exercise: any, idx: number) => (
                 <button 
                   key={idx} 
                   onClick={() => handleBookmarkedExerciseClick(exercise)} 
@@ -807,9 +810,16 @@ export default function ChatPage() {
                   </div>
                 </button>
               ))}
-              <div>
-                <p className="text-xs text-gray-400 text-semibold hover:text-gray-500 mt-2 cursor-pointer underline text-center transition-colors duration-200">View More</p>
-              </div>
+              {bookmarkedExercises.length > 2 && (
+                <div>
+                  <p 
+                    onClick={() => setBookmarksExpanded(!bookmarksExpanded)}
+                    className="text-xs text-gray-400 font-semibold hover:text-gray-500 mt-2 cursor-pointer underline text-center transition-colors duration-200"
+                  >
+                    {bookmarksExpanded ? "View Less" : "View More"}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
 
