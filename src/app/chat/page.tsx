@@ -297,6 +297,8 @@ export default function ChatPage() {
     new Map()
   );
   const [lessonExpanded, setLessonExpanded] = useState(false);
+  const [lessonLoading, setLessonLoading] = useState(false);
+  const [showSkeletonMinTime, setShowSkeletonMinTime] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
@@ -387,6 +389,13 @@ export default function ChatPage() {
         setSearchOpen(prev => !prev);
         setSearchQuery("");
       }
+      if ((e.ctrlKey || e.metaKey) && e.key === "n") {
+        e.preventDefault();
+        setConversationId(null);
+        setMessages([]);
+        setLessonExpanded(false);
+        setSelectedLesson(null);
+      }
       if (e.key === "Escape") {
         setSearchOpen(false);
         setSearchQuery("");
@@ -419,10 +428,21 @@ export default function ChatPage() {
   };
 
   const handleBookmarkedExerciseClick = async (exercise: any) => {
+    // Start loading with minimum 1 second display
+    setLessonLoading(true);
+    setShowSkeletonMinTime(true);
+    const minTimePromise = new Promise<void>((resolve) => 
+      setTimeout(() => {
+        setShowSkeletonMinTime(false);
+        resolve();
+      }, 1000)
+    );
+
     try {
       const idToken = (session?.user as any)?.idToken;
       if (!idToken) {
         console.error("No idToken found");
+        setLessonLoading(false);
         return;
       }
 
@@ -443,10 +463,6 @@ export default function ChatPage() {
         // Set the conversation context
         setConversationId(conversationId);
         setMessages(messagesData);
-        setSelectedLesson({
-          originalMessage: "",
-          response: messagesData,
-        });
 
         // Find the user's prompt (previous message from user)
         const messageIndex = messagesData.findIndex(
@@ -455,6 +471,9 @@ export default function ChatPage() {
         const userPrompt = messageIndex > 0 
           ? messagesData[messageIndex - 1]?.text || ""
           : "";
+
+        // Wait for minimum time before showing the lesson
+        await minTimePromise;
 
         // Set the selected lesson with the exercise message
         setSelectedLesson({
@@ -466,12 +485,16 @@ export default function ChatPage() {
         setLessonExpanded(true);
       } else {
         console.error("Exercise message not found in conversation");
+        await minTimePromise;
       }
     } catch (error: any) {
       console.error("Error loading bookmarked exercise:", error);
+      await minTimePromise;
       if (isTokenError(error)) {
         await signOut({ redirect: false });
       }
+    } finally {
+      setLessonLoading(false);
     }
   };
 
@@ -722,20 +745,16 @@ export default function ChatPage() {
         user={user}
         onEditUser={onEditUser}
       />
-      {/* Left Sidebar */}
       <aside className="w-64 border-r border-gray-200 flex flex-col">
-        {/* Logo */}
         <div className="p-4 border-b border-gray-200">
           <div
             onClick={() => router.push("/landing")}
             className="flex items-center gap-2 cursor-pointer"
           >
-            {/* <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-full" /> */}
             <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
           </div>
         </div>
         <div className="relative flex-1 overflow-y-auto">
-          {/* New Chat Button */}
           <div className="sticky top-0 left-0 right-0 z-20 px-4 py-3 flex flex-col items-center gap-2">
             <button
               onClick={openSearch}
@@ -750,8 +769,8 @@ export default function ChatPage() {
               <span className="text-sm text-black m-0 font-medium tracking-wide">Search</span>
               <div className="absolute top-0 bottom-0 right-0 flex items-center justify-center px-2">
                 <span className="flex items-center gap-1">
-                <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">Ctrl</kbd>
-                <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">K</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">Ctrl</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">K</kbd>
                 </span>              
               </div>
 
@@ -1076,48 +1095,6 @@ export default function ChatPage() {
                     </motion.div>
                   </div>
                 ))}
-              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <div className="text-sm font-medium mb-1">
-                  Chat app with friends
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    Cassandra
-                  </span>
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    Sockets
-                  </span>
-                  <span className="text-xs text-gray-500">+ 4 more</span>
-                </div>
-              </div>
-              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <div className="text-sm font-medium mb-1">
-                  Fitness Tracking App
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    Firebase
-                  </span>
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    Bluetooth APIs
-                  </span>
-                  <span className="text-xs text-gray-500">+ 2 more</span>
-                </div>
-              </div>
-              <div className="p-2 rounded-lg hover:bg-gray-100 cursor-pointer">
-                <div className="text-sm font-medium mb-1">
-                  Event Ticketing Platform
-                </div>
-                <div className="flex flex-wrap gap-1">
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    Stripe
-                  </span>
-                  <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
-                    Supabase
-                  </span>
-                  <span className="text-xs text-gray-500">+ 3 more</span>
-                </div>
-              </div>
             </div>
           </div>
         </div>       
