@@ -193,7 +193,7 @@ export default function ResponseUI({
                                     className="w-4 h-4 text-gray-400 cursor-pointer hover:text-white"
                                   />
                                 </div>
-
+                                
                                 <SyntaxHighlighter
                                   language="javascript"
                                   style={vscDarkPlus}

@@ -1280,7 +1280,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                     })}
                   </div>
                 )}
-                <div className="text-sm">
+                <div onClick={expandExercises} className="cursor-pointer">
                   <SyntaxHighlighter
                     language={
                       currentExercise.filename.endsWith('.py')
