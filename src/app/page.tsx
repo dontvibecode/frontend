@@ -27,9 +27,9 @@ function ScrollingFeatures() {
             borderRadius: isInView ? "4rem" : "2rem" 
           }} 
           transition={{ duration: 0.4, ease: "easeOut" }} 
-          className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
+          className="relative w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
             <FluidImage
-              src="https://cdn.dribbble.com/userupload/37247718/file/original-b5b7417148edb38744dac3c7a8be9a5d.png"
+              src="https://i.ibb.co/ym7kzFx5/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
               fluidIntensity={0.0006}
@@ -43,7 +43,7 @@ function ScrollingFeatures() {
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
             <FluidImage
-              src="https://cdn.dribbble.com/userupload/37247717/file/original-58afb4f323d9065eee4e60be093c8fbe.png"
+              src="https://i.ibb.co/gMfRbQ60/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
               fluidIntensity={0.0006}
@@ -57,7 +57,7 @@ function ScrollingFeatures() {
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
             <FluidImage
-              src="https://cdn.dribbble.com/userupload/37247724/file/original-0c82c58fa89fa42e92fb89438ceaa613.png"
+              src="https://i.ibb.co/8RD9ykb/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
               fluidIntensity={0.0006}
@@ -85,6 +85,7 @@ function PricingSection() {
       <motion.div animate={{ x: isInView ? 0 : 30 }} transition={{ duration: 0.4, ease: "easeOut" }} initial={{ x: 30 }} className="w-[6%] bg-gray-300 opacity-20 rounded-2xl"></motion.div>
       <motion.div animate={{ x: isInView ? 0 : 20 }} transition={{ duration: 0.4, ease: "easeOut" }} initial={{ x: 20 }} className="w-[8%] bg-gray-300 opacity-30 rounded-2xl"></motion.div>
       <div className="relative bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-[0_0_70px_0_rgba(0,0,0,0.08)] w-full max-w-2xl">
+        {/* Header */}
         <div className="grid grid-cols-3 border-b border-gray-100">
           <div className="p-6 flex items-end">
             <span className="text-xs font-medium text-gray-400 uppercase tracking-wider"></span>
@@ -95,30 +96,117 @@ function PricingSection() {
             <p className="text-xs text-gray-400">forever</p>
           </div>
           <div className="p-6 text-center bg-gray-50">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Pro</span>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">$12</p>
+            <span className="text-xs font-medium text-emerald-600 uppercase tracking-wider">Pro</span>
+            <p className="text-2xl font-semibold text-gray-900 mt-1">$5</p>
             <p className="text-xs text-gray-400">per month</p>
           </div>
         </div>
 
+        {/* Tokens Section */}
+        <div className="grid grid-cols-3 border-b border-gray-100 bg-gray-50/30">
+          <div className="p-3 flex items-center">
+            <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Tokens</span>
+          </div>
+          <div className="p-3 border-x border-gray-100"></div>
+          <div className="p-3 bg-gray-50/50"></div>
+        </div>
         {[
-          { feature: "AI-powered debugging", free: true, paid: true },
-          { feature: "Code explanations", free: true, paid: true },
-          { feature: "Daily requests", free: "10", paid: "Unlimited" },
-          { feature: "Response speed", free: "Standard", paid: "Priority" },
-          { feature: "Advanced models", free: false, paid: true },
-          { feature: "Private sessions", free: false, paid: true },
-          { feature: "Export history", free: false, paid: true },
-          { feature: "Email support", free: false, paid: true },
+          { feature: "Monthly tokens included", free: "5,000", paid: "50,000", tooltip: "Tokens refresh monthly" },
+          { feature: "Models", free: "Gemini 2.5 Pro", paid: "Gemini Pro, Sonnet", tooltip: "Tokens refresh monthly" },
         ].map((row, index) => (
-          <div key={index} className="grid grid-cols-3 border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+          <div key={`tokens-${index}`} className="grid grid-cols-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
             <div className="p-4 flex items-center">
-              <span className="text-sm text-gray-700">{row.feature}</span>
+              <span className="text-sm text-gray-700 border-b border-dashed border-gray-300 cursor-help" title={row.tooltip}>{row.feature}</span>
+            </div>
+            <div className="p-4 flex items-center justify-center border-x border-gray-100">
+              {typeof row.free === "boolean" ? (
+                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {row.free}
+                </span>
+              )}
+            </div>
+            <div className="p-4 flex items-center justify-center bg-gray-50/50">
+              <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                {row.paid}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {/* Lesson Generation Section */}
+        <div className="grid grid-cols-3 border-b border-gray-100 bg-gray-50/30">
+          <div className="p-3 flex items-center">
+            <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Lessons</span>
+          </div>
+          <div className="p-3 border-x border-gray-100"></div>
+          <div className="p-3 bg-gray-50/50"></div>
+        </div>
+        {[
+          { feature: "Generate lessons", free: "500 tokens", paid: "500 tokens", tooltip: "AI-generated coding lessons tailored to you" },
+          { feature: "Fast lesson generation", free: false, paid: "750 tokens", tooltip: "Generate lessons 2x faster with premium models" },
+          { feature: "Lesson history", free: "7 days", paid: "Unlimited", tooltip: "Access your past lessons" },
+        ].map((row, index) => (
+          <div key={`lessons-${index}`} className="grid grid-cols-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+            <div className="p-4 flex items-center">
+              <span className="text-sm text-gray-700 border-b border-dashed border-gray-300 cursor-help" title={row.tooltip}>{row.feature}</span>
+            </div>
+            <div className="p-4 flex items-center justify-center border-x border-gray-100">
+              {typeof row.free === "boolean" ? (
+                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {row.free}
+                </span>
+              )}
+            </div>
+            <div className="p-4 flex items-center justify-center bg-gray-50/50">
+              <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                {row.paid}
+              </span>
+            </div>
+          </div>
+        ))}
+
+        {/* Exercises Section */}
+        <div className="grid grid-cols-3 border-b border-gray-100 bg-gray-50/30">
+          <div className="p-3 flex items-center">
+            <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Exercises</span>
+          </div>
+          <div className="p-3 border-x border-gray-100"></div>
+          <div className="p-3 bg-gray-50/50"></div>
+        </div>
+        {[
+          { feature: "Interactive exercises", free: true, paid: true, tooltip: "Hands-on coding practice" },
+          { feature: "Real-time AI feedback", free: "150 tokens", paid: "150 tokens", tooltip: "Get instant feedback on your solutions" },
+          { feature: "Generate additional exercises", free: "5 per lesson", paid: "Unlimited", tooltip: "Create more practice problems" },
+          { feature: "Solution explanations", free: "5 per day", paid: "Unlimited", tooltip: "Detailed breakdowns of optimal solutions" },
+        ].map((row, index) => (
+          <div key={`exercises-${index}`} className="grid grid-cols-3 border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
+            <div className="p-4 flex items-center">
+              <span className="text-sm text-gray-700 border-b border-dashed border-gray-300 cursor-help" title={row.tooltip}>{row.feature}</span>
             </div>
             <div className="p-4 flex items-center justify-center border-x border-gray-100">
               {typeof row.free === "boolean" ? (
                 row.free ? (
-                  <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
@@ -127,13 +215,18 @@ function PricingSection() {
                   </svg>
                 )
               ) : (
-                <span className="text-sm text-gray-500">{row.free}</span>
+                <span className="text-sm text-gray-500 flex items-center gap-1">
+                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {row.free}
+                </span>
               )}
             </div>
             <div className="p-4 flex items-center justify-center bg-gray-50/50">
               {typeof row.paid === "boolean" ? (
                 row.paid ? (
-                  <svg className="w-5 h-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                   </svg>
                 ) : (
@@ -142,7 +235,12 @@ function PricingSection() {
                   </svg>
                 )
               ) : (
-                <span className="text-sm font-medium text-gray-700">{row.paid}</span>
+                <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
+                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  {row.paid}
+                </span>
               )}
             </div>
           </div>
@@ -152,9 +250,9 @@ function PricingSection() {
         <div className="grid grid-cols-3 border-t border-gray-100">
           <div className="p-4"></div>
           <div className="p-4 flex items-center justify-center border-x border-gray-100">
-            <button className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+            <Link href="/chat" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors underline">
               Get Started
-            </button>
+            </Link>
           </div>
           <div className="p-4 flex items-center justify-center bg-gray-50">
             <button className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-full hover:bg-gray-800 transition-colors">
@@ -189,7 +287,7 @@ function InfoSection() {
           className="w-full aspect-[2/3] bg-red-100 rounded-[3rem] overflow-hidden object-cover"
         >
           <FluidImage
-            src="https://i.ibb.co/27Nt80Lc/image.png"
+            src="https://i.ibb.co/1JXNB6M9/image.png"
             alt="Info 1"
             className="w-full h-full object-cover"
             fluidIntensity={0.0006}
@@ -211,7 +309,7 @@ function InfoSection() {
             className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
           >
             <FluidImage
-              src="https://i.ibb.co/V0YCgpvF/image.png"
+              src="https://i.ibb.co/bj1hh6k4/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
               fluidIntensity={0.0006}
@@ -225,7 +323,7 @@ function InfoSection() {
             className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
           >
             <FluidImage
-              src="https://i.ibb.co/VGg0P5X/image.png"
+              src="https://i.ibb.co/B2ksDSt3/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
               fluidIntensity={0.0006}
@@ -239,7 +337,7 @@ function InfoSection() {
             className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
           >
             <FluidImage
-              src="https://i.ibb.co/1YYDwYZ4/image.png"
+              src="https://i.ibb.co/8n3zcMWv/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
               fluidIntensity={0.0006}
@@ -307,10 +405,10 @@ export default function LandingPage() {
   const features = [
     { text: "Learn to code", id: "learn", color: "text-pink-400" },
     { text: "Tailored lessons", id: "tailored", color: "text-blue-400" },
-    { text: "Interactive snippets", id: "interactive", color: "text-green-400" },
+    { text: "Interactive coding", id: "interactive", color: "text-green-400" },
     { text: "Relevant sources", id: "sources", color: "text-yellow-400" },
     { text: "Track your progress", id: "track", color: "text-purple-400" },
-    { text: "Improve", id: "improve", color: "text-orange-400" },
+    { text: "Bookmark your favorites", id: "improve", color: "text-orange-400" },
   ];
 
   // Calculate which line should be highlighted based on scroll
@@ -388,7 +486,7 @@ export default function LandingPage() {
                 <button className="cursor-pointer px-6 py-2 rounded-full bg-white/20 backdrop-blur-4xl text-white border border-white/10 hover:bg-white/30 transition-all">
                 Gemini
                 </button>
-                <Link href="/chat" className="cursor-pointer ml-auto w-10 h-10 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-all -rotate-45">
+                <Link href="/chat" className="cursor-pointer ml-auto w-10 h-10 rounded-full bg-white flex items-center justify-center text-black hover:bg-gray-800 transition-all -rotate-45">
                   <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24"><path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m5 12l-.604-5.437C4.223 5.007 5.825 3.864 7.24 4.535l11.944 5.658c1.525.722 1.525 2.892 0 3.614L7.24 19.466c-1.415.67-3.017-.472-2.844-2.028zm0 0h7"/></svg>
                 </Link>
               </div>
@@ -398,11 +496,11 @@ export default function LandingPage() {
 
         </div>
         <FluidImage
-          src="/splash.png"
+          src="https://images.unsplash.com/photo-1761767380566-7a86c3e653a3?q=80&w=1632&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
           alt="Background"
           className="absolute inset-0 w-full h-full object-cover"
-          fluidIntensity={0.0001}
-          cursorRadius={0.0002}
+          fluidIntensity={0.0003}
+          cursorRadius={0.0003}
         />
       </div>
 
@@ -519,17 +617,33 @@ export default function LandingPage() {
         
         <div className="flex flex-col gap-4 mx-4 max-w-7xl">
           <div className="w-full grid grid-cols-2 gap-4">
-            <BoxInView className="border border-gray-100 bg-white"/>
+            <BoxInView className="relative border border-gray-100 bg-white flex flex-col justify-center items-center gap-4">
+              <div className="absolute top-0 left-0 right-0 mx-auto w-full h-full max-w-md border-x-[1px] border-gray-300">
+              </div>
+              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
+              <div className="relatieve z-20 max-w-md text-center text-lg px-4 font-regular text-gray-400">
+                <p>Our AI understands how you think and builds a personalized learning path with interactive exercises that help you actually master coding concepts.</p>
+              </div>
+              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
+            </BoxInView>
             <BoxInView>
-              <img src="https://cdn.dribbble.com/userupload/37412722/file/original-cdd6028136b09656c236eb0d8fbde15e.jpg?resize=752x&vertical=center" alt="Image" className="w-full h-full object-cover rounded-3xl" />
+              <img src="https://i.ibb.co/XrTR0jxF/image.png" alt="Image" className="w-full h-full object-cover rounded-3xl" />
             </BoxInView>
           </div>
 
           <div className="w-full grid grid-cols-2 gap-4">
             <BoxInView>
-              <img src="https://cdn.dribbble.com/userupload/37412722/file/original-cdd6028136b09656c236eb0d8fbde15e.jpg?resize=752x&vertical=center" alt="Image" className="w-full h-full object-cover rounded-3xl" />
+              <img src="https://i.ibb.co/TMKQxGmG/image.png" alt="Image" className="w-full h-full object-cover rounded-3xl" />
             </BoxInView>
-            <BoxInView className="border border-gray-100 bg-white"/>
+            <BoxInView className="relative border border-gray-100 bg-white flex flex-col justify-center items-center gap-4">
+              <div className="absolute top-0 left-0 right-0 mx-auto w-full h-full max-w-md border-x-[1px] border-gray-300">
+              </div>
+              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
+              <div className="relatieve z-20 max-w-md text-center text-lg px-4 font-regular text-gray-400">
+                <p>Code, submit, and learn faster. Our AI analyzes your solutions in real time, tells you what’s right or wrong, and guides you toward cleaner, more efficient code.</p>
+              </div>
+              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
+            </BoxInView>
           </div>
         </div>
 
