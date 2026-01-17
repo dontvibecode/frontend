@@ -15,7 +15,7 @@ function ScrollingFeatures() {
     offset: ["start end", "end start"],
   });
   
-  const xOffset = useTransform(scrollYProgress, [0, 1], ["-50px", "50px"]);
+  const xOffset = useTransform(scrollYProgress, [0, 1], ["-80px", "80px"]);
 
   return (
     <div ref={containerRef} className="relative overflow-hidden w-full border-r border-l border-gray-300 py-12">
@@ -25,11 +25,12 @@ function ScrollingFeatures() {
       >
         <motion.div
           animate={{
-            borderRadius: isInView ? "4rem" : "2rem" 
+            borderRadius: isInView ? "5rem" : "1rem" 
           }} 
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="relative w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
             <FluidImage
+              isStatic={true}
               src="https://i.ibb.co/q3hSWLMM/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
@@ -39,11 +40,12 @@ function ScrollingFeatures() {
         </motion.div>
         <motion.div
           animate={{
-            borderRadius: isInView ? "3rem" : "1rem" 
+            borderRadius: isInView ? "5rem" : "1rem" 
           }} 
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
             <FluidImage
+              isStatic={true}
               src="https://i.ibb.co/0xg5dJZ/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
@@ -53,11 +55,12 @@ function ScrollingFeatures() {
         </motion.div>
         <motion.div
           animate={{
-            borderRadius: isInView ? "3rem" : "1rem" 
+            borderRadius: isInView ? "5rem" : "1rem" 
           }} 
           transition={{ duration: 0.4, ease: "easeOut" }} 
           className="w-full aspect-square bg-gray-300 rounded-[4rem] overflow-hidden">
             <FluidImage
+              isStatic={true}
               src="https://i.ibb.co/QF8rWzxt/image.png"
               alt="Info 1"
               className="w-full h-full object-cover"
@@ -81,10 +84,10 @@ function PricingSection() {
   
   return (
     <div ref={sectionRef} className="flex flex-row w-[155%] sm:w-full items-stretch justify-center gap-3">
-      <motion.div animate={{ x: isInView ? 0 : 20 }} transition={{ duration: 0.4, ease: "easeOut" }} initial={{ x: 20 }} className="w-[2%] bg-gray-50 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : 40 }} transition={{ duration: 0.4, ease: "easeOut" }} initial={{ x: 40 }} className="w-[4%] bg-gray-300 opacity-10 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : 30 }} transition={{ duration: 0.4, ease: "easeOut" }} initial={{ x: 30 }} className="w-[6%] bg-gray-300 opacity-20 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : 20 }} transition={{ duration: 0.4, ease: "easeOut" }} initial={{ x: 20 }} className="w-[8%] bg-gray-300 opacity-30 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : 20, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 90 }} className="w-[2%] bg-gray-50 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : 40, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 80 }} className="w-[4%] bg-gray-300 opacity-10 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : 30, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 60 }} className="w-[6%] bg-gray-300 opacity-20 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : 20, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 40 }} className="w-[8%] bg-gray-300 opacity-30 rounded-2xl"></motion.div>
       <div className="relative bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-[0_0_70px_0_rgba(0,0,0,0.08)] w-full max-w-2xl">
         {/* Header */}
         <div className="grid grid-cols-3 border-b border-gray-100">
@@ -262,10 +265,10 @@ function PricingSection() {
           </div>
         </div>
       </div>
-      <motion.div animate={{ x: isInView ? 0 : -20 }} initial={{ x: -20 }} transition={{ duration: 0.4, ease: "easeOut" }} className="w-[8%] bg-gray-300 opacity-30 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : -30 }} initial={{ x: -30 }} transition={{ duration: 0.4, ease: "easeOut" }} className="w-[6%] bg-gray-300 opacity-20 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : -40 }} initial={{ x: -40 }} transition={{ duration: 0.4, ease: "easeOut" }} className="w-[4%] bg-gray-300 opacity-10 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : -50 }} initial={{ x: -50 }} transition={{ duration: 0.4, ease: "easeOut" }} className="w-[2%] bg-gray-50 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -20, display: isInView ? "block" : "none" }} initial={{ x: -40 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[8%] bg-gray-300 opacity-30 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -30, display: isInView ? "block" : "none" }} initial={{ x: -60 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[6%] bg-gray-300 opacity-20 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -40, display: isInView ? "block" : "none" }} initial={{ x: -80 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0}} className="w-[4%] bg-gray-300 opacity-10 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -50, display: isInView ? "block" : "none" }} initial={{ x: -90 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[2%] bg-gray-50 rounded-2xl"></motion.div>
     </div>
   );
 }
@@ -288,6 +291,7 @@ function InfoSection() {
           className="w-full aspect-auto sm:aspect-[2/3] overflow-hidden object-cover flex flex-col gap-4"
         >
           <FluidImage
+            isStatic={true}
             src="https://i.ibb.co/1JXNB6M9/image.png"
             alt="Info 1"
             className="hidden sm:block w-full h-full object-cover rounded-[3rem]"
@@ -295,6 +299,7 @@ function InfoSection() {
             cursorRadius={0.001}
           />
           <FluidImage
+            isStatic={true}
             src="https://i.ibb.co/bj1hh6k4/image.png"
             alt="Info 1"
             className="block sm:hidden w-full h-full object-cover rounded-[3rem] aspect-square"
@@ -302,6 +307,7 @@ function InfoSection() {
             cursorRadius={0.001}
           />
           <FluidImage
+            isStatic={true}
             src="https://i.ibb.co/B2ksDSt3/image.png"
             alt="Info 1"
             className="block sm:hidden w-full h-full object-cover rounded-[3rem] aspect-square"
@@ -309,6 +315,7 @@ function InfoSection() {
             cursorRadius={0.001}
           />
           <FluidImage
+            isStatic={true}
             src="https://i.ibb.co/8n3zcMWv/image.png"
             alt="Info 1"
             className="block sm:hidden w-full h-full object-cover rounded-[3rem] aspect-square"
@@ -331,6 +338,7 @@ function InfoSection() {
               className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
             >
               <FluidImage
+                isStatic={true}
                 src="https://i.ibb.co/bj1hh6k4/image.png"
                 alt="Info 1"
                 className="w-full h-full object-cover"
@@ -345,6 +353,7 @@ function InfoSection() {
               className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
             >
               <FluidImage
+                isStatic={true}
                 src="https://i.ibb.co/B2ksDSt3/image.png"
                 alt="Info 1"
                 className="w-full h-full object-cover"
@@ -359,6 +368,7 @@ function InfoSection() {
               className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
             >
               <FluidImage
+                isStatic={true}
                 src="https://i.ibb.co/8n3zcMWv/image.png"
                 alt="Info 1"
                 className="w-full h-full object-cover"

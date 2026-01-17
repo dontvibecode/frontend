@@ -8,6 +8,7 @@ interface FluidImageProps {
   className?: string;
   fluidIntensity?: number;
   cursorRadius?: number;
+  isStatic?: boolean; 
 }
 
 // Shader sources
@@ -233,6 +234,7 @@ export default function FluidImage({
   className = "",
   fluidIntensity = 0.0003,
   cursorRadius = 0.0003,
+  isStatic = false,
 }: FluidImageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
@@ -659,6 +661,12 @@ export default function FluidImage({
       cancelAnimationFrame(animationRef.current);
     };
   }, [src, fluidIntensity, cursorRadius, createProgram, createFBO, createDoubleFBO]);
+
+  if (isStatic === true) {
+    return (
+      <img src={src} alt={alt} className={className} />
+    );
+  }
 
   return (
     <canvas
