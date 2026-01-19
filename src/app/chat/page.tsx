@@ -561,6 +561,7 @@ export default function ChatPage() {
           conversation: 0,
           modelUsed: "gemini-2.5-pro",
           json: null,
+          created_at: new Date().toISOString(),
         },
       ]);
 

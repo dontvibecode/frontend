@@ -351,7 +351,7 @@ export default function FluidImage({
     
     let halfFloatType = gl.UNSIGNED_BYTE;
     if (ext) {
-      halfFloatType = ext.HALF_FLOAT_OES;
+      halfFloatType = ext.HALF_FLOAT_OES as any;
     }
 
     // Configuration
