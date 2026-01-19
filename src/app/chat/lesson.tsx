@@ -10,8 +10,6 @@ import { vscodeDark } from "@uiw/codemirror-theme-vscode";
 import { javascript } from "@codemirror/lang-javascript";
 import { python } from "@codemirror/lang-python";
 import { java } from "@codemirror/lang-java";
-import { indentUnit } from "@codemirror/language";
-import { EditorState } from "@codemirror/state";
 import api from "@/lib/api";
 import { useSession } from "next-auth/react";
 import { Markdown } from "@/lib/markdownParser";
