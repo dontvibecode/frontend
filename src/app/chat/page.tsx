@@ -715,6 +715,8 @@ export default function ChatPage() {
     setSearchQuery("");
   };
 
+  return(<div>Coming soon</div>)
+
   return (
     <div className="flex h-screen bg-white">
       {/* Login Modal */}
