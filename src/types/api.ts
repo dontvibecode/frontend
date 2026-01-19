@@ -1,5 +1,7 @@
 export interface MessageData {
+  id?: number;
   text: string | null;
+  created_at: string;
   conversation: number;
   fromUser?: boolean;
   modelUsed: string;
@@ -28,6 +30,7 @@ export interface InstructorResponse {
   explanation?: string;
   recommendedReadings?: RecommendedReading[];
   exercises?: Exercise[];
+  tags?: string[];
 }
 
 export interface SubmitRequest {
@@ -36,6 +39,7 @@ export interface SubmitRequest {
 
 export interface Conversation {
   id: string;
+  tags?: string[];
   title: string;
   lastActive: string;
   pinned: boolean;
@@ -55,6 +59,7 @@ export interface UserPreferences {
   shareData?: boolean;
   fontSize?: 'small' | 'medium' | 'large';    
   compactMode?: boolean;
+  tab_size?: number; // 1-8, default 2
 }
 
 export interface User {
@@ -62,4 +67,5 @@ export interface User {
   username: string;
   email: string;
   preferences?: UserPreferences;
+  tokens?: number;
 }

@@ -34,6 +34,20 @@ const handleApiError = async (response: Response, context: string) => {
   throw error;
 };
 
+// Add this type above the messageAPI object
+export type StreamStage = 
+  | 'routing' 
+  | 'routing_thought' 
+  | 'instructor' 
+  | 'instructor_thought' 
+  | 'complete' 
+  | 'error';
+
+export interface StreamEvent {
+  stage: StreamStage;
+  data: string | MessageData | null;
+}
+
 // ============================================================================
 // USER API
 // ============================================================================
@@ -143,6 +157,25 @@ export const conversationAPI = {
   },
 
   /**
+   * Get all bookmarked exercises for a user
+   */
+  getBookmarkedExercises: async (email: string, idToken?: string) => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/bookmark/${email}`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get bookmarked exercises");
+    }
+
+    return response.json();
+  },
+
+  /**
    * Get a specific conversation by ID
    */
   getConversationById: async (conversationId: string, idToken?: string) => {
@@ -183,6 +216,8 @@ export const conversationAPI = {
     const responseJson = await response.json();
     
     return responseJson.map((msg: any) => ({
+      id: msg.id,
+      created_at: msg.created_at,
       text: msg.text,
       conversation: msg.conversation,
       fromUser: msg.from_user,
@@ -193,6 +228,7 @@ export const conversationAPI = {
         explanation: msg.json.explanation,
         recommendedReadings: msg.json.recommendedReadings,
         exercises: msg.json.exercises,
+        tags: msg.json.tags,
       } as InstructorResponse : {},
     })) as MessageData[];
   },
@@ -246,6 +282,7 @@ export const messageAPI = {
    */
   sendMessage: async (
     messageData: {
+      created_at: string;
       text: string;
       conversation: number | null;
       from_user: boolean;
@@ -277,11 +314,14 @@ export const messageAPI = {
         explanation: responseJson.json.explanation,
         recommendedReadings: responseJson.json.recommendedReadings,
         exercises: responseJson.json.exercises,
+        tags: responseJson.json.tags,
       } as InstructorResponse
     : {};
 
     // For the sake of consistency, we use CamelCase in the frontend and snake_case in the backend
     const message: MessageData = {
+      id: responseJson.id,
+      created_at: responseJson.created_at,
       text: responseJson.text,
       conversation: responseJson.conversation,
       fromUser: responseJson.from_user,
@@ -291,8 +331,280 @@ export const messageAPI = {
     }
     return message;
   },
+
+  /**
+   * Send a message with real-time streaming of AI thoughts
+   */
+  sendMessageStreaming: async (
+    messageData: {
+      created_at: string;
+      text: string;
+      conversation: number | null;
+      from_user: boolean;
+      model_used: string;
+      json: Record<string, unknown>;
+      experience_level: string;
+    },
+    onEvent: (event: StreamEvent) => void,
+    idToken?: string
+  ): Promise<MessageData> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/message/stream/`, {
+      method: 'POST',
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify(messageData),
+    });
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to send message");
+    }
+
+    const reader = response.body?.getReader();
+    if (!reader) {
+      throw new Error('No response body');
+    }
+
+    const decoder = new TextDecoder();
+    let finalMessage: MessageData | null = null;
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const events = buffer.split('\n\n');
+      buffer = events.pop() || '';
+
+      for (const eventText of events) {
+        if (!eventText.trim()) continue;
+
+        const lines = eventText.split('\n');
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const event: StreamEvent = JSON.parse(line.slice(6));
+              onEvent(event);
+
+              if (event.stage === 'complete' && event.data) {
+                const responseJson = event.data as any;
+                const instructorData = responseJson.json
+                  ? {
+                      lessonTitle: responseJson.json.lesson_title,
+                      breakdown: responseJson.json.breakdown,
+                      explanation: responseJson.json.explanation,
+                      recommendedReadings: responseJson.json.recommendedReadings,
+                      exercises: responseJson.json.exercises,
+                      tags: responseJson.json.tags,
+                    } as InstructorResponse
+                  : {};
+
+                finalMessage = {
+                  id: responseJson.id,
+                  created_at: responseJson.created_at,
+                  text: responseJson.text,
+                  conversation: responseJson.conversation,
+                  fromUser: responseJson.from_user,
+                  modelUsed: responseJson.model_used,
+                  isSending: false,
+                  json: instructorData,
+                };
+              }
+
+              if (event.stage === 'error') {
+                throw new Error(event.data as string);
+              }
+            } catch (e) {
+              console.error('Failed to parse SSE event:', line, e);
+            }
+          }
+        }
+      }
+    }
+
+    if (!finalMessage) {
+      throw new Error('Stream ended without complete message');
+    }
+
+    return finalMessage;
+  }, 
 };
 
+// ============================================================================
+// EXERCISE API
+// ============================================================================
+
+export interface NewExerciseResponse {
+  exercises: {
+    filename: string;
+    text: string;
+    code: string;
+  }[];
+}
+
+export interface ExerciseFile {
+  exercise: string;
+  filename: string;
+  text: string;
+  code: string;
+  user_submission: string;
+}
+
+export interface ExerciseData {
+  correctness: 0 | 1 | 2 | null;
+  files: ExerciseFile[];
+}
+
+export interface GetExercisesResponse {
+  [exerciseId: string]: ExerciseData;
+}
+
+export interface ExerciseSubmissionResponse {
+  correctness: 0 | 1 | 2;
+  heading: string;
+  summary: string;
+  corrections: {
+    diffs: {
+      headline: string;
+      incorrect_code: string;
+      correct_code: string;
+      comment: string;
+    }[];
+    statements: string[];
+  };
+}
+
+export interface BookmarkExerciseResponse {
+  id: number;
+  message: number;
+  correctness: number;
+  bookmarked: boolean;
+  title: string;
+  tags: string[];
+}
+
+export const exerciseAPI = {
+  /**
+   * Get all exercises for a message
+   */
+  getExercises: async (
+    messageId: number,
+    idToken?: string
+  ): Promise<GetExercisesResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/${messageId}/`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get exercises");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Get new exercises for a message
+   */
+  getNewExercise: async (
+    messageId: number,
+    abilityLevel: string,
+    idToken?: string
+  ): Promise<NewExerciseResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/new/${messageId}`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify({ ability_level: abilityLevel }),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get new exercise");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Submit an exercise attempt for marking
+   */
+  submitExercise: async (
+    submissionData: {
+      ability_level: string;
+      message_id: number;
+      exercise_id: number;
+      exercise_file_ids: number[];
+      user_submissions: string[];
+    },
+    
+    idToken?: string
+  ): Promise<ExerciseSubmissionResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/submit/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify(submissionData),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to submit exercise");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Save code progress
+   */
+  saveCodeProgress: async (submissionData: {
+      user_submissions: string[];
+      exercise_file_ids: number[];
+    },
+    idToken?: string
+  ): Promise<void> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/save/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify(submissionData),
+      })
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to save code progress");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Bookmark an exercise
+   */
+  bookmarkExercise: async (
+    exerciseId: number,
+    idToken?: string
+  ): Promise<BookmarkExerciseResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/exercise/bookmark/${exerciseId}`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to bookmark exercise");
+    }
+
+    return response.json();
+  },
+}
 // ============================================================================
 // COMBINED API OBJECT (for convenience)
 // ============================================================================
@@ -301,6 +613,7 @@ const api = {
   user: userAPI,
   conversation: conversationAPI,
   message: messageAPI,
+  exercise: exerciseAPI,
 };
 
 export default api;

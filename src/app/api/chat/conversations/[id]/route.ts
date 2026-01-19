@@ -2,10 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ): Promise<NextResponse> {
   try {
-    const { id } = params;
+    const { id } = await params;
     const apiUrl = process.env.API_URL || process.env.NEXT_PUBLIC_API_URL || 'https://dontvibecode.uc.r.appspot.com/';
     
     const response = await fetch(`${apiUrl}api/chat/conversations/${id}/`, {

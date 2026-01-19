@@ -1,10 +1,9 @@
 import { NextResponse } from "next/server";
-import { Session } from "@/types/api";
 
-export async function GET(): Promise<NextResponse<Session[]>> {
+export async function GET(): Promise<NextResponse<any[]>> {
   try {
     // Mock data for recent conversations
-    const mockSessions: Session[] = [
+    const mockSessions: any[] = [
       {
         id: "1",
         title: "JavaScript Array Loop Issue",
@@ -412,6 +411,6 @@ interface Duck extends Animal, Flyable, Swimmable {
     return NextResponse.json(sortedSessions);
   } catch (error) {
     console.error("Error fetching recent conversations:", error);
-    return NextResponse.json([] as Session[], { status: 500 });
+    return NextResponse.json([] as any[], { status: 500 });
   }
 }
