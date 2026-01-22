@@ -864,9 +864,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                 const incorrectPercent = total > 0 ? Math.round((incorrect / total) * 100) : 0;
                 
                 return (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
+                  <div
                     className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-5 mb-4 border border-gray-200/60"
                   >
                     {/* Main Progress Section */}
@@ -1025,7 +1023,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                         )}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })()}
   

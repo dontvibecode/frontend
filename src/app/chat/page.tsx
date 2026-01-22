@@ -18,90 +18,7 @@ import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
 import SearchModal from "../components/SearchModal";
 import { StreamingThoughts } from "../components/StreamingThoughts";
-
-const GeneratingLessonAnimation = () => {
-  const steps = [
-    { text: "Generating Lesson", icon: "✦" },
-    { text: "Understanding problem", icon: "◈" },
-    { text: "Creating exercises", icon: "◇" },
-    { text: "Finding sources", icon: "○" },
-  ];
-  const stepDuration = 1.2;
-  const totalDuration = steps.length * stepDuration + 0.5;
-
-  return (
-    <motion.div
-      className="h-fit w-full flex flex-col items-start justify-start gap-3 py-4 px-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-    >
-      {steps.map((step, idx) => (
-        <motion.div
-          key={idx}
-          className="flex items-center gap-3"
-          initial={{ opacity: 0, y: 10, x: 0 }}
-          animate={{ opacity: [0, 0, 1, 1], y: [20, 20, 0, 0] }}
-          transition={{
-            duration: totalDuration,
-            repeat: Infinity,
-            times: [
-              0,
-              (idx * stepDuration) / totalDuration,
-              (idx * stepDuration + 0.2) / totalDuration,
-              1
-            ],
-            ease: "easeOut",
-          }}
-        >
-          <div className="relative overflow-hidden">
-            <span 
-              className="text-sm font-medium text-gray-400 tracking-wide"
-              style={{ fontFamily: "'SF Mono', 'Fira Code', monospace" }}
-            >
-              {step.text}
-            </span>
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
-              style={{ 
-                maskImage: "linear-gradient(to right, transparent, black, transparent)",
-                WebkitMaskImage: "linear-gradient(to right, transparent, black, transparent)",
-              }}
-              initial={{ x: "-100%" }}
-              animate={{ x: "200%" }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: idx * stepDuration,
-              }}
-            />
-          </div>
-          
-          <div className="flex gap-0.5">
-            {[0, 1, 2].map((dotIdx) => (
-              <motion.span
-                key={dotIdx}
-                className="w-1 h-1 rounded-full bg-indigo-300"
-                animate={{ 
-                  opacity: [0.2, 1, 0.2],
-                  scale: [0.8, 1, 0.8],
-                }}
-                transition={{
-                  duration: 0.8,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: idx * stepDuration + dotIdx * 0.15,
-                }}
-              />
-            ))}
-          </div>
-        </motion.div>
-      ))}
-    </motion.div>
-  );
-};
-
+import { Icon } from "@iconify/react";
 
 export const AIResponse = ({
   message,
@@ -261,7 +178,7 @@ export const AIResponse = ({
                 ))}
               </div>
             )}
-            <p className="text-xs font-semibold text-gray-300 uppercase mt-3">{new Date(message.created_at).toLocaleString().split(',')[0]}</p>
+            <p className="text-xs font-regular text-gray-300 uppercase mt-3">{new Date(message.created_at).toLocaleString().split(',')[0]}</p>
           </div>
         </div>
       )}
@@ -293,6 +210,7 @@ export default function ChatPage() {
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(true);
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(
     new Map()
   );
@@ -303,7 +221,9 @@ export default function ChatPage() {
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [tokenData, setTokenData] = useState<{ token_used: number; token_limit: number } | null>(null);
   const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>([]);
+  const [bookmarksLoading, setBookmarksLoading] = useState(true);
   const [bookmarksExpanded, setBookmarksExpanded] = useState(false);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
@@ -337,18 +257,21 @@ export default function ChatPage() {
             return;
           }
 
-          const conversationsData = await api.conversation.getConversations(
-            session?.user?.email as string,
-            idToken
-          );
-          setConversations(conversationsData);
+          // Fetch both in parallel, with minimum 1 second delay
+          const [conversationsData, bookmarkedExercisesData] = await Promise.all([
+            api.conversation.getConversations(session?.user?.email as string, idToken),
+            api.conversation.getBookmarkedExercises(session?.user?.email as string, idToken),
+            new Promise(resolve => setTimeout(resolve, 1000)), // minimum 1 second
+          ]);
 
-          const bookmarkedExercises = await api.conversation.getBookmarkedExercises(
-            session?.user?.email as string,
-            idToken
-          );
-          setBookmarkedExercises(bookmarkedExercises);
+          // Set both values at the same time
+          setConversations(conversationsData);
+          setBookmarkedExercises(bookmarkedExercisesData);
+          setConversationsLoading(false);
+          setBookmarksLoading(false);
         } catch (error: any) {
+          setConversationsLoading(false);
+          setBookmarksLoading(false);
           console.error("Error loading conversations:", error);
           if (isTokenError(error)) {
             await signOut({ redirect: false });
@@ -367,6 +290,9 @@ export default function ChatPage() {
         try {
           const response = await api.user.getUser(session.user.email, idToken);
           setUser(response);
+          // Fetch token usage
+          const tokenUsage = await api.user.getTokenUsage(session.user.email, idToken);
+          setTokenData(tokenUsage);
         } catch (error) {
           const response = await api.user.createUser(
             {
@@ -377,6 +303,13 @@ export default function ChatPage() {
             idToken
           );
           setUser(response);
+          // Fetch token usage for new user
+          try {
+            const tokenUsage = await api.user.getTokenUsage(session.user.email, idToken);
+            setTokenData(tokenUsage);
+          } catch (e) {
+            console.error("Failed to fetch token usage:", e);
+          }
         }
       }
     };
@@ -802,46 +735,64 @@ export default function ChatPage() {
             </button>
           </div>
 
-          {/* Sandbox Section */}
           <div className="px-4 py-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
               Bookmarked Exercises
             </h3>
             <div className="space-y-1">
-              {(bookmarksExpanded ? bookmarkedExercises : bookmarkedExercises.slice(0, 2)).map((exercise: any, idx: number) => (
-                <button 
-                  key={idx} 
-                  onClick={() => handleBookmarkedExerciseClick(exercise)} 
-                  className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left duration-200 ease-in-out"
-                >
-                  <div className="flex flex-col w-full">
-                    <span className="text-xs text-black font-medium overflow-wrap break-words whitespace-pre-wrap">
-                      {exercise.title || `Exercise ${exercise.id}`}
-                    </span>
-                    {exercise.tags && exercise.tags.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-1">
-                        {exercise.tags.slice(0, 3).map((tag: string) => (
-                          <span 
-                            key={tag} 
-                            className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200"
-                          >
-                            {tag}
-                          </span>
-                        ))}
+              {bookmarksLoading ? (
+                // Loading skeletons
+                <>
+                  {[0, 1].map((idx) => (
+                    <div key={idx} className="w-full p-2 rounded-lg animate-pulse">
+                      <div className="flex flex-col w-full gap-2">
+                        <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                        <div className="flex gap-1">
+                          <div className="h-5 bg-gray-100 rounded w-12"></div>
+                          <div className="h-5 bg-gray-100 rounded w-16"></div>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                </button>
-              ))}
-              {bookmarkedExercises.length > 2 && (
-                <div>
-                  <p 
-                    onClick={() => setBookmarksExpanded(!bookmarksExpanded)}
-                    className="text-xs text-gray-400 font-semibold hover:text-gray-500 mt-2 cursor-pointer underline text-center transition-colors duration-200"
-                  >
-                    {bookmarksExpanded ? "View Less" : "View More"}
-                  </p>
-                </div>
+                    </div>
+                  ))}
+                </>
+              ) : (
+                <>
+                  {(bookmarksExpanded ? bookmarkedExercises : bookmarkedExercises.slice(0, 2)).map((exercise: any, idx: number) => (
+                    <button 
+                      key={idx} 
+                      onClick={() => handleBookmarkedExerciseClick(exercise)} 
+                      className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left duration-200 ease-in-out"
+                    >
+                      <div className="flex flex-col w-full">
+                        <span className="text-xs text-black font-medium overflow-wrap break-words whitespace-pre-wrap">
+                          {exercise.title || `Exercise ${exercise.id}`}
+                        </span>
+                        {exercise.tags && exercise.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {exercise.tags.slice(0, 3).map((tag: string) => (
+                              <span 
+                                key={tag} 
+                                className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  ))}
+                  {bookmarkedExercises.length > 2 && (
+                    <div>
+                      <p 
+                        onClick={() => setBookmarksExpanded(!bookmarksExpanded)}
+                        className="text-xs text-gray-400 font-regular hover:text-gray-500 mt-2 cursor-pointer underline text-center transition-colors duration-200"
+                      >
+                        {bookmarksExpanded ? "View Less" : "View More"}
+                      </p>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>
@@ -864,12 +815,68 @@ export default function ChatPage() {
                         {conversation.title}
                       </div>
                       <div
-                        onClick={(e) => { e.stopPropagation(); chatMenuDropdown(Number(conversation.id)); }}
-                        className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
+                        onMouseEnter={() => chatMenuDropdown(Number(conversation.id))}
+                        onMouseLeave={() => setChatMenuOpen(-1)}
+                        className="relative"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
-                          <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"></path>
-                        </svg>
+                        <div className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200">
+                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
+                            <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"></path>
+                          </svg>
+                        </div>
+                        {/* Delete and Unpin buttons */}
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{
+                            display: chatMenuOpen === Number(conversation.id) ? "flex" : "none",
+                            opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                            y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                          }}
+                          transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                          className="absolute top-6 right-0 z-50 flex gap-2"
+                        >
+                          <motion.div
+                            initial={{ x: 10, y: -2 }}
+                            animate={{
+                              x: chatMenuOpen === Number(conversation.id) ? 0 : 10,
+                              y: chatMenuOpen === Number(conversation.id) ? -2 : -2,
+                            }}
+                            transition={{
+                              x: { type: "spring", damping: 10, stiffness: 300 },
+                              y: { type: "spring", damping: 10, stiffness: 300 },
+                              scale: { duration: 0.1 },
+                            }}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              setChatMenuOpen(-1);
+                              await api.conversation.pinConversation(Number(conversation.id), (session?.user as any)?.idToken);
+                              if (user?.email) {
+                                const idToken = (session?.user as any)?.idToken;
+                                const conversationsData = await api.conversation.getConversations(user.email, idToken);
+                                setConversations(conversationsData);
+                              }
+                            }}
+                            className="bg-slate-800 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer hover:bg-black/90 transition-colors"
+                          >
+                            <Icon icon="octicon:pin-slash-16" className="w-4 h-4" />
+                          </motion.div>
+                          <motion.div
+                            transition={{ scale: { duration: 0.1 } }}
+                            onClick={async (e) => {
+                              e.stopPropagation();
+                              if (user?.email) {
+                                setChatMenuOpen(-1);
+                                await api.conversation.deleteConversation(Number(conversation.id), (session?.user as any)?.idToken);
+                                const idToken = (session?.user as any)?.idToken;
+                                const conversationsData = await api.conversation.getConversations(user.email, idToken);
+                                setConversations(conversationsData);
+                              }
+                            }}
+                            className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
+                          >
+                            <Icon icon="octicon:trash-16" className="w-4 h-4" />
+                          </motion.div>
+                        </motion.div>
                       </div>
                     </div>
                     <div className="flex flex-wrap gap-1">
@@ -886,59 +893,6 @@ export default function ChatPage() {
                         <span className="text-xs text-gray-500">+ {conversation.tags.length - 2} more</span>
                       )}
                     </div>
-                    {/* Delete and Unpin buttons */}
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{
-                        display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
-                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                      }}
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        if (user?.email) {
-                          setChatMenuOpen(-1);
-                          await api.conversation.deleteConversation(Number(conversation.id), (session?.user as any)?.idToken);
-                          const idToken = (session?.user as any)?.idToken;
-                          const conversationsData = await api.conversation.getConversations(user.email, idToken);
-                          setConversations(conversationsData);
-                        }
-                      }}
-                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
-                      className="absolute -bottom-10 right-0 z-20"
-                    >
-                      <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                          <path fill="currentColor" stroke="currentColor" strokeWidth="0.4" d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"></path>
-                        </svg>
-                      </div>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{
-                        display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
-                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                      }}
-                      onClick={async (e) => {
-                        e.stopPropagation();
-                        setChatMenuOpen(-1);
-                        await api.conversation.pinConversation(Number(conversation.id), (session?.user as any)?.idToken);
-                        if (user?.email) {
-                          const idToken = (session?.user as any)?.idToken;
-                          const conversationsData = await api.conversation.getConversations(user.email, idToken);
-                          setConversations(conversationsData);
-                        }
-                      }}
-                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
-                      className="absolute -bottom-6 right-10 z-20"
-                    >
-                      <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-                          <path fill="currentColor" d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2z"/>
-                        </svg>
-                      </div>
-                    </motion.div>
                   </div>
                 ))}
               </div>
@@ -951,154 +905,153 @@ export default function ChatPage() {
               Chats
             </h3>
             <div className="space-y-1">
-              {conversations.filter(c => !c.pinned).map((conversation: Conversation, index: number) => (
-                  <div
-                    key={`chat-${index}`}
-                    onClick={() => handleConversationClick(conversation)}
-                    className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer duration-200 ease-in-out"
-                  >
-                    <div className="flex flex-row justify-between items-center">
-                      <div className="text-sm text-black font-medium mb-1">
-                        {conversation.title}
-                      </div>
-                      <div
-                        onClick={() => chatMenuDropdown(Number(conversation.id))}
-                        className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
-                      >
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            fill="none"
-                            stroke="currentColor"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth="2"
-                            d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
-                          ></path>
-                        </svg>
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap gap-1">
-                      {
-                        conversation?.tags && conversation?.tags?.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {conversation.tags.slice(0, 2).map((tag) => (
-                              <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200">
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )
-                      }
-                      {conversation?.tags && conversation?.tags?.length > 2 && (
-                        <div className="flex flex-wrap gap-1">
-                          <span className="text-xs text-gray-500">+ {conversation.tags.length - 3} more</span>
+              {conversationsLoading ? (
+                // Loading skeletons
+                <>
+                  {[0, 1, 2, 3].map((idx) => (
+                    <div key={idx} className="w-full p-2 rounded-lg animate-pulse">
+                      <div className="flex flex-col w-full gap-2">
+                        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                        <div className="flex gap-1">
+                          <div className="h-5 bg-gray-100 rounded w-14"></div>
+                          <div className="h-5 bg-gray-100 rounded w-12"></div>
                         </div>
-                      )}
+                      </div>
                     </div>
-                    {/* Delete and Pin buttons remain the same */}
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{
-                        display:
-                          chatMenuOpen === Number(conversation.id)
-                            ? "block"
-                            : "none",
-                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                      }}
-                      onClick={async () => {
-                        if (user?.email) {
-                          setChatMenuOpen(-1);
-                          await api.conversation.deleteConversation(
-                            Number(conversation.id),
-                            (session?.user as any)?.idToken
-                          );
-                          const idToken = (session?.user as any)?.idToken;
-                          const conversationsData =
-                            await api.conversation.getConversations(
-                              user.email,
-                              idToken
-                            );
-                          setConversations(conversationsData);
-                        }
-                      }}
-                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
-                      className="absolute -bottom-10 right-0 z-20"
+                  ))}
+                </>
+              ) : (
+                <>
+                  {conversations.filter(c => !c.pinned).map((conversation: Conversation, index: number) => (
+                    <div
+                      key={`chat-${index}`}
+                      onClick={() => handleConversationClick(conversation)}
+                      className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer duration-200 ease-in-out"
                     >
-                      <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
+                      <div className="flex flex-row justify-between items-center">
+                        <div className="text-sm text-black font-medium mb-1">
+                          {conversation.title}
+                        </div>
+                        <div
+                          onMouseEnter={() => chatMenuDropdown(Number(conversation.id))}
+                          onMouseLeave={() => setChatMenuOpen(-1)}
+                          className="relative"
                         >
-                          <g fill="none">
-                            <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
-                            <path
-                              fill="currentColor"
-                              stroke="currentColor"
-                              strokeWidth="0.4"
-                              d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"
-                            ></path>
-                          </g>
-                        </svg>
+                          <div className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                fill="none"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
+                              ></path>
+                            </svg>
+                          </div>
+                          {/* Delete and Pin buttons */}
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{
+                              display:
+                                chatMenuOpen === Number(conversation.id)
+                                  ? "flex"
+                                  : "none",
+                              opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
+                              y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                            }}
+                            transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                            className="absolute top-6 right-0 z-50 flex gap-2"
+                          >
+                            <motion.div
+                            initial={{ x: 10, y: -2 }}
+                            animate={{
+                              x: chatMenuOpen === Number(conversation.id) ? 0 : 10,
+                              y: chatMenuOpen === Number(conversation.id) ? -2 : -2,
+                            }}
+                              transition={{
+                                x: { type: "spring", damping: 10, stiffness: 300 },
+                                y: { type: "spring", damping: 10, stiffness: 300 },
+                                scale: { duration: 0.1 },
+                              }}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setChatMenuOpen(-1);
+                                await api.conversation.pinConversation(
+                                  Number(conversation.id),
+                                  (session?.user as any)?.idToken
+                                );
+                                if (user?.email) {
+                                  const idToken = (session?.user as any)?.idToken;
+                                  const conversationsData =
+                                    await api.conversation.getConversations(
+                                      user.email,
+                                      idToken
+                                    );
+                                  setConversations(conversationsData);
+                                }
+                              }}
+                              className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer hover:bg-black/90 transition-colors"
+                            >
+                              <Icon icon="octicon:pin-16" className="w-4 h-4" />
+                            </motion.div>
+                            <motion.div
+                              transition={{
+                                x: { type: "spring", damping: 10, stiffness: 300 },
+                                y: { type: "spring", damping: 10, stiffness: 300 },
+                                scale: { duration: 0.1 },
+                              }}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (user?.email) {
+                                  setChatMenuOpen(-1);
+                                  await api.conversation.deleteConversation(
+                                    Number(conversation.id),
+                                    (session?.user as any)?.idToken
+                                  );
+                                  const idToken = (session?.user as any)?.idToken;
+                                  const conversationsData =
+                                    await api.conversation.getConversations(
+                                      user.email,
+                                      idToken
+                                    );
+                                  setConversations(conversationsData);
+                                }
+                              }}
+                              className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
+                            >
+                              <Icon icon="octicon:trash-16" className="w-4 h-4" />
+                            </motion.div>
+                          </motion.div>
+                        </div>
                       </div>
-                    </motion.div>
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{
-                        display:
-                          chatMenuOpen === Number(conversation.id)
-                            ? "block"
-                            : "none",
-                        opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                        y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                      }}
-                      onClick={async () => {
-                        setChatMenuOpen(-1);
-                        await api.conversation.pinConversation(
-                          Number(conversation.id),
-                          (session?.user as any)?.idToken
-                        );
-                        if (user?.email) {
-                          const idToken = (session?.user as any)?.idToken;
-                          const conversationsData =
-                            await api.conversation.getConversations(
-                              user.email,
-                              idToken
-                            );
-                          setConversations(conversationsData);
+                      <div className="flex flex-wrap gap-1">
+                        {
+                          conversation?.tags && conversation?.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {conversation.tags.slice(0, 2).map((tag) => (
+                                <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200">
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )
                         }
-                      }}
-                      transition={{ type: "spring", damping: 10, stiffness: 300 }}
-                      className="absolute -bottom-6 right-10 rotate-45 z-20"
-                    >
-                      <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="20"
-                          height="20"
-                          viewBox="0 0 24 24"
-                        >
-                          <g fill="none" fillRule="evenodd">
-                            <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
-                            <path
-                              fill="currentColor"
-                              stroke="currentColor"
-                              strokeWidth="0.4"
-                              d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2zm0 2h6.266l.515 3.605c.261 1.83.98 3.565 2.09 5.045l.606.808C17.209 13.71 15.204 14 12 14s-5.21-.29-6.344-.542l.607-.808a11 11 0 0 0 2.09-5.045L8.866 4Z"
-                            ></path>
-                          </g>
-                        </svg>
+                        {conversation?.tags && conversation?.tags?.length > 2 && (
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-xs text-gray-500">+ {conversation.tags.length - 3} more</span>
+                          </div>
+                        )}
                       </div>
-                    </motion.div>
-                  </div>
-                ))}
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </div>
         </div>       
@@ -1111,19 +1064,21 @@ export default function ChatPage() {
                 <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-pink-300 flex items-center justify-center text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20"><path fill="currentColor" fillRule="evenodd" d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38" clipRule="evenodd" strokeWidth="0.4" stroke="currentColor"/></svg>                
                 </div>
-                <span className="text-xs font-medium text-gray-600">Tokens</span>
+                <span className="text-xs font-medium text-gray-600">Tok eens</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-sm font-bold text-gray-900">{user?.tokens?.toLocaleString() ?? 0}</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {tokenData ? (tokenData.token_limit - tokenData.token_used).toLocaleString() : 0}
+                </span>
                 <span className="text-xs text-gray-400">remaining</span>
               </div>
             </div>
-            {user?.tokens !== undefined && (
+            {tokenData && (
               <div className="mt-2">
                 <div className="h-1.5 bg-violet-200 rounded-full overflow-hidden">
                   <motion.div 
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.min((user.tokens / 10000) * 100, 100)}%` }}
+                    animate={{ width: `${Math.min(((tokenData.token_limit - tokenData.token_used) / tokenData.token_limit) * 100, 100)}%` }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="h-full bg-gradient-to-r from-violet-400 to-purple-500"
                   />
@@ -1281,8 +1236,6 @@ export default function ChatPage() {
                 />
               );
             })}
-            {/* <ThinkingAnimation />
-            <GeneratingLessonAnimation /> */}
             <AnimatePresence mode="wait">
               {loading && streamStage && (
                 <StreamingThoughts 
@@ -1312,28 +1265,31 @@ export default function ChatPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={cycleDifficulty}
-                className="cursor-pointer font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all overflow-hidden relative h-9 min-w-18"
+                className="cursor-pointer font-semibold px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all overflow-hidden relative h-8 min-w-18"
               >
                 <AnimatePresence mode="popLayout" initial={false}>
-                  <motion.div
-                    key={difficultyLevels[difficultyIndex]}
-                    initial={{ opacity: 0, y: -20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 20 }}
-                    whileHover={{ y: 2 }}
-                    transition={{
-                      duration: 0.25,
-                      ease: "easeInOut",
-                      type: "spring",
-                      damping: 10,
-                      stiffness: 300,
-                    }}
-                  >
-                    {difficultyLevels[difficultyIndex]}
-                  </motion.div>
+                  <div className="flex items-center gap-1">
+                    <motion.div
+                      key={difficultyLevels[difficultyIndex]}
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      whileHover={{ y: 2 }}
+                      transition={{
+                        duration: 0.25,
+                        ease: "easeInOut",
+                        type: "spring",
+                        damping: 10,
+                        stiffness: 300,
+                      }}
+                    >
+                      {difficultyLevels[difficultyIndex]}
+                    </motion.div>
+                    <Icon icon="iconamoon:arrow-down-2-bold" className="w-4 h-4" />
+                  </div>
                 </AnimatePresence>
               </button>
-              <button className="cursor-pointer px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
+              <button className="cursor-pointer font-semibold px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all h-8 flex items-center">
                 Gemini
               </button>
               <button

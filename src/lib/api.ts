@@ -130,6 +130,25 @@ export const userAPI = {
 
     return response.json();
   },
+
+  /**
+   * Get user token usage
+   */
+  getTokenUsage: async (email: string, idToken?: string): Promise<{ token_used: number; token_limit: number }> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/token/${email}`,
+      {
+        method: "GET",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get token usage");
+    }
+
+    return response.json();
+  },
 };
 
 // ============================================================================
