@@ -943,7 +943,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                             <span className="w-2 h-2 rounded-full bg-amber-400"></span>
                             <span className="text-xl font-bold text-gray-900">{partial}</span>
                           </div>
-                          <span className="text-xs text-gray-500">Meh</span>
+                          <span className="text-xs text-gray-500">Partial</span>
                         </div>
                         <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
                           <div className="flex items-center justify-center gap-1.5">
