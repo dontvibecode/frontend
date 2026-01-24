@@ -95,7 +95,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   }, [data.exercises]);
 
   useEffect(() => {
-    if(data.feedback) {
+    if (data.feedback) {
       setFeedbackData({
         ...data.feedback,
         correctness: data.correctness,
@@ -136,11 +136,11 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
     setSaving(true);
     try {
       const exerciseFileIds = Object.keys(editedCode).map(
-        (exerciseFilename) => 
+        (exerciseFilename) =>
           data.exercises?.find(
             (exercise: any) => exercise.filename === exerciseFilename
           )?.id
-        );
+      );
       const response = await api.exercise.saveCodeProgress({
         user_submissions: Object.values(editedCode),
         exercise_file_ids: exerciseFileIds,
@@ -211,17 +211,17 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
     }
   };
 
-  if(!currentExercise) return null;
+  if (!currentExercise) return null;
 
   return (
     <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 ml-2"> 
-          <div className={`${correctnessColor(data.correctness)} w-2 h-2 rounded-full`}/>
+        <div className="flex items-center gap-2 ml-2">
+          <div className={`${correctnessColor(data.correctness)} w-2 h-2 rounded-full`} />
           <h2 className="text-xl font-semibold text-gray-900">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
         </div>
-        <motion.button 
-          onClick={() => bookmarkExercise(data.id)} 
+        <motion.button
+          onClick={() => bookmarkExercise(data.id)}
           whileHover={{ scale: 1 }}
           whileTap={{ scale: 0.95 }}
           className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -670,7 +670,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
   const fetchExercises = async () => {
     setLoading(true);
     const minTimePromise = new Promise<void>((resolve) => setTimeout(resolve, 1000));
-    
+
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
       console.error('No idToken found in session');
@@ -712,7 +712,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
       const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
 
       // Use exercise_id from response
-      const exerciseId = parsedResponse.exercise_id;
+      const exerciseId = parsedResponse.id;
 
       // Transform exercise_files array to files format
       const newExerciseData = {
@@ -721,7 +721,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
         bookmarked: false,
         title: null,
         tags: [],
-        files: parsedResponse.exercise_files.map((exercise: any, idx: number) => ({
+        files: parsedResponse.files.map((exercise: any, idx: number) => ({
           ...exercise,
           id: idx,
           exercise_id: exerciseId,
@@ -747,20 +747,20 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
       console.error('No idToken found in session');
       return false;
     }
-    
+
     try {
       const response = await api.exercise.bookmarkExercise(exerciseId, idToken);
       console.log('Bookmark response:', response);
-      
+
       // Update fetchedExercises with the new bookmark state
       setFetchedExercises((prev: any) => {
         if (!prev) return prev;
-        
+
         // Find the key that matches this exercise id
         const exerciseKey = Object.keys(prev).find(
           key => !isNaN(Number(key)) && prev[key].id === exerciseId
         );
-        
+
         if (exerciseKey) {
           return {
             ...prev,
@@ -774,7 +774,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
         }
         return prev;
       });
-      
+
       // Notify parent about bookmark change
       if (onBookmarkChange) {
         onBookmarkChange(exerciseId, response.bookmarked, {
@@ -787,14 +787,14 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           tags: response.tags,
         });
       }
-      
+
       return response.bookmarked;
     } catch (error) {
       console.error('Failed to bookmark exercise:', error);
       return false;
     }
   };
-  
+
   return (
     <AnimatePresence mode="popLayout">
       {lessonExpanded ? (
@@ -820,19 +820,19 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           ) : (
             <div className="p-8 pb-0 pt-16 flex flex-col gap-2">
               <h1 className="text-2xl font-bold text-gray-900 mb-2">Expanded Lesson View</h1>
-  
+
               {/* Progress Stats Component */}
               {fetchedExercises && (() => {
                 const exercises = Object.keys(fetchedExercises)
                   .filter(key => !isNaN(Number(key)))
                   .map(key => fetchedExercises[key]);
-                
+
                 const total = exercises.length;
                 const completed = exercises.filter((ex: any) => ex.correctness === 2).length;
                 const partial = exercises.filter((ex: any) => ex.correctness === 1).length;
                 const incorrect = exercises.filter((ex: any) => ex.correctness === 0).length;
                 const notStarted = exercises.filter((ex: any) => ex.correctness === null).length;
-                
+
                 // Get language stats from files
                 const languageCount: Record<string, number> = {};
                 exercises.forEach((ex: any) => {
@@ -840,7 +840,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                     const ext = file.filename?.split('.').pop()?.toLowerCase() || 'other';
                     const langMap: Record<string, string> = {
                       'js': 'JavaScript',
-                      'ts': 'TypeScript', 
+                      'ts': 'TypeScript',
                       'tsx': 'TypeScript',
                       'jsx': 'JavaScript',
                       'py': 'Python',
@@ -853,16 +853,16 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                     languageCount[lang] = (languageCount[lang] || 0) + 1;
                   });
                 });
-                
+
                 const totalFiles = Object.values(languageCount).reduce((a, b) => a + b, 0);
                 const topLanguages = Object.entries(languageCount)
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 3);
-                
+
                 const completionPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
                 const partialPercent = total > 0 ? Math.round((partial / total) * 100) : 0;
                 const incorrectPercent = total > 0 ? Math.round((incorrect / total) * 100) : 0;
-                
+
                 return (
                   <div
                     className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-5 mb-4 border border-gray-200/60"
@@ -928,7 +928,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                           <p className="text-sm text-gray-500">{completed} of {total} completed</p>
                         </div>
                       </div>
-                      
+
                       {/* Quick Stats */}
                       <div className="flex gap-4">
                         <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
@@ -961,7 +961,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Full Width Progress Bar */}
                     {/* <div className="mb-4">
                       <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden flex">
@@ -985,7 +985,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                         />
                       </div>
                     </div> */}
-                    
+
                     {/* Language Stats */}
                     {topLanguages.length > 0 && (
                       <div className="flex items-center gap-3 pt-3 border-t-1 border-gray-300">
@@ -1004,7 +1004,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                             };
                             const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200';
                             return (
-                              <span 
+                              <span
                                 key={lang}
                                 className={`text-xs px-2 py-1 rounded-lg border ${colorClass} font-medium`}
                               >
@@ -1026,9 +1026,8 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                   </div>
                 );
               })()}
-  
               {fetchedExercises && Object.keys(fetchedExercises)
-                .filter(key => !isNaN(Number(key))) 
+                .filter(key => !isNaN(Number(key)))
                 .map((exerciseId, idx) => {
                   const exerciseData = fetchedExercises[exerciseId];
                   return (
@@ -1064,7 +1063,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                   index={0}
                 />
               )} */}
-  
+
               <div className="relative rounded-t-xl overflow-hidden">
                 <div className="absolute inset-0 z-10 backdrop-blur-xs bg-white/0 flex items-end justify-center">
                   <div className="rounded-t-xl bg-white py-4 w-[80%] flex items-center justify-center">
