@@ -8,6 +8,11 @@ const handler = NextAuth({
       clientSecret: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET!,
     })
   ],
+  session: {
+    strategy: "jwt",
+    maxAge: 30 * 24 * 60 * 60, // 30 days
+    updateAge: 24 * 60 * 60,   // Refresh session every 24 hours
+  },
   callbacks: {
     async jwt({ token, account, profile }) {
       // Persist the OAuth id_token and or the user id to the token right after signin

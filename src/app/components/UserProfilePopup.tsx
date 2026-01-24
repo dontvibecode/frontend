@@ -4,8 +4,7 @@ import React, { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { User, UserPreferences } from "@/types/api";
-import { pre } from "framer-motion/client";
-import { on } from "events";
+import { useTheme } from "./ThemeProvider";
 
 interface UserProfilePopupProps {
   isOpen: boolean;
@@ -26,15 +25,12 @@ export default function UserProfilePopup({
   onEditUser,
 }: UserProfilePopupProps) {
   const { data: session } = useSession();
-  const [isInitialized, setIsInitialized] = useState(false);
+  const { theme, setTheme } = useTheme();
   const [isSaved, setIsSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const [name, setName] = useState(user?.username ?? "");
   const [email, setEmail] = useState(user?.email ?? "");
-  const [theme, setTheme] = useState<"light" | "dark" | "system">(
-    user?.preferences?.theme ?? "light"
-  );
   const [accentColor, setAccentColor] = useState(
     user?.preferences?.accentColor ?? "000000"
   );
@@ -44,11 +40,13 @@ export default function UserProfilePopup({
   useEffect(() => {
     setName(user?.username ?? "");
     setEmail(user?.email ?? "");
-    setTheme(user?.preferences?.theme ?? "light");
+    if (user?.preferences?.theme) {
+      setTheme(user.preferences.theme);
+    }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
     setTabSize(user?.preferences?.tab_size ?? 2);
-  }, [user]);
+  }, [user, setTheme]);
 
   const handleSave = async () => {
     try {
@@ -122,7 +120,9 @@ export default function UserProfilePopup({
     console.log("Resetting fields to user data");
     setName(user?.username ?? "");
     setEmail(user?.email ?? "");
-    setTheme(user?.preferences?.theme ?? "light");
+    if (user?.preferences?.theme) {
+      setTheme(user.preferences.theme);
+    }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
     setTabSize(user?.preferences?.tab_size ?? 2);
@@ -259,9 +259,9 @@ export default function UserProfilePopup({
                   Theme
                   </label>
                   <select
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
-                  className="w-full px-3 py-2 border border-gray-300 text-black rounded-lg outline-none"
+                    value={theme}
+                    onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
+                    className="w-full px-3 py-2 border border-gray-300 text-primary-text rounded-lg outline-none"
                   >
                   <option value="light">Light</option>
                   <option value="dark">Dark</option>
