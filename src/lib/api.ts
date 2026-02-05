@@ -34,6 +34,60 @@ const handleApiError = async (response: Response, context: string) => {
   throw error;
 };
 
+/**
+ * Transform user preferences from snake_case (backend) to camelCase (frontend)
+ */
+const transformPreferencesToCamelCase = (prefs: any): UserPreferences | undefined => {
+  if (!prefs) return undefined;
+  return {
+    theme: prefs.theme,
+    accentColor: prefs.accent_color,
+    language: prefs.language,
+    profileImage: prefs.profile_image,
+    emailNotifications: prefs.email_notifications,
+    pushNotifications: prefs.push_notifications,
+    inAppNotifications: prefs.in_app_notifications,
+    profileVisible: prefs.profile_visible,
+    shareData: prefs.share_data,
+    fontSize: prefs.font_size,
+    compactMode: prefs.compact_mode,
+    tabSize: prefs.tab_size,
+  };
+};
+
+/**
+ * Transform user preferences from camelCase (frontend) to snake_case (backend)
+ */
+const transformPreferencesToSnakeCase = (prefs: UserPreferences | undefined): any => {
+  if (!prefs) return undefined;
+  return {
+    theme: prefs.theme,
+    accent_color: prefs.accentColor,
+    language: prefs.language,
+    profile_image: prefs.profileImage,
+    email_notifications: prefs.emailNotifications,
+    push_notifications: prefs.pushNotifications,
+    in_app_notifications: prefs.inAppNotifications,
+    profile_visible: prefs.profileVisible,
+    share_data: prefs.shareData,
+    font_size: prefs.fontSize,
+    compact_mode: prefs.compactMode,
+    tab_size: prefs.tabSize,
+  };
+};
+
+/**
+ * Transform user response from backend to frontend format
+ */
+const transformUserResponse = (data: any): import("@/types").User => {
+  return {
+    id: data.id,
+    username: data.username,
+    email: data.email,
+    preferences: transformPreferencesToCamelCase(data.preferences),
+  };
+};
+
 // Add this type above the messageAPI object
 export type StreamStage = 
   | 'routing' 
@@ -56,7 +110,7 @@ export const userAPI = {
   /**
    * Get user by email
    */
-  getUser: async (email: string, idToken?: string) => {
+  getUser: async (email: string, idToken?: string): Promise<import("@/types").User> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/user/${email}/`,
       {
@@ -72,7 +126,8 @@ export const userAPI = {
       throw error;
     }
 
-    return response.json();
+    const data = await response.json();
+    return transformUserResponse(data);
   },
 
   /**
@@ -85,7 +140,7 @@ export const userAPI = {
       method: string;
     },
     idToken?: string
-  ) => {
+  ): Promise<import("@/types").User> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/user/`,
       {
@@ -99,7 +154,8 @@ export const userAPI = {
       await handleApiError(response, "Failed to create user");
     }
 
-    return response.json();
+    const data = await response.json();
+    return transformUserResponse(data);
   },
 
   /**
@@ -114,13 +170,19 @@ export const userAPI = {
       preferences?: UserPreferences;
     },
     idToken?: string
-  ) => {
+  ): Promise<import("@/types").User> => {
+    // Transform preferences to snake_case for the backend
+    const backendData = {
+      ...updatedUserData,
+      preferences: transformPreferencesToSnakeCase(updatedUserData.preferences),
+    };
+
     const response = await fetch(
       `${API_BASE_URL}api/chat/user/${email}/`,
       {
         method: "PUT",
         headers: getAuthHeaders(idToken),
-        body: JSON.stringify(updatedUserData),
+        body: JSON.stringify(backendData),
       }
     );
 
@@ -128,7 +190,8 @@ export const userAPI = {
       await handleApiError(response, "Failed to update user");
     }
 
-    return response.json();
+    const data = await response.json();
+    return transformUserResponse(data);
   },
 
   /**
@@ -501,6 +564,89 @@ export interface BookmarkExerciseResponse {
   tags: string[];
 }
 
+// ============================================================================
+// UPLOAD API
+// ============================================================================
+
+export interface UploadUrlResponse {
+  upload_url: string;
+  public_url: string;
+  filename: string;
+  expires_in: number;
+}
+
+export const uploadAPI = {
+  /**
+   * Get a signed URL for uploading a profile image to GCS
+   */
+  getProfileImageUploadUrl: async (
+    contentType: string,
+    idToken?: string
+  ): Promise<UploadUrlResponse> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/upload/profile-image-url/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify({ content_type: contentType }),
+      }
+    );
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to get upload URL");
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Upload a file directly to GCS using a signed URL
+   */
+  uploadToGCS: async (uploadUrl: string, file: File): Promise<void> => {
+    const response = await fetch(uploadUrl, {
+      method: "PUT",
+      headers: {
+        "Content-Type": file.type,
+        "Access-Control-Allow-Origin": "*",
+      },
+      body: file,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to upload to GCS: ${response.status}`);
+    }
+  },
+
+  /**
+   * Confirm the profile image upload and update user preferences
+   */
+  confirmProfileImageUpload: async (
+    publicUrl: string,
+    idToken?: string
+  ): Promise<{ profile_image: string }> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/upload/profile-image-confirm/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify({ public_url: publicUrl }),
+      }
+    );
+
+    console.log({ confirmProfileImageUpload: response })
+
+    if (!response.ok) {
+      await handleApiError(response, "Failed to confirm upload");
+    }
+
+    return response.json();
+  },
+};
+
+// ============================================================================
+// EXERCISE API
+// ============================================================================
+
 export const exerciseAPI = {
   /**
    * Get all exercises for a message
@@ -633,6 +779,7 @@ const api = {
   conversation: conversationAPI,
   message: messageAPI,
   exercise: exerciseAPI,
+  upload: uploadAPI,
 };
 
 export default api;

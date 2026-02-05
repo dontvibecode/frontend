@@ -52,14 +52,14 @@ export interface UserPreferences {
   accentColor?: string;
   language?: string;
   profileImage?: string;
-  email_notifications?: boolean;
-  push_notifications?: boolean;
-  in_app_notifications?: boolean;
+  emailNotifications?: boolean;
+  pushNotifications?: boolean;
+  inAppNotifications?: boolean;
   profileVisible?: boolean;
   shareData?: boolean;
   fontSize?: 'small' | 'medium' | 'large';    
   compactMode?: boolean;
-  tab_size?: number; // 1-8, default 2
+  tabSize?: number; // 1-8, default 2
 }
 
 export interface User {

@@ -1232,10 +1232,10 @@ export default function ChatPage() {
             onClick={handleUserProfileClick}
           >
             <div className="flex items-center gap-2">
-              {session?.user?.image ? (
+              {user?.preferences?.profileImage ? (
                 <img
-                  src={session.user.image}
-                  alt={session.user.name || "User"}
+                  src={user.preferences.profileImage}
+                  alt={session?.user?.name || "User"}
                   className="w-8 h-8 rounded-full"
                 />
               ) : (
@@ -1258,7 +1258,7 @@ export default function ChatPage() {
             userPrompt={selectedLesson.originalMessage}
             lessonExpanded={lessonExpanded}
             abilityLevel={difficultyLevels[difficultyIndex]}
-            tabSize={user?.preferences?.tab_size ?? 2}
+            tabSize={user?.preferences?.tabSize ?? 2}
             initialExpandedLesson={lessonExpanded}
             onBookmarkChange={handleBookmarkChange}
           />

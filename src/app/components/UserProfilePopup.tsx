@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { User, UserPreferences } from "@/types/api";
 import { useTheme } from "./ThemeProvider";
+import { uploadAPI } from "@/lib/api";
 
 interface UserProfilePopupProps {
   isOpen: boolean;
@@ -35,7 +36,12 @@ export default function UserProfilePopup({
     user?.preferences?.accentColor ?? "000000"
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
-  const [tabSize, setTabSize] = useState(user?.preferences?.tab_size ?? 2);
+  const [tabSize, setTabSize] = useState(user?.preferences?.tabSize ?? 2);
+
+  // Profile image upload state
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setName(user?.username ?? "");
@@ -45,8 +51,11 @@ export default function UserProfilePopup({
     }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tab_size ?? 2);
+    setTabSize(user?.preferences?.tabSize ?? 2);
   }, [user, setTheme]);
+
+
+  console.log({ user })
 
   const handleSave = async () => {
     try {
@@ -59,7 +68,7 @@ export default function UserProfilePopup({
           theme,
           accentColor,
           language,
-          tab_size: tabSize,
+          tabSize,
         },
       });
 
@@ -85,19 +94,67 @@ export default function UserProfilePopup({
     signOut({ callbackUrl: "/" });
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        onEditUser({
-          ...user,
-          preferences: {
-            profileImage: e.target?.result as string,
-          },
-        });
-      };
-      reader.readAsDataURL(file);
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"];
+    if (!allowedTypes.includes(file.type)) {
+      setUploadError("Please upload a JPEG, PNG, GIF, or WebP image");
+      return;
+    }
+
+    // Validate file size (5MB max)
+    if (file.size > 5 * 1024 * 1024) {
+      setUploadError("Image must be less than 5MB");
+      return;
+    }
+
+    setIsUploading(true);
+    setUploadError(null);
+
+    try {
+      // Get auth token from session
+      const idToken = (session as any)?.user?.idToken as string;
+
+      if (!idToken) {
+        throw new Error("Authentication required");
+      }
+
+      // Step 1: Get signed URL from backend
+      const { upload_url, public_url } = await uploadAPI.getProfileImageUploadUrl(
+        file.type,
+        idToken
+      );
+
+      // Step 2: Upload directly to GCS
+      await uploadAPI.uploadToGCS(upload_url, file);
+
+      // Step 3: Confirm upload and update user profile
+      await uploadAPI.confirmProfileImageUpload(public_url, idToken);
+
+      // Step 4: Update local state to show new image immediately
+      await onEditUser({
+        preferences: {
+          profileImage: public_url,
+        },
+      });
+    } catch (error) {
+      console.error("Upload failed:", error);
+      setUploadError(
+        error instanceof Error ? error.message : "Failed to upload image. Please try again."
+      );
+    } finally {
+      setIsUploading(false);
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
     }
   };
 
@@ -125,7 +182,7 @@ export default function UserProfilePopup({
     }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tab_size ?? 2);
+    setTabSize(user?.preferences?.tabSize ?? 2);
   };
 
   const onClose = () => {
@@ -188,14 +245,39 @@ export default function UserProfilePopup({
                 {/* Profile Picture */}
                 <div className="text-center">
                   <div className="relative inline-block">
-                    <div className="w-20 h-20 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3">
-                      {user?.preferences?.profileImage ||
-                      session?.user?.image ? (
+                    <div
+                      className={`w-20 h-20 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3 cursor-pointer relative ${isUploading ? "opacity-70" : "hover:opacity-90"
+                        } transition-opacity`}
+                      onClick={handleImageClick}
+                    >
+                      {/* Loading overlay */}
+                      {isUploading && (
+                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                          <svg
+                            className="animate-spin w-6 h-6 text-white"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                          >
+                            <circle
+                              className="opacity-25"
+                              cx="12"
+                              cy="12"
+                              r="10"
+                              stroke="currentColor"
+                              strokeWidth="4"
+                            />
+                            <path
+                              className="opacity-75"
+                              fill="currentColor"
+                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                            />
+                          </svg>
+                        </div>
+                      )}
+                      {user?.preferences?.profileImage ? (
                         <img
                           src={
-                            user?.preferences?.profileImage ||
-                            session?.user?.image ||
-                            ""
+                            user?.preferences?.profileImage
                           }
                           alt="Profile"
                           className="w-full h-full object-cover"
@@ -210,18 +292,22 @@ export default function UserProfilePopup({
                         </div>
                       )}
                     </div>
-                    {/* <label className="absolute bottom-0 right-0 text-white p-1.5 rounded-full cursor-pointer hover:bg-gray-800 transition-colors duration-200">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                      />
-                    </label> */}
+                    {/* Hidden file input */}
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/jpeg,image/png,image/gif,image/webp"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                      disabled={isUploading}
+                    />
                   </div>
                   <p className="text-sm text-gray-500">
-                    Click to change profile picture
+                    {isUploading ? "Uploading..." : "Click to change profile picture"}
                   </p>
+                  {uploadError && (
+                    <p className="text-sm text-red-500 mt-1">{uploadError}</p>
+                  )}
                 </div>
 
                 {/* Name */}
@@ -256,16 +342,16 @@ export default function UserProfilePopup({
                 {/* Theme */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Theme
+                    Theme
                   </label>
                   <select
                     value={theme}
                     onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
                     className="w-full px-3 py-2 border border-gray-300 text-primary-text rounded-lg outline-none"
                   >
-                  <option value="light">Light</option>
-                  <option value="dark">Dark</option>
-                  <option value="system">System</option>
+                    <option value="light">Light</option>
+                    <option value="dark">Dark</option>
+                    <option value="system">System</option>
                   </select>
                 </div>
 
@@ -322,7 +408,7 @@ export default function UserProfilePopup({
                 {/* Editor Settings Section */}
                 <div className="pt-4 border-t border-gray-200">
                   <h3 className="text-sm font-semibold text-gray-900 mb-4">Editor Settings</h3>
-                  
+
                   {/* Tab Size */}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -375,13 +461,12 @@ export default function UserProfilePopup({
               <button
                 onClick={handleSave}
                 disabled={isSaving || isSaved}
-                className={`w-full py-3 px-4 rounded-xl transition-all duration-300 font-medium flex items-center justify-center space-x-2 ${
-                  isSaved
+                className={`w-full py-3 px-4 rounded-xl transition-all duration-300 font-medium flex items-center justify-center space-x-2 ${isSaved
                     ? "bg-green-600 text-white"
                     : isSaving
-                    ? "bg-black text-white cursor-not-allowed"
-                    : "bg-black text-white hover:bg-gray-800 cursor-pointer"
-                }`}
+                      ? "bg-black text-white cursor-not-allowed"
+                      : "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                  }`}
               >
                 {isSaving ? (
                   <>
