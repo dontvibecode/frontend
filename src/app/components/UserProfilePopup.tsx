@@ -36,7 +36,7 @@ export default function UserProfilePopup({
     user?.preferences?.accentColor ?? "000000"
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
-  const [tabSize, setTabSize] = useState(user?.preferences?.tabSize ?? 2);
+  const [tabSize, setTabSize] = useState(user?.preferences?.tab_size ?? 2);
 
   // Profile image upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -51,7 +51,7 @@ export default function UserProfilePopup({
     }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tabSize ?? 2);
+    setTabSize(user?.preferences?.tab_size ?? 2);
   }, [user, setTheme]);
 
 
@@ -68,7 +68,7 @@ export default function UserProfilePopup({
           theme,
           accentColor,
           language,
-          tabSize,
+          tab_size: tabSize,
         },
       });
 
@@ -182,7 +182,7 @@ export default function UserProfilePopup({
     }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tabSize ?? 2);
+    setTabSize(user?.preferences?.tab_size ?? 2);
   };
 
   const onClose = () => {
@@ -210,20 +210,20 @@ export default function UserProfilePopup({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
             transition={{ duration: 0.1, ease: "easeOut" }}
-            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white rounded-2xl shadow-2xl z-51 w-full max-w-3xl max-h-[80vh] overflow-hidden"
+            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background rounded-2xl shadow-2xl z-51 w-full max-w-3xl max-h-[80vh] overflow-hidden"
           >
             {/* Header */}
-            <div className="bg-gradient-to-r from-gray-50 to-gray-100 p-6 border-b border-gray-200">
+            <div className="bg-container-primary p-6 border-b border-base-10">
               <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-gray-900">
+                <h2 className="text-xl font-semibold text-primary-text">
                   Profile Settings
                 </h2>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-200 rounded-full transition-colors duration-200"
+                  className="p-2 hover:bg-base-5 cursor-pointer rounded-full transition-colors duration-200"
                 >
                   <svg
-                    className="w-5 h-5 text-gray-500"
+                    className="w-5 h-5 text-text-70"
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
@@ -283,7 +283,7 @@ export default function UserProfilePopup({
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <div className="w-full h-full bg-black flex items-center justify-center">
+                        <div className="w-full h-full bg-loading flex items-center justify-center">
                           <span className="text-white font-semibold text-lg">
                             {user?.username?.charAt(0)?.toUpperCase() ||
                               session?.user?.name?.charAt(0)?.toUpperCase() ||
@@ -302,31 +302,31 @@ export default function UserProfilePopup({
                       disabled={isUploading}
                     />
                   </div>
-                  <p className="text-sm text-gray-500">
+                  <p className="text-sm text-text-70">
                     {isUploading ? "Uploading..." : "Click to change profile picture"}
                   </p>
                   {uploadError && (
-                    <p className="text-sm text-red-500 mt-1">{uploadError}</p>
+                    <p className="text-sm text-text-90 mt-1">{uploadError}</p>
                   )}
                 </div>
 
                 {/* Name */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-text-70 mb-2">
                     Name
                   </label>
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 text-black rounded-lg outline-none"
+                    className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
                     placeholder="Enter your name"
                   />
                 </div>
 
                 {/* Email */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-500 mb-2">
+                  <label className="block text-sm font-medium text-text-70 mb-2">
                     Email
                   </label>
                   <input
@@ -334,20 +334,20 @@ export default function UserProfilePopup({
                     value={email}
                     readOnly={true}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 bg-gray-200 font-light text-gray-400 rounded-lg outline-none"
+                    className="w-full px-3 py-2 border border-base-10 bg-base-10 font-light text-text-70 rounded-lg outline-none"
                     placeholder="Enter your email"
                   />
                 </div>
 
                 {/* Theme */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-text-70 mb-2">
                     Theme
                   </label>
                   <select
                     value={theme}
                     onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
-                    className="w-full px-3 py-2 border border-gray-300 text-primary-text rounded-lg outline-none"
+                    className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
                   >
                     <option value="light">Light</option>
                     <option value="dark">Dark</option>
@@ -356,41 +356,41 @@ export default function UserProfilePopup({
                 </div>
 
                 {/* Accent Color */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                {/* <div>
+                  <label className="block text-sm font-medium text-text-70 mb-2">
                     Accent Color
                   </label>
                   <div className="flex items-center space-x-3">
                     <div
-                      className="w-10 h-10 rounded-full cursor-pointer border border-gray-300"
+                      className="w-10 h-10 rounded-full cursor-pointer border border-base-10"
                       style={{
                         backgroundColor: `#${accentColor}`,
                       }}
                     />
                     <div className="flex-1 flex items-center">
-                      <span className="text-gray-500 mr-1">#</span>
+                      <span className="text-text-70 mr-1">#</span>
                       <input
                         type="text"
                         value={accentColor}
                         maxLength={6}
                         onChange={(e) => handleColorChange(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-gray-300 text-black rounded-lg outline-none"
+                        className="flex-1 px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
                         placeholder="000000"
                         style={{ textTransform: "uppercase" }}
                       />
                     </div>
                   </div>
-                </div>
+                </div> */}
 
                 {/* Language */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                {/* <div>
+                  <label className="block text-sm font-medium text-text-70 mb-2">
                     Language
                   </label>
                   <select
                     value={user?.preferences?.language || "en"}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 text-black rounded-lg outline-none"
+                    className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
                   >
                     <option value="en">English</option>
                     <option value="es">Spanish</option>
@@ -403,15 +403,15 @@ export default function UserProfilePopup({
                     <option value="ko">Korean</option>
                     <option value="zh">Chinese</option>
                   </select>
-                </div>
+                </div> */}
 
                 {/* Editor Settings Section */}
-                <div className="pt-4 border-t border-gray-200">
-                  <h3 className="text-sm font-semibold text-gray-900 mb-4">Editor Settings</h3>
+                <div className=" ">
+                  <h3 className="text-sm font-semibold text-primary-text mb-4">Editor Settings</h3>
 
                   {/* Tab Size */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-text-70 mb-2">
                       Tab Size
                     </label>
                     <div className="flex items-center gap-4">
@@ -421,13 +421,13 @@ export default function UserProfilePopup({
                         max="8"
                         value={tabSize}
                         onChange={(e) => setTabSize(Number(e.target.value))}
-                        className="flex-1 h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-black"
+                        className="flex-1 h-2 bg-base-10 rounded-lg appearance-none cursor-pointer accent-primary-text"
                       />
-                      <span className="w-8 text-center text-sm font-medium text-gray-900 bg-gray-100 px-2 py-1 rounded">
+                      <span className="w-8 text-center text-sm font-medium text-primary-text bg-base-10 px-2 py-1 rounded">
                         {tabSize}
                       </span>
                     </div>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="mt-1 text-xs text-text-70">
                       Number of spaces for each tab in the code editor
                     </p>
                   </div>
@@ -438,7 +438,7 @@ export default function UserProfilePopup({
 
               <button
                 onClick={handleLogout}
-                className="w-full -mt-2 px-4 py-2.5 rounded-xl cursor-pointer font-medium flex items-center justify-center space-x-2 hover:bg-red-50 transition-colors duration-200"
+                className="w-full -mt-2 px-4 py-2.5 rounded-xl cursor-pointer font-medium flex items-center justify-center space-x-2 hover:bg-base-5 transition-colors duration-200"
               >
                 <svg
                   className="w-4 h-4"
@@ -462,10 +462,10 @@ export default function UserProfilePopup({
                 onClick={handleSave}
                 disabled={isSaving || isSaved}
                 className={`w-full py-3 px-4 rounded-xl transition-all duration-300 font-medium flex items-center justify-center space-x-2 ${isSaved
-                    ? "bg-green-600 text-white"
+                    ? "bg-primary-text text-secondary-text"
                     : isSaving
-                      ? "bg-black text-white cursor-not-allowed"
-                      : "bg-black text-white hover:bg-gray-800 cursor-pointer"
+                      ? "bg-primary-text text-secondary-text cursor-not-allowed"
+                      : "bg-primary-text text-secondary-text cursor-pointer"
                   }`}
               >
                 {isSaving ? (

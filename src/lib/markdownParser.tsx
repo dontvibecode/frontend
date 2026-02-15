@@ -192,9 +192,9 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
       elements.push(
         <pre
           key={`code-${codeBlock.startIndex}`}
-          className={`bg-gray-100 border border-gray-200 rounded-lg p-3 overflow-x-auto ${compact ? '' : 'my-3'}`}
+          className={`bg-base-10 border border-base-10 rounded-lg p-3 overflow-x-auto ${compact ? '' : 'my-3'}`}
         >
-          <code className="text-sm font-mono text-black whitespace-pre">{code}</code>
+          <code className="text-sm font-mono text-primary-text whitespace-pre">{code}</code>
         </pre>
       );
       codeBlock = null;

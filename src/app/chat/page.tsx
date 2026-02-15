@@ -191,7 +191,7 @@ export const AIResponse = ({
           response: message,
         })
       }
-      className="cursor-pointer bg-base-10 border border-theme-border rounded-2xl p-3"
+      className="cursor-pointer bg-container-primary  border border-theme-border rounded-2xl p-3"
     >
       {/* Breakdown */}
       <h1 className="text-xl text-primary-text mb-3 font-semibold">
@@ -214,7 +214,7 @@ export const AIResponse = ({
 
       {/* Lesson Content Card */}
       {(jsonData.exercises || jsonData.recommendedReadings) && (
-        <div className="bg-base-10 rounded-xl p-4 border border-theme-border">
+        <div className="bg-base-5 rounded-xl p-4 border border-theme-border">
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-semibold text-primary-text uppercase">
               Lesson
@@ -246,7 +246,7 @@ export const AIResponse = ({
                 {jsonData.exercises.map((exercise, index) => (
                   <div
                     key={index}
-                    className="p-3 bg-base-10 rounded-lg border border-theme-border"
+                    className="p-3 bg-base-5 rounded-lg border border-base-10"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
@@ -277,7 +277,7 @@ export const AIResponse = ({
                       href={reading.Url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-base-10 rounded-lg border border-theme-border p-3 hover:border-theme-border hover:shadow-sm transition-all group"
+                      className="bg-base-5 rounded-lg border border-base-10 p-3 hover:border-theme-border hover:shadow-sm transition-all group"
                     >
                       <h5 className="text-xs font-semibold text-primary-text mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
                         {reading.title}
@@ -902,7 +902,7 @@ export default function ChatPage() {
                     <button 
                       key={idx} 
                       onClick={() => handleBookmarkedExerciseClick(exercise)} 
-                      className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-base-10 cursor-pointer text-left duration-200 ease-in-out"
+                      className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-base-5 cursor-pointer text-left duration-200 ease-in-out"
                     >
                       <div className="flex flex-col w-full">
                         <span className="text-xs text-currentColor font-medium overflow-wrap break-words whitespace-pre-wrap">
@@ -913,7 +913,7 @@ export default function ChatPage() {
                             {exercise.tags.slice(0, 3).map((tag: string) => (
                               <span 
                                 key={tag} 
-                                className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-10 transition-colors duration-200"
+                                className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
                               >
                                 {tag}
                               </span>
@@ -949,7 +949,7 @@ export default function ChatPage() {
                   <div
                     key={`pinned-${index}`}
                     onClick={() => handleConversationClick(conversation)}
-                    className="relative p-2 rounded-lg hover:bg-base-10 group cursor-pointer duration-200 ease-in-out"
+                    className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
                   >
                     <div className="flex flex-row justify-between items-center">
                       <div className="text-sm text-currentColor font-medium mb-1">
@@ -997,7 +997,7 @@ export default function ChatPage() {
                                 setConversations(conversationsData);
                               }
                             }}
-                            className="bg-base-10 text-currentColor backdrop-blur-md border border-button-border rounded-full p-2 cursor-pointer hover:bg-base-10 transition-colors"
+                            className="bg-base-10 text-currentColor backdrop-blur-md border border-button-border rounded-full p-2 cursor-pointer hover:bg-base-5 transition-colors"
                           >
                             <Icon icon="octicon:pin-slash-16" className="w-4 h-4" />
                           </motion.div>
@@ -1020,11 +1020,27 @@ export default function ChatPage() {
                         </motion.div>
                       </div>
                     </div>
+                    {conversation.exercises_count && (conversation?.exercises_correct_count ?? 0) + (conversation?.exercises_almost_count ?? 0) > 0 && (
+                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
+                        {conversation.exercises_correct_count && conversation.exercises_correct_count > 0 && (
+                          <div 
+                            className="bg-emerald-500 h-full"
+                            style={{ width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%` }}
+                          />
+                        )}
+                        {conversation.exercises_almost_count && conversation.exercises_almost_count > 0 && (
+                          <div 
+                            className="bg-amber-400 h-full"
+                            style={{ width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%` }}
+                          />
+                        )}
+                      </div>
+                    )}
                     <div className="flex flex-wrap gap-1">
                       {conversation?.tags && conversation?.tags?.length > 0 && (
                         <div className="flex flex-wrap gap-1">
                           {conversation.tags.slice(0, 2).map((tag) => (
-                            <span key={tag} className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-10 transition-colors duration-200">
+                            <span key={tag} className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200">
                               {tag}
                             </span>
                           ))}
@@ -1067,7 +1083,7 @@ export default function ChatPage() {
                     <div
                       key={`chat-${index}`}
                       onClick={() => handleConversationClick(conversation)}
-                      className="relative p-2 rounded-lg hover:bg-base-10 group cursor-pointer duration-200 ease-in-out"
+                      className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
                     >
                       <div className="flex flex-row justify-between items-center">
                         <div className="text-sm text-currentColor font-medium mb-1">
@@ -1171,12 +1187,28 @@ export default function ChatPage() {
                           </motion.div>
                         </div>
                       </div>
+                      {conversation.exercises_count && (conversation?.exercises_correct_count ?? 0) + (conversation?.exercises_almost_count ?? 0) > 0 && (
+                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
+                          {conversation.exercises_correct_count && conversation.exercises_correct_count > 0 ? (
+                            <div 
+                              className="bg-emerald-500 h-full"
+                              style={{ width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%` }}
+                            />
+                          ) : null}
+                          {conversation.exercises_almost_count && conversation.exercises_almost_count > 0 ? (
+                            <div 
+                              className="bg-amber-400 h-full"
+                              style={{ width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%` }}
+                            />
+                          ) : null}
+                        </div>
+                      )}
                       <div className="flex flex-wrap gap-1">
                         {
                           conversation?.tags && conversation?.tags?.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {conversation.tags.slice(0, 2).map((tag) => (
-                                <span key={tag} className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-10 transition-colors duration-200">
+                                <span key={tag} className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200">
                                   {tag}
                                 </span>
                               ))}
@@ -1202,7 +1234,7 @@ export default function ChatPage() {
           <div className="mb-2 p-2 bg-base-10 rounded-lg border border-theme-border">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-pink-300 flex items-center justify-center text-white">
+                <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20"><path fill="currentColor" fillRule="evenodd" d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38" clipRule="evenodd" strokeWidth="0.4" stroke="currentColor"/></svg>                
                 </div>
                 <span className="text-xs font-medium text-base-40">Tok eens</span>
@@ -1228,7 +1260,7 @@ export default function ChatPage() {
             )}
           </div>
           <button
-            className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-10 rounded-lg p-2 transition-colors duration-200"
+            className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
             onClick={handleUserProfileClick}
           >
             <div className="flex items-center gap-2">
@@ -1239,8 +1271,10 @@ export default function ChatPage() {
                   className="w-8 h-8 rounded-full"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-                  {user?.username}
+                <div className="w-8 h-8 rounded-full bg-loading flex items-center justify-center text-white text-sm font-semibold">
+                  {user?.username?.charAt(0)?.toUpperCase() ||
+                    session?.user?.name?.charAt(0)?.toUpperCase() ||
+                    "U"}
                 </div>
               )}
               <span className="text-sm font-medium">{user?.username}</span>
@@ -1272,14 +1306,14 @@ export default function ChatPage() {
       {lessonExpanded && (
         <aside
           onClick={() => setLessonExpanded(false)}
-          className="cursor-pointer border-l px-4 py-6 border-theme-border flex flex-col bg-gray-100 overflow-hidden justify-start items-center"
+          className="cursor-pointer border-l px-4 py-6 border-theme-border flex flex-col bg-base-10 overflow-hidden justify-start items-center"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
             width="24"
             height="24"
             viewBox="0 0 24 24"
-            className="text-black opacity-40"
+            className="text-primary-text opacity-40"
           >
             <path
               fill="none"
@@ -1294,7 +1328,7 @@ export default function ChatPage() {
       )}
 
       {!lessonExpanded && (
-        <aside className="w-96 border-l border-theme-border flex flex-col bg-base-10">
+        <aside className="w-96 border-l border-theme-border flex flex-col bg-base">
           <div
             className="flex-1 overflow-y-auto p-4 space-y-4"
             id="chat-container"
@@ -1303,7 +1337,7 @@ export default function ChatPage() {
               return !!(message.fromUser || (message as any).from_user) ? (
                 <div key={index} className="w-full flex justify-end">
                   <motion.div
-                    className="w-fit bg-base-10 rounded-2xl p-3 self-end"
+                    className="w-fit bg-blue-100 rounded-2xl p-3 self-end"
                     animate={
                       message.isSending
                         ? {
@@ -1326,7 +1360,7 @@ export default function ChatPage() {
                           }
                     }
                   >
-                    <div className="text-sm text-primary-text"><Markdown compact>{message.text as string}</Markdown></div>
+                    <div className="text-sm text-slate-900"><Markdown compact>{message.text as string}</Markdown></div>
                   </motion.div>
                 </div>
               ) : (
@@ -1389,7 +1423,7 @@ export default function ChatPage() {
                       {difficultyLevels[difficultyIndex]}
                     </motion.div>
                   </AnimatePresence>
-                  <Icon icon="iconamoon:arrow-down-2-bold" className="w-4 h-4" />
+                  <Icon icon="iconamoon:arrow-down-2-bold" className="text-primary-text w-4 h-4" />
                 </div>
               </button>
               <button className="cursor-pointer font-semibold px-4 py-1.5 rounded-full bg-base-10 text-text-70 text-sm hover:bg-base-20 transition-all h-8 flex items-center">

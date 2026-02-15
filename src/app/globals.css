@@ -5,6 +5,8 @@
   --background: #ffffff;
   --foreground: #171717;
   --primary-text: #171717;
+  --loading: #cdcdcd;
+  --container-primary: #fbfbfb;
   --text-90: rgba(0, 0, 0, 0.9);
   --text-70: rgba(0, 0, 0, 0.7);
   --base-5: rgba(0, 0, 0, 0.05);
@@ -25,18 +27,20 @@
   --text-40: rgba(0, 0, 0, 0.4);
   --opaque-button: rgba(0, 0, 0, 0.1);
   --opaque-button-hover: rgba(0, 0, 0, 0.15);
-  --theme-border: rgba(0, 0, 0, 0.2);
+  --theme-border: #e1e1e1;
   --button-border: rgba(0, 0, 0, 0.1);
-  --button-border-hover: rgba(0, 0, 0, 0.15);
+  --button-border-hover: rgba(0, 0, 0, 0.05);
   --secondary-text: #ffffff;
 }
 
 /* Class-based dark mode (controlled by ThemeProvider) */
 .dark {
   color-scheme: dark;
-  --background: #0a0a0a;
+  --background: #0a0a0a; /*dim : 202124*/
   --foreground: #ededed;
-  --primary-text: #ffffff;
+  --primary-text: #ffffff;  
+  --loading: #444444;
+  --container-primary: #1a1a1a;
   --text-90: rgba(255, 255, 255, 0.9);
   --text-70: rgba(255, 255, 255, 0.7);
   --base-5: rgba(255, 255, 255, 0.05);
@@ -69,6 +73,8 @@
   --color-foreground: var(--foreground);
   --color-primary-text: var(--primary-text);
   --color-secondary-text: var(--secondary-text);
+  --color-loading: var(--loading);
+  --color-container-primary: var(--container-primary);
   --color-text-70: var(--text-70);
   --color-base-5: var(--base-5);
   --color-base-10: var(--base-10);

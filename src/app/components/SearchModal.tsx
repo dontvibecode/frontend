@@ -150,15 +150,15 @@ export default function SearchModal({
             transition={{ duration: 0.04, ease: "easeOut" }}
             className="fixed top-[10%] left-1/2 -translate-x-1/2 w-full max-w-2xl z-50"
           >
-            <div className="bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden">
+            <div className="bg-background rounded-2xl shadow-2xl border border-base-10 overflow-hidden">
               {/* Search Input */}
-              <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-100">
+              <div className="flex items-center gap-3 px-4 py-3 border-b border-base-10">
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   width="20"
                   height="20"
                   viewBox="0 0 24 24"
-                  className="text-gray-400 flex-shrink-0"
+                  className="text-text-70 flex-shrink-0"
                 >
                   <path
                     fill="currentColor"
@@ -171,12 +171,12 @@ export default function SearchModal({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search chats"
-                  className="flex-1 text-base text-gray-900 placeholder-gray-400 outline-none bg-transparent"
+                  className="flex-1 text-base text-primary-text placeholder-text-70 outline-none bg-transparent"
                 />
                 {searchQuery && (
                   <button
                     onClick={() => setSearchQuery("")}
-                    className="p-1 hover:bg-gray-100 rounded transition-colors"
+                    className="p-1 hover:bg-base-5 cursor-pointer rounded transition-colors"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
                       <path
@@ -208,13 +208,13 @@ export default function SearchModal({
                                 onMouseEnter={() => setSelectedIndex(globalIdx)}
                                 className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                                   selectedIndex === globalIdx
-                                    ? "bg-gray-100 text-gray-700"
-                                    : "hover:bg-gray-100 text-gray-700"
+                                    ? "bg-base-5 text-primary-text"
+                                    : "hover:bg-base-5 text-primary-text"
                                 }`}
                               >
                                 <div className={`
-                                  w-8 h-8 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0
-                                  ${selectedIndex === globalIdx ? "bg-gray-200" : "bg-gray-100"}
+                                  w-8 h-8 rounded-xl bg-base-5 flex items-center justify-center flex-shrink-0
+                                  ${selectedIndex === globalIdx ? "bg-base-10" : "bg-base-5"}
                                 `}>
                                   {selectedIndex === globalIdx ? (
                                     <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24"><g fill="none" fillRule="evenodd"><path d="m12.594 23.258l-.012.002l-.071.035l-.02.004l-.014-.004l-.071-.036q-.016-.004-.024.006l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.016-.018m.264-.113l-.014.002l-.184.093l-.01.01l-.003.011l.018.43l.005.012l.008.008l.201.092q.019.005.029-.008l.004-.014l-.034-.614q-.005-.019-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.003-.011l.018-.43l-.003-.012l-.01-.01z"/><path fill="currentColor" d="M12 2c.901 0 1.774.12 2.605.344a3 3 0 0 0 .425 5.495l.378.129a1 1 0 0 1 .624.624l.13.378a3 3 0 0 0 5.493.425A10 10 0 0 1 22 12c0 5.523-4.477 10-10 10H4a2 2 0 0 1-2-2v-8C2 6.477 6.477 2 12 2m0 12H9a1 1 0 1 0 0 2h3a1 1 0 1 0 0-2m3-4H9a1 1 0 1 0 0 2h6a1 1 0 1 0 0-2m4-9a1 1 0 0 1 .946.677l.13.378c.3.879.99 1.57 1.87 1.87l.377.129a1 1 0 0 1 0 1.892l-.378.13c-.879.3-1.57.99-1.87 1.87l-.129.377a1 1 0 0 1-1.892 0l-.13-.378a3 3 0 0 0-1.87-1.87l-.377-.129a1 1 0 0 1 0-1.892l.378-.13c.879-.3 1.57-.99 1.87-1.87l.129-.377A1 1 0 0 1 19 1" strokeWidth="0.2" stroke="currentColor"/></g></svg>
@@ -230,10 +230,10 @@ export default function SearchModal({
                                         <span
                                           key={tag}
                                           className={`
-                                            text-xs px-1.5 py-0.5 bg-gray-100 text-gray-600 group-hover:bg-gray-200 rounded transition-colors duration-200
+                                            text-xs px-1.5 py-0.5 bg-base-10 text-text-70 group-hover:bg-base-10 rounded transition-colors duration-200
                                             ${selectedIndex === globalIdx
-                                              ? "bg-gray-200 text-gray-700"
-                                              : "hover:bg-gray-200 text-gray-700"}
+                                              ? "bg-base-10 text-primary-text"
+                                              : "hover:bg-base-10 text-primary-text"}
                                           `}
                                         >
                                           {tag}
@@ -259,7 +259,7 @@ export default function SearchModal({
 
                       {filteredExercises.length > 0 && (
                         <div className="flex flex-col gap-2">
-                          <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                          <div className="px-3 text-xs font-semibold text-text-70 uppercase tracking-wide">
                             Bookmarked Exercises
                           </div>
                           {filteredExercises.map((exercise: any, idx: number) => {
@@ -272,8 +272,8 @@ export default function SearchModal({
                                 onMouseEnter={() => setSelectedIndex(globalIdx)}
                                 className={`w-full group flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                                   selectedIndex === globalIdx
-                                    ? "bg-gray-100 text-gray-700"
-                                    : "hover:bg-gray-100 text-gray-700"
+                                    ? "bg-base-5 text-primary-text"
+                                    : "hover:bg-base-5 text-primary-text"
                                 }`}
                               >
                                 <div className={`
@@ -323,7 +323,7 @@ export default function SearchModal({
                     </div>
                   ) : (
                     <div className="py-16 text-center">
-                      <div className="text-gray-400 mb-2">
+                      <div className="text-text-70 mb-2">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
                           width="48"
@@ -337,18 +337,18 @@ export default function SearchModal({
                           />
                         </svg>
                       </div>
-                      <p className="text-gray-500">No results found for "{searchQuery}"</p>
+                      <p className="text-text-70">No results found for "{searchQuery}"</p>
                     </div>
                   )
                 ) : recentSearches.length > 0 ? (
                   <div className="p-2">
                     <div className="flex items-center justify-between px-3 py-1.5">
-                      <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                      <span className="text-xs font-semibold text-text-70 uppercase tracking-wide">
                         Recent Searches
                       </span>
                       <button
                         onClick={clearRecentSearches}
-                        className="text-xs text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-xs text-text-70 hover:text-text-70 transition-colors"
                       >
                         Clear
                       </button>
@@ -357,9 +357,9 @@ export default function SearchModal({
                       <button
                         key={idx}
                         onClick={() => setSearchQuery(search)}
-                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-gray-50 transition-colors text-gray-600"
+                        className="w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left hover:bg-base-5 transition-colors text-primary-text"
                       >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" className="text-gray-400">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" className="text-text-70">
                           <path fill="currentColor" d="M13 3a9 9 0 0 0-9 9H1l3.89 3.89l.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7s-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42A8.95 8.95 0 0 0 13 21a9 9 0 0 0 0-18" />
                         </svg>
                         <span>{search}</span>
@@ -368,20 +368,20 @@ export default function SearchModal({
                   </div>
                 ) : (
                   <div className="py-16 text-center">
-                    <p className="text-gray-400">No recent searches</p>
+                    <p className="text-text-70">No recent searches</p>
                   </div>
                 )}
               </div>
 
               {/* Footer */}
-              <div className="flex items-center justify-between px-4 py-3 border-t border-gray-100 bg-gray-100">
-                <div className="flex items-center gap-4 text-xs text-gray-400">
+              <div className="flex items-center justify-between px-4 py-3 border-t border-base-10 bg-container-primary">
+                <div className="flex items-center gap-4 text-xs text-text-70">
                   <span className="flex items-center gap-1">
-                    <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">esc</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-background border border-base-10 rounded text-[10px] text-text-70 font-medium">esc</kbd>
                     <span>to close</span>
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-xs text-gray-400">
+                <div className="flex items-center gap-4 text-xs text-text-70">
                   <span className="flex items-center gap-1">
                   <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">↑</kbd>
                   <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">↓</kbd>
