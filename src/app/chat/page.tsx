@@ -997,7 +997,7 @@ export default function ChatPage() {
                                 setConversations(conversationsData);
                               }
                             }}
-                            className="bg-base-10 text-currentColor backdrop-blur-md border border-button-border rounded-full p-2 cursor-pointer hover:bg-base-5 transition-colors"
+                            className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
                           >
                             <Icon icon="octicon:pin-slash-16" className="w-4 h-4" />
                           </motion.div>
@@ -1153,7 +1153,7 @@ export default function ChatPage() {
                                   setConversations(conversationsData);
                                 }
                               }}
-                              className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer hover:bg-black/90 transition-colors"
+                              className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
                             >
                               <Icon icon="octicon:pin-16" className="w-4 h-4" />
                             </motion.div>
@@ -1437,7 +1437,7 @@ export default function ChatPage() {
                 {loading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <svg viewBox="0 0 24 24" fill="primary-text" className="w-4 h-4">
+                  <svg viewBox="0 0 24 24" className="text-primary-text w-4 h-4">
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                   </svg>
                 )}
