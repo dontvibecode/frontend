@@ -89,7 +89,7 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
     {
       regex: /~~(.+?)~~/,
       render: (match, key) => (
-        <del key={key} className="line-through text-gray-500">
+        <del key={key} className="line-through text-text-70">
           {match[1]}
         </del>
       ),
@@ -100,7 +100,7 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
       render: (match, key) => (
         <code
           key={key}
-          className="bg-gray-100 text-rose-600 px-1.5 py-0.5 rounded text-sm font-mono"
+          className="bg-base-10 text-rose-600 px-1.5 py-0.5 rounded text-sm font-mono"
         >
           {match[1]}
         </code>
@@ -115,7 +115,7 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
           href={match[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-800 underline"
+          className="text-primary-text hover:text-primary-text-hover underline"
         >
           {match[1]}
         </a>

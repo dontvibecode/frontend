@@ -161,6 +161,53 @@ const TypewriterHero = () => {
   );
 };
 
+const ThoughtDropdown = ({ thought }: { thought: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+  
+  // Count the number of steps by counting bold headers (lines starting with **)
+  const stepCount = useMemo(() => {
+    const matches = thought.match(/\*\*[^*]+\*\*/g);
+    return matches ? matches.length : 1;
+  }, [thought]);
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-sm text-base-40 cursor-pointer hover:text-text-70 transition-colors"
+      >
+        <motion.svg
+          animate={{ rotate: isExpanded ? 90 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="w-3 h-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </motion.svg>
+        <span className="font-medium">Thought for {stepCount} step{stepCount !== 1 ? 's' : ''}</span>
+      </button>
+      
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden scrollbar-hide"
+          >
+            <div className="mt-3 pl-5 border-l-2 border-base-20 text-sm text-text-70 space-y-3 max-h-64 overflow-y-auto scrollbar-hide">
+              <Markdown>{thought}</Markdown>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
 export const AIResponse = ({
   message,
   previousMessage,
@@ -199,18 +246,16 @@ export const AIResponse = ({
           (jsonData as any).lesson_title ??
           "No Title Available"}
       </h1>
+
+      {message.thought && (
+        <ThoughtDropdown thought={message.thought} />
+      )}
+
       {jsonData.breakdown && (
         <p className="text-sm text-primary-text mb-3 font-regular">
           {jsonData.breakdown}
         </p>
       )}
-
-      {/* Explanation */}
-      {/* {jsonData.explanation && (
-        <p className="text-sm text-gray-600 mb-4">
-          {jsonData.explanation}
-        </p>
-      )} */}
 
       {/* Lesson Content Card */}
       {(jsonData.exercises || jsonData.recommendedReadings) && (
@@ -872,10 +917,11 @@ export default function ChatPage() {
                   </path>
                 </g>
               </svg>
-              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">New C2hat</span>
+              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">New Chat</span>
             </button>
           </div>
 
+          {bookmarkedExercises.length > 0 && (
           <div className="px-4 py-3">
             <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
               Bookmarked Exercises
@@ -937,6 +983,7 @@ export default function ChatPage() {
               )}
             </div>
           </div>
+          )}
 
           {/* Pinned Section */}
           {conversations.filter(c => c.pinned).length > 0 && (
@@ -1058,7 +1105,7 @@ export default function ChatPage() {
 
           {/* Regular Chats Section */}
           <div className="px-4 py-3 flex-1">
-            <h3 className="text-xs font-semibold text-base-40 uppercase mb-2">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
               Chats
             </h3>
             <div className="space-y-1">
@@ -1077,6 +1124,12 @@ export default function ChatPage() {
                     </div>
                   ))}
                 </>
+              ) : conversations.length <= 0 ? (
+                <div className="w-full rounded-lg">
+                    <div className="flex flex-col w-full gap-2">
+                      <span className="text-xs text-base-40 font-regular">Your chats will show up here</span>
+                    </div>
+                </div>
               ) : (
                 <>
                   {conversations.filter(c => !c.pinned).map((conversation: Conversation, index: number) => (
@@ -1237,7 +1290,7 @@ export default function ChatPage() {
                 <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20"><path fill="currentColor" fillRule="evenodd" d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38" clipRule="evenodd" strokeWidth="0.4" stroke="currentColor"/></svg>                
                 </div>
-                <span className="text-xs font-medium text-base-40">Tok eens</span>
+                <span className="text-xs font-medium text-base-40">Tokens</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-sm font-bold text-currentColor">

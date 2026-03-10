@@ -16,51 +16,51 @@ const ExpandedSkeletonLoader: React.FC = () => {
       <div className="flex items-center justify-between mt-12">
         <div className="flex items-center gap-3">
           <div className="space-y-2">
-            <div className="h-8 w-48 bg-gray-200 rounded-full animate-pulse" />
+            <div className="h-8 w-48 bg-base-10 rounded-full animate-pulse" />
           </div>
         </div>
       </div>
       
       {/* Progress Header Skeleton */}
-      <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
+      <div className="bg-container-primary rounded-2xl p-5 border border-base-10 shadow-sm">
         <div className="flex items-center justify-between mb-4">
           {/* Circular Progress + Text */}
           <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-gray-200 animate-pulse" />
+            <div className="w-16 h-16 rounded-full bg-base-10 animate-pulse" />
             <div className="space-y-2">
-              <div className="h-5 w-36 bg-gray-200 rounded-full animate-pulse" />
-              <div className="h-3 w-28 bg-gray-100 rounded-full animate-pulse" />
+              <div className="h-5 w-36 bg-base-10 rounded-full animate-pulse" />
+              <div className="h-3 w-28 bg-base-10 rounded-full animate-pulse" />
             </div>
           </div>
           {/* Stat Boxes */}
           <div className="flex gap-3">
             {[...Array(4)].map((_, i) => (
-              <div key={i} className="flex flex-col items-center px-4 py-2 aspect-[2] bg-gray-50 rounded-xl min-w-[80px]">
+              <div key={i} className="flex flex-col items-center px-4 py-2 aspect-[2] bg-base-10 rounded-xl min-w-[80px]">
            
               </div>
             ))}
           </div>
         </div>
         {/* Languages + Bookmarked Row */}
-        <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+        <div className="flex items-center justify-between pt-3 border-t border-base-10">
           <div className="flex items-center gap-3">
-            <div className="h-5 w-20 bg-gray-200 rounded-full animate-pulse" />
-            <div className="h-5 w-24 bg-gray-200 rounded-full animate-pulse" />
+            <div className="h-5 w-20 bg-base-10 rounded-full animate-pulse" />
+            <div className="h-5 w-24 bg-base-10 rounded-full animate-pulse" />
           </div>
         </div>
       </div>
 
 
       {/* Main Content Area */}
-      <div className="bg-white rounded-2xl space-y-5">
+      <div className="bg-container-primary rounded-2xl space-y-5">
         {/* Explanation Section */}
         <div className="space-y-3">
-          <div className="h-6 w-40 bg-gray-200 rounded-full animate-pulse" />
+          <div className="h-6 w-40 bg-base-10 rounded-full animate-pulse" />
           <div className="space-y-2 w-2/3">
-            <div className="h-4 w-9/10 bg-gray-100 rounded-full animate-pulse" />
-            <div className="h-4 w-full bg-gray-100 rounded-full animate-pulse" />
-            <div className="h-4 w-5/6 bg-gray-100 rounded-full animate-pulse" />
-            <div className="h-4 w-full bg-gray-100 rounded-full animate-pulse" />
+            <div className="h-4 w-9/10 bg-base-10 rounded-full animate-pulse" />
+            <div className="h-4 w-full bg-base-10 rounded-full animate-pulse" />
+            <div className="h-4 w-5/6 bg-base-10 rounded-full animate-pulse" />
+            <div className="h-4 w-full bg-base-10 rounded-full animate-pulse" />
           </div>
         </div>
 
@@ -81,7 +81,7 @@ const ExpandedSkeletonLoader: React.FC = () => {
 
         {/* Exercise Tabs Skeleton */}
         <div className="flex gap-2 pt-2">
-          <div className="aspect-[3] w-full bg-gray-200 rounded-lg animate-pulse" />
+          <div className="aspect-[3] w-full bg-base-10 rounded-lg animate-pulse" />
         </div>
       </div>
     </motion.div>

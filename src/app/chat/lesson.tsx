@@ -559,9 +559,9 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
                   <h3 className="text-lg font-semibold text-rose-900 mb-1">
                     <Markdown>{feedbackData.heading}</Markdown>
                   </h3>
-                  <p className="text-sm text-rose-700/80 leading-relaxed whitespace-pre-wrap">
+                  <span className="text-sm text-rose-700/80 leading-relaxed whitespace-pre-wrap">
                     <Markdown>{feedbackData.summary}</Markdown>
-                  </p>
+                  </span>
                 </div>
               </div>
 
@@ -755,6 +755,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
       // Update fetchedExercises with the new bookmark state
       setFetchedExercises((prev: any) => {
         if (!prev) return prev;
+        if (!response) return prev;
 
         // Find the key that matches this exercise id
         const exerciseKey = Object.keys(prev).find(
@@ -776,7 +777,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
       });
 
       // Notify parent about bookmark change
-      if (onBookmarkChange) {
+      if (onBookmarkChange && response) {
         onBookmarkChange(exerciseId, response.bookmarked, {
           id: response.id,
           message_id: message.id,
@@ -788,7 +789,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
         });
       }
 
-      return response.bookmarked;
+      return response?.bookmarked ?? false;
     } catch (error) {
       console.error('Failed to bookmark exercise:', error);
       return false;
@@ -809,9 +810,9 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           {/* Close button */}
           <button
             onClick={() => setLessonExpanded(false)}
-            className="cursor-pointer absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+            className="cursor-pointer absolute top-4 right-4 p-2 hover:bg-base-10 rounded-lg transition-colors z-10"
           >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-text-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
