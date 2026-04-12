@@ -20,6 +20,7 @@ import SearchModal from "../components/SearchModal";
 import { StreamingThoughts } from "../components/StreamingThoughts";
 import { Icon } from "@iconify/react";
 import { Markdown } from "@/lib/markdownParser";
+import PaymentModal from "../components/PaymentModal";
 
 const TypewriterHero = () => {
   const lines = [
@@ -404,6 +405,7 @@ export default function ChatPage() {
   const [lessonLoading, setLessonLoading] = useState(false);
   const [showSkeletonMinTime, setShowSkeletonMinTime] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -861,6 +863,13 @@ export default function ChatPage() {
         }}
       />
 
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        idToken={(session?.user as any)?.idToken}
+        mode="subscription"
+      />
+
       {/* User Profile Popup */}
       <UserProfilePopup
         isOpen={showUserProfilePopup}
@@ -1280,6 +1289,19 @@ export default function ChatPage() {
               )}
             </div>
           </div>
+        </div>
+        <div className="p-2 border-t border-theme-border">
+          <button
+            className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
+            onClick={() => setShowPaymentModal(true)}
+          >
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
+                <svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14,11H10a2,2,0,0,1,0-4h5a1,1,0,0,1,1,1,1,1,0,0,0,2,0,3,3,0,0,0-3-3H13V3a1,1,0,0,0-2,0V5H10a4,4,0,0,0,0,8h4a2,2,0,0,1,0,4H9a1,1,0,0,1-1-1,1,1,0,0,0-2,0,3,3,0,0,0,3,3h2v2a1,1,0,0,0,2,0V19h1a4,4,0,0,0,0-8Z"/></svg>
+              </div>
+              <span className="text-sm font-medium">Payments Portal</span>
+            </div>
+          </button>
         </div>       
         {/* User Profile */}
         <div className="p-2 border-t border-theme-border">

@@ -831,6 +831,83 @@ export const exerciseAPI = {
   },
 }
 // ============================================================================
+// PAYMENT API
+// ============================================================================
+
+export const paymentAPI = {
+  /**
+   * Create a subscription and get the client_secret for Stripe Elements
+   */
+  createSubscription: async (
+    idToken?: string
+  ): Promise<{ subscription_id: string; client_secret: string } | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/payments/subscribe/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      console.log("Subscription creation failed.");
+      const errorData = await response.json().catch(() => ({}));
+      console.error("Error details:", errorData);
+      const isTokenWarning = await handleApiError(response, "Failed to create subscription");
+      if (isTokenWarning) return null;
+    }
+
+    return parseJsonWithWarningCheck(response);
+  },
+
+  /**
+   * Create a one-time token purchase and get the client_secret for Stripe Elements
+   */
+  buyTokens: async (
+    data: { token_amount: 200000 },
+    idToken: string
+  ): Promise<{ client_secret: string } | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/payments/tokens/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify(data),
+      }
+    );
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(response, "Failed to create token purchase");
+      if (isTokenWarning) return null;
+    }
+
+    return parseJsonWithWarningCheck(response);
+  },
+
+  /**
+   * Cancel the user's Pro subscription at period end
+   */
+  cancelSubscription: async (
+    idToken?: string
+  ): Promise<{ status: string; message: string; active_until: string } | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/payments/cancel/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(response, "Failed to cancel subscription");
+      if (isTokenWarning) return null;
+    }
+
+    return parseJsonWithWarningCheck(response);
+  },
+};
+
+// ============================================================================
 // COMBINED API OBJECT (for convenience)
 // ============================================================================
 
@@ -840,6 +917,7 @@ const api = {
   message: messageAPI,
   exercise: exerciseAPI,
   upload: uploadAPI,
+  payment: paymentAPI,
 };
 
 export default api;

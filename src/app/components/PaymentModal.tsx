@@ -1,0 +1,294 @@
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { loadStripe } from "@stripe/stripe-js";
+import {
+  Elements,
+  PaymentElement,
+  useStripe,
+  useElements,
+} from "@stripe/react-stripe-js";
+import { paymentAPI } from "@/lib/api";
+
+const stripePromise = loadStripe(
+  process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
+);
+
+interface PaymentModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  idToken: string;
+}
+
+export default function PaymentModal({
+  isOpen,
+  onClose,
+  idToken,
+}: PaymentModalProps) {
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [mode, setMode] = useState<"subscription" | "tokens">("subscription");
+
+  useEffect(() => {
+    if (!isOpen) {
+      setClientSecret(null);
+      setError(null);
+      return;
+    }
+
+    const fetchClientSecret = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        if (mode === "subscription") {
+          console.log("Creating subscription with idToken:", idToken);
+          const result = await paymentAPI.createSubscription(idToken);
+          if (result) {
+            console.log("Received client secret:", result.client_secret);
+            setClientSecret(result.client_secret);
+          }
+        } else if (mode === "tokens") {
+          const tokenAmount = 200000;
+          console.log(
+            "Buying tokens with idToken:",
+            idToken,
+            "and token amount of ",
+            tokenAmount,
+          );
+          const result = await paymentAPI.buyTokens({
+            token_amount: tokenAmount,
+          }, idToken);
+          if (result) setClientSecret(result.client_secret);
+        }
+      } catch (err: any) {
+        setError(err.message || "Failed to initialize payment");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchClientSecret();
+  }, [isOpen, mode, idToken]);
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          {/* Backdrop */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
+            onClick={onClose}
+          />
+
+          {/* Modal */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.04, ease: "easeOut" }}
+            className="fixed top-[10%] left-1/2 -translate-x-1/2 w-full max-w-2xl z-50"
+          >
+            <div className="bg-background rounded-2xl shadow-2xl border border-base-10 overflow-hidden">
+              {/* Header */}
+              <div className="p-6 pb-4 border-b border-base-10 flex">
+                <button
+                  className={`p-4 mr-8 rounded-xl cursor-pointer transition-colors
+                            ${
+                              mode === "subscription"
+                                ? "bg-gray-800 hover:bg-gray-700"
+                                : "hover:bg-gray-800/50"
+                            }`}
+                  onClick={() => setMode("subscription")}
+                >
+                  <h2 className="text-xl font-semibold text-primary-text">
+                    Subscribe to Pro
+                  </h2>
+                  <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+                    Unlock 5M tokens/month and unlimited exercises
+                  </p>
+                </button>
+                <button
+                  className={`p-4 mr-8 rounded-xl cursor-pointer transition-colors
+                            ${
+                              mode === "tokens"
+                                ? "bg-gray-800 hover:bg-gray-700"
+                                : "hover:bg-gray-800/50"
+                            }`}
+                  onClick={() => setMode("tokens")}
+                >
+                  <h2 className="text-xl font-semibold text-primary-text">
+                    Buy Tokens
+                  </h2>
+                  <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+                    Add 200,000 tokens to your balance
+                  </p>
+                </button>
+                {/* <h2 className="text-xl font-semibold text-primary-text">
+                  {mode === "subscription"
+                    ? "Subscribe to Pro"
+                    : "Buy Tokens"}
+                </h2>
+                <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+                  {mode === "subscription"
+                    ? "Unlock 5M tokens/month and unlimited exercises"
+                    : `Add ${tokenAmount?.toLocaleString()} tokens to your balance`}
+                </p> */}
+              </div>
+
+              {/* Body */}
+              <div className="p-6">
+                {loading && (
+                  <div className="flex flex-col gap-6 items-center justify-center py-12">
+                    <h1>Loading payment portal...</h1>
+                    <div className="w-6 h-6 border-2 border-base-20 border-t-primary-text rounded-full animate-spin" />
+                  </div>
+                )}
+
+                {error && (
+                  <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+                    {error}
+                  </div>
+                )}
+
+                {!loading && clientSecret && (
+                  <Elements
+                    key={clientSecret}
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret,
+                      appearance: {
+                        theme: "stripe",
+                        variables: {
+                          borderRadius: "10px",
+                          fontFamily: "inherit",
+                        },
+                      },
+                    }}
+                  >
+                    <CheckoutForm onClose={onClose} />
+                  </Elements>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function CheckoutForm({ onClose }: { onClose: () => void }) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    const { error: stripeError } = await stripe.confirmPayment({
+      elements,
+      confirmParams: {
+        return_url: window.location.href,
+      },
+      redirect: "if_required",
+    });
+
+    if (stripeError) {
+      setError(stripeError.message || "Payment failed");
+      setSubmitting(false);
+    } else {
+      setSuccess(true);
+      setSubmitting(false);
+    }
+  };
+
+  if (success) {
+    return (
+      <div className="text-center py-6">
+        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-green-600 dark:text-green-400"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-primary-text">
+          Payment successful
+        </h3>
+        <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+          Your account has been updated.
+        </p>
+        <button
+          onClick={onClose}
+          className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
+        >
+          Done
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <PaymentElement
+        options={{
+          layout: {
+            type: "accordion",
+            defaultCollapsed: false,
+            radios: "always",
+            spacedAccordionItems: false,
+          },
+        }}
+      />
+
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="mt-6 space-y-3">
+        <button
+          type="submit"
+          disabled={!stripe || submitting}
+          className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Processing..." : "Pay now"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={submitting}
+          className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
+        >
+          Cancel
+        </button>
+      </div>
+    </form>
+  );
+}
