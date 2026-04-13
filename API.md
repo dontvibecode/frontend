@@ -35,6 +35,11 @@ This document provides a comprehensive reference for all available API endpoints
 - [File Upload](#file-upload)
   - [Get Profile Image Upload URL](#get-profile-image-upload-url)
   - [Confirm Profile Image Upload](#confirm-profile-image-upload)
+- [Payments](#payments)
+  - [Create Subscription](#create-subscription)
+  - [Buy Tokens](#buy-tokens)
+  - [Cancel Subscription](#cancel-subscription)
+  - [Stripe Webhook](#stripe-webhook)
 - [Type Definitions](#type-definitions)
 
 ---
@@ -719,6 +724,127 @@ Saves the `public_url` into the database, overwriting the old one if there is on
 ```typescript
 {
   profile_image: string;                                     // Returns the public_url
+}
+```
+
+---
+
+## Payments
+
+### Create Subscription
+
+Creates a Pro subscription for the authenticated user. Returns a `client_secret` for Stripe Elements confirmation on the frontend.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `BASE_URL/api/chat/payments/subscribe/` |
+| **Method** | `POST` |
+
+**Request Body**
+
+No body required. User is identified via Bearer token authentication.
+
+**Response**
+
+```typescript
+{
+  subscription_id: string;
+  client_secret: string;
+}
+```
+
+---
+
+### Buy Tokens
+
+Creates a one-time PaymentIntent for purchasing tokens. Returns a `client_secret` for Stripe Elements confirmation.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `BASE_URL/api/chat/payments/tokens/` |
+| **Method** | `POST` |
+
+**Request Body**
+
+```typescript
+{
+  token_amount: 200000;                                      // Only 200000 is currently supported
+}
+```
+
+**Response**
+
+```typescript
+{
+  client_secret: string;
+}
+```
+
+---
+
+### Cancel Subscription
+
+Cancels the user's Pro subscription at the end of the current billing period. The user retains Pro access until the period ends.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `BASE_URL/api/chat/payments/cancel/` |
+| **Method** | `POST` |
+
+**Request Body**
+
+No body required. User is identified via Bearer token authentication.
+
+**Response**
+
+```typescript
+{
+  status: "canceled";
+  message: "Subscription will cancel at period end";
+  active_until: string;                                      // ISO datetime string for when Pro access expires
+}
+```
+
+**Error Responses**
+
+```json
+{ "error": "No subscription found" }
+```
+
+```json
+{ "error": "No active subscription" }
+```
+
+---
+
+### Stripe Webhook
+
+Receives and processes Stripe webhook events. Verifies the payload signature via the `Stripe-Signature` header before processing. CSRF protection is disabled for this endpoint.
+
+| Property | Value |
+|----------|-------|
+| **Endpoint** | `BASE_URL/api/chat/webhooks/stripe/` |
+| **Method** | `POST` |
+
+**Request Headers**
+
+| Header | Description |
+|--------|-------------|
+| `Stripe-Signature` | Stripe webhook signature for payload verification |
+
+**Supported Events**
+
+| Event | Description |
+|-------|-------------|
+| `invoice.payment_succeeded` | Updates user membership to Pro on subscription payment |
+| `payment_intent.succeeded` | Adds purchased tokens to user's token limit |
+| `customer.subscription.deleted` | Downgrades user back to free tier (50k token limit) |
+
+**Response**
+
+```json
+{
+  "status": "success"
 }
 ```
 

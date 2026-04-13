@@ -73,4 +73,5 @@ export interface User {
   email: string;
   preferences?: UserPreferences;
   tokens?: number;
+  membership: "free" | "pro";
 }

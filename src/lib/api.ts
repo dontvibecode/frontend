@@ -112,11 +112,13 @@ const transformPreferencesToSnakeCase = (prefs: UserPreferences | undefined): an
  * Transform user response from backend to frontend format
  */
 const transformUserResponse = (data: any): import("@/types").User => {
+  console.log({ transformUserResponse: data })
   return {
     id: data.id,
     username: data.username,
     email: data.email,
     preferences: transformPreferencesToCamelCase(data.preferences),
+    membership: data.membership,
   };
 };
 

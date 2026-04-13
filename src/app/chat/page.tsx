@@ -477,6 +477,7 @@ export default function ChatPage() {
       if (session?.user?.email && idToken) {
         try {
           const response = await api.user.getUser(session.user.email, idToken);
+          console.log('user response: ', { response })
           setUser(response);
           // Fetch token usage
           const tokenUsage = await api.user.getTokenUsage(session.user.email, idToken);
@@ -867,7 +868,7 @@ export default function ChatPage() {
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
         idToken={(session?.user as any)?.idToken}
-        mode="subscription"
+        membership={user?.membership}
       />
 
       {/* User Profile Popup */}
@@ -1295,11 +1296,14 @@ export default function ChatPage() {
             className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
             onClick={() => setShowPaymentModal(true)}
           >
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
-                <svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14,11H10a2,2,0,0,1,0-4h5a1,1,0,0,1,1,1,1,1,0,0,0,2,0,3,3,0,0,0-3-3H13V3a1,1,0,0,0-2,0V5H10a4,4,0,0,0,0,8h4a2,2,0,0,1,0,4H9a1,1,0,0,1-1-1,1,1,0,0,0-2,0,3,3,0,0,0,3,3h2v2a1,1,0,0,0,2,0V19h1a4,4,0,0,0,0-8Z"/></svg>
+            <div className="flex items-center place-content-around w-full">
+              <div className="flex gap-2 items-center">
+                <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
+                  <svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14,11H10a2,2,0,0,1,0-4h5a1,1,0,0,1,1,1,1,1,0,0,0,2,0,3,3,0,0,0-3-3H13V3a1,1,0,0,0-2,0V5H10a4,4,0,0,0,0,8h4a2,2,0,0,1,0,4H9a1,1,0,0,1-1-1,1,1,0,0,0-2,0,3,3,0,0,0,3,3h2v2a1,1,0,0,0,2,0V19h1a4,4,0,0,0,0-8Z"/></svg>
+                </div>
+                <span className="text-sm font-medium">Payments</span>
               </div>
-              <span className="text-sm font-medium">Payments Portal</span>
+              <span className="font-light text-end">{user?.membership} member</span>
             </div>
           </button>
         </div>       
