@@ -74,4 +74,6 @@ export interface User {
   preferences?: UserPreferences;
   tokens?: number;
   membership: "free" | "pro";
+  subscriptionActive?: boolean | null;
+  membershipExpiresAt?: string | null;
 }

@@ -12,7 +12,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { Conversation, Exercise, MessageData, User, UserPreferences } from "@/types/api";
+import {
+  Conversation,
+  Exercise,
+  MessageData,
+  User,
+  UserPreferences,
+} from "@/types/api";
 import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
@@ -115,7 +121,14 @@ const TypewriterHero = () => {
 
       return () => clearTimeout(timeout);
     }
-  }, [currentCharIndex, currentLineIndex, isDeleting, isPaused, displayedLines, lines]);
+  }, [
+    currentCharIndex,
+    currentLineIndex,
+    isDeleting,
+    isPaused,
+    displayedLines,
+    lines,
+  ]);
 
   // Determine which line should show the cursor
   const getCursorLineIndex = () => {
@@ -164,7 +177,7 @@ const TypewriterHero = () => {
 
 const ThoughtDropdown = ({ thought }: { thought: string }) => {
   const [isExpanded, setIsExpanded] = useState(false);
-  
+
   // Count the number of steps by counting bold headers (lines starting with **)
   const stepCount = useMemo(() => {
     const matches = thought.match(/\*\*[^*]+\*\*/g);
@@ -185,11 +198,18 @@ const ThoughtDropdown = ({ thought }: { thought: string }) => {
           viewBox="0 0 24 24"
           stroke="currentColor"
         >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
         </motion.svg>
-        <span className="font-medium">Thought for {stepCount} step{stepCount !== 1 ? 's' : ''}</span>
+        <span className="font-medium">
+          Thought for {stepCount} step{stepCount !== 1 ? "s" : ""}
+        </span>
       </button>
-      
+
       <AnimatePresence>
         {isExpanded && (
           <motion.div
@@ -226,7 +246,9 @@ export const AIResponse = ({
   if (!jsonData || Object.keys(jsonData).length === 0 || !message) {
     return (
       <div className="bg-base-10 border border-theme-border rounded-2xl p-3">
-        <div className="text-sm text-text-90"><Markdown compact>{message?.text as string}</Markdown></div>
+        <div className="text-sm text-text-90">
+          <Markdown compact>{message?.text as string}</Markdown>
+        </div>
       </div>
     );
   }
@@ -248,9 +270,7 @@ export const AIResponse = ({
           "No Title Available"}
       </h1>
 
-      {message.thought && (
-        <ThoughtDropdown thought={message.thought} />
-      )}
+      {message.thought && <ThoughtDropdown thought={message.thought} />}
 
       {jsonData.breakdown && (
         <p className="text-sm text-primary-text mb-3 font-regular">
@@ -299,7 +319,9 @@ export const AIResponse = ({
                         <div className="font-medium text-sm mb-1">
                           {exercise.filename}
                         </div>
-                        <p className="text-xs text-primary-text">{exercise.text}</p>
+                        <p className="text-xs text-primary-text">
+                          {exercise.text}
+                        </p>
                       </div>
                       <div className="w-5 h-5 rounded-full border-2 border-theme-border flex-shrink-0"></div>
                     </div>
@@ -359,13 +381,18 @@ export const AIResponse = ({
             {jsonData.tags && jsonData.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {jsonData.tags.map((tag) => (
-                  <span key={tag} className="text-xs px-2 py-0.5 bg-base-10 text-primary-text rounded">
+                  <span
+                    key={tag}
+                    className="text-xs px-2 py-0.5 bg-base-10 text-primary-text rounded"
+                  >
                     {tag}
                   </span>
                 ))}
               </div>
             )}
-            <p className="text-xs font-regular text-text-90 uppercase mt-3">{new Date(message.created_at).toLocaleString().split(',')[0]}</p>
+            <p className="text-xs font-regular text-text-90 uppercase mt-3">
+              {new Date(message.created_at).toLocaleString().split(",")[0]}
+            </p>
           </div>
         </div>
       )}
@@ -390,16 +417,22 @@ export default function ChatPage() {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [streamStage, setStreamStage] = useState<
-    'routing' | 'routing_thought' | 'instructor' | 'instructor_thought' | 'complete' | 'error' | null
+    | "routing"
+    | "routing_thought"
+    | "instructor"
+    | "instructor_thought"
+    | "complete"
+    | "error"
+    | null
   >(null);
-  const [thoughtStream, setThoughtStream] = useState<string>('');
+  const [thoughtStream, setThoughtStream] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(
-    new Map()
+    new Map(),
   );
   const [lessonExpanded, setLessonExpanded] = useState(false);
   const [lessonLoading, setLessonLoading] = useState(false);
@@ -409,8 +442,13 @@ export default function ChatPage() {
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [tokenData, setTokenData] = useState<{ token_used: number; token_limit: number } | null>(null);
-  const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>([]);
+  const [tokenData, setTokenData] = useState<{
+    token_used: number;
+    token_limit: number;
+  } | null>(null);
+  const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>(
+    [],
+  );
   const [bookmarksLoading, setBookmarksLoading] = useState(true);
   const [bookmarksExpanded, setBookmarksExpanded] = useState(false);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
@@ -446,11 +484,18 @@ export default function ChatPage() {
           }
 
           // Fetch both in parallel, with minimum 1 second delay
-          const [conversationsData, bookmarkedExercisesData] = await Promise.all([
-            api.conversation.getConversations(session?.user?.email as string, idToken),
-            api.conversation.getBookmarkedExercises(session?.user?.email as string, idToken),
-            new Promise(resolve => setTimeout(resolve, 1000)), // minimum 1 second
-          ]);
+          const [conversationsData, bookmarkedExercisesData] =
+            await Promise.all([
+              api.conversation.getConversations(
+                session?.user?.email as string,
+                idToken,
+              ),
+              api.conversation.getBookmarkedExercises(
+                session?.user?.email as string,
+                idToken,
+              ),
+              new Promise((resolve) => setTimeout(resolve, 1000)), // minimum 1 second
+            ]);
 
           // Set both values at the same time
           setConversations(conversationsData);
@@ -477,10 +522,13 @@ export default function ChatPage() {
       if (session?.user?.email && idToken) {
         try {
           const response = await api.user.getUser(session.user.email, idToken);
-          console.log('user response: ', { response })
+          console.log("user response: ", { response });
           setUser(response);
           // Fetch token usage
-          const tokenUsage = await api.user.getTokenUsage(session.user.email, idToken);
+          const tokenUsage = await api.user.getTokenUsage(
+            session.user.email,
+            idToken,
+          );
           setTokenData(tokenUsage);
         } catch (error) {
           const response = await api.user.createUser(
@@ -489,12 +537,15 @@ export default function ChatPage() {
               email: session.user.email as string,
               method: "google",
             },
-            idToken
+            idToken,
           );
           setUser(response);
           // Fetch token usage for new user
           try {
-            const tokenUsage = await api.user.getTokenUsage(session.user.email, idToken);
+            const tokenUsage = await api.user.getTokenUsage(
+              session.user.email,
+              idToken,
+            );
             setTokenData(tokenUsage);
           } catch (e) {
             console.error("Failed to fetch token usage:", e);
@@ -510,7 +561,7 @@ export default function ChatPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        setSearchOpen(prev => !prev);
+        setSearchOpen((prev) => !prev);
         setSearchQuery("");
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "n") {
@@ -535,7 +586,7 @@ export default function ChatPage() {
       console.log("Selected conversation:", conversation);
       const messagesData = await api.conversation.getConversationMessages(
         Number(conversation.id),
-        (session?.user as any)?.idToken
+        (session?.user as any)?.idToken,
       );
       setConversationId(Number(conversation.id));
       setMessages(messagesData);
@@ -555,11 +606,11 @@ export default function ChatPage() {
     // Start loading with minimum 1 second display
     setLessonLoading(true);
     setShowSkeletonMinTime(true);
-    const minTimePromise = new Promise<void>((resolve) => 
+    const minTimePromise = new Promise<void>((resolve) =>
       setTimeout(() => {
         setShowSkeletonMinTime(false);
         resolve();
-      }, 1000)
+      }, 1000),
     );
 
     try {
@@ -575,12 +626,12 @@ export default function ChatPage() {
       console.log("Conversation ID:", conversationId);
       const messagesData = await api.conversation.getConversationMessages(
         conversationId,
-        idToken
+        idToken,
       );
 
       // Find the message that contains this exercise
       const exerciseMessage = messagesData.find(
-        (msg: MessageData) => msg.id === exercise.message_id
+        (msg: MessageData) => msg.id === exercise.message_id,
       );
 
       if (exerciseMessage) {
@@ -590,11 +641,10 @@ export default function ChatPage() {
 
         // Find the user's prompt (previous message from user)
         const messageIndex = messagesData.findIndex(
-          (msg: MessageData) => msg.id === exercise.message_id
+          (msg: MessageData) => msg.id === exercise.message_id,
         );
-        const userPrompt = messageIndex > 0 
-          ? messagesData[messageIndex - 1]?.text || ""
-          : "";
+        const userPrompt =
+          messageIndex > 0 ? messagesData[messageIndex - 1]?.text || "" : "";
 
         // Wait for minimum time before showing the lesson
         await minTimePromise;
@@ -622,7 +672,11 @@ export default function ChatPage() {
     }
   };
 
-  const handleBookmarkChange = (exerciseId: number, bookmarked: boolean, exerciseData: any) => {
+  const handleBookmarkChange = (
+    exerciseId: number,
+    bookmarked: boolean,
+    exerciseData: any,
+  ) => {
     if (bookmarked) {
       // Add to bookmarked exercises list
       setBookmarkedExercises((prev) => {
@@ -634,8 +688,8 @@ export default function ChatPage() {
       });
     } else {
       // Remove from bookmarked exercises list
-      setBookmarkedExercises((prev) => 
-        prev.filter((ex: any) => ex.id !== exerciseId)
+      setBookmarkedExercises((prev) =>
+        prev.filter((ex: any) => ex.id !== exerciseId),
       );
     }
   };
@@ -688,32 +742,35 @@ export default function ChatPage() {
       ]);
 
       // Use streaming API
-    const response = await api.message.sendMessageStreaming(
-      {
-        created_at: new Date().toISOString(),
-        text: currentMessage,
-        conversation: conversationId,
-        from_user: true,
-        model_used: "placeholder",
-        json: {},
-        experience_level: difficultyLevels[difficultyIndex],
-      },
-      (event) => {
-        // Update stage
-        setStreamStage(event.stage);
+      const response = await api.message.sendMessageStreaming(
+        {
+          created_at: new Date().toISOString(),
+          text: currentMessage,
+          conversation: conversationId,
+          from_user: true,
+          model_used: "placeholder",
+          json: {},
+          experience_level: difficultyLevels[difficultyIndex],
+        },
+        (event) => {
+          // Update stage
+          setStreamStage(event.stage);
 
-        // Handle thought streams - append new thoughts
-        if (event.stage === 'routing_thought' || event.stage === 'instructor_thought') {
-          setThoughtStream((prev) => prev + (event.data as string));
-        }
+          // Handle thought streams - append new thoughts
+          if (
+            event.stage === "routing_thought" ||
+            event.stage === "instructor_thought"
+          ) {
+            setThoughtStream((prev) => prev + (event.data as string));
+          }
 
-        // Clear thoughts when moving from routing to instructor
-        if (event.stage === 'instructor') {
-          setThoughtStream('');
-        }
-      },
-      idToken
-    );
+          // Clear thoughts when moving from routing to instructor
+          if (event.stage === "instructor") {
+            setThoughtStream("");
+          }
+        },
+        idToken,
+      );
 
       if (
         response.json &&
@@ -735,7 +792,7 @@ export default function ChatPage() {
 
       const messagesData = await api.conversation.getConversationMessages(
         response.conversation,
-        (session?.user as any)?.idToken
+        (session?.user as any)?.idToken,
       );
 
       console.log({ messagesData });
@@ -775,7 +832,7 @@ export default function ChatPage() {
     } finally {
       setLoading(false);
       setStreamStage(null);
-      setThoughtStream('');
+      setThoughtStream("");
     }
   };
 
@@ -812,7 +869,7 @@ export default function ChatPage() {
       await api.user.updateUser(
         session?.user?.email as string,
         updatedUserData,
-        idToken
+        idToken,
       );
 
       setShowUserProfilePopup(false);
@@ -845,7 +902,7 @@ export default function ChatPage() {
         canClose={false}
         onClose={() => setShowLoginModal(false)}
       />
-      
+
       {/* Search Modal */}
       <SearchModal
         isOpen={searchOpen}
@@ -893,22 +950,39 @@ export default function ChatPage() {
               onClick={openSearch}
               className="cursor-pointer w-full flex flex-row items-center gap-2 bg-opaque-button hover:bg-opaque-button-hover transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-button-border hover:border-button-border-hover rounded-2xl p-3 mx-auto"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="text-currentColor">
-                <g fill="none" fillRule="evenodd" stroke="currentColor" strokeWidth={0}>
-                  <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/>
-                  <path fill="currentColor" d="M10.5 2a8.5 8.5 0 1 0 5.262 15.176l3.652 3.652a1 1 0 0 0 1.414-1.414l-3.652-3.652A8.5 8.5 0 0 0 10.5 2M4 10.5a6.5 6.5 0 1 1 13 0a6.5 6.5 0 0 1-13 0"/>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                className="text-currentColor"
+              >
+                <g
+                  fill="none"
+                  fillRule="evenodd"
+                  stroke="currentColor"
+                  strokeWidth={0}
+                >
+                  <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z" />
+                  <path
+                    fill="currentColor"
+                    d="M10.5 2a8.5 8.5 0 1 0 5.262 15.176l3.652 3.652a1 1 0 0 0 1.414-1.414l-3.652-3.652A8.5 8.5 0 0 0 10.5 2M4 10.5a6.5 6.5 0 1 1 13 0a6.5 6.5 0 0 1-13 0"
+                  />
                 </g>
-              </svg>              
-              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">Search</span>
+              </svg>
+              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">
+                Search
+              </span>
               <div className="text-base-40 absolute top-0 bottom-0 right-0 flex items-center justify-center px-2">
                 <span className="flex items-center gap-1">
-                  <kbd className="px-1.5 py-0.5 bg-background border border-button-border rounded text-[10px] font-medium">Ctrl</kbd>
-                  <kbd className="px-1.5 py-0.5 bg-background border border-button-border rounded text-[10px] font-medium">K</kbd>
-                </span>              
+                  <kbd className="px-1.5 py-0.5 bg-background border border-button-border rounded text-[10px] font-medium">
+                    Ctrl
+                  </kbd>
+                  <kbd className="px-1.5 py-0.5 bg-background border border-button-border rounded text-[10px] font-medium">
+                    K
+                  </kbd>
+                </span>
               </div>
-
-
-
             </button>
             <button
               onClick={() => {
@@ -919,232 +993,114 @@ export default function ChatPage() {
               }}
               className="cursor-pointer w-full flex flex-row items-center gap-2 bg-opaque-button hover:bg-opaque-button-hover transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-button-border hover:border-button-border-hover rounded-2xl p-3 text-primary-text mx-auto"
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" className="text-currentColor">
-                <g fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}>
-                  <path d="M10.371 4.25H8.25a5 5 0 0 0-5 5v6.5a5 5 0 0 0 5 5h6.5a5 5 0 0 0 5-5v-2.121">
-                  </path>
-                  <path d="M12.299 14.75a1.86 1.86 0 0 0 1.316-.545l6.59-6.59a1.86 1.86 0 0 0 0-2.633l-1.187-1.187a1.86 1.86 0 0 0-2.633 0l-6.59 6.59a1.86 1.86 0 0 0-.545 1.316v3.049z">
-                  </path>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={20}
+                height={20}
+                viewBox="0 0 24 24"
+                className="text-currentColor"
+              >
+                <g
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                >
+                  <path d="M10.371 4.25H8.25a5 5 0 0 0-5 5v6.5a5 5 0 0 0 5 5h6.5a5 5 0 0 0 5-5v-2.121"></path>
+                  <path d="M12.299 14.75a1.86 1.86 0 0 0 1.316-.545l6.59-6.59a1.86 1.86 0 0 0 0-2.633l-1.187-1.187a1.86 1.86 0 0 0-2.633 0l-6.59 6.59a1.86 1.86 0 0 0-.545 1.316v3.049z"></path>
                 </g>
               </svg>
-              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">New Chat</span>
+              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">
+                New Chat
+              </span>
             </button>
           </div>
 
           {bookmarkedExercises.length > 0 && (
-          <div className="px-4 py-3">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-              Bookmarked Exercises
-            </h3>
-            <div className="space-y-1">
-              {bookmarksLoading ? (
-                // Loading skeletons
-                <>
-                  {[0, 1].map((idx) => (
-                    <div key={idx} className="w-full p-2 rounded-lg animate-pulse">
-                      <div className="flex flex-col w-full gap-2">
-                        <div className="h-3 bg-base-10 rounded w-3/4"></div>
-                        <div className="flex gap-1">
-                          <div className="h-5 bg-base-10 rounded w-12"></div>
-                          <div className="h-5 bg-base-10 rounded w-16"></div>
+            <div className="px-4 py-3">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                Bookmarked Exercises
+              </h3>
+              <div className="space-y-1">
+                {bookmarksLoading ? (
+                  // Loading skeletons
+                  <>
+                    {[0, 1].map((idx) => (
+                      <div
+                        key={idx}
+                        className="w-full p-2 rounded-lg animate-pulse"
+                      >
+                        <div className="flex flex-col w-full gap-2">
+                          <div className="h-3 bg-base-10 rounded w-3/4"></div>
+                          <div className="flex gap-1">
+                            <div className="h-5 bg-base-10 rounded w-12"></div>
+                            <div className="h-5 bg-base-10 rounded w-16"></div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </>
-              ) : (
-                <>
-                  {(bookmarksExpanded ? bookmarkedExercises : bookmarkedExercises.slice(0, 2)).map((exercise: any, idx: number) => (
-                    <button 
-                      key={idx} 
-                      onClick={() => handleBookmarkedExerciseClick(exercise)} 
-                      className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-base-5 cursor-pointer text-left duration-200 ease-in-out"
-                    >
-                      <div className="flex flex-col w-full">
-                        <span className="text-xs text-currentColor font-medium overflow-wrap break-words whitespace-pre-wrap">
-                          {exercise.title || `Exercise ${exercise.id}`}
-                        </span>
-                        {exercise.tags && exercise.tags.length > 0 && (
-                          <div className="flex flex-wrap gap-1 mt-1">
-                            {exercise.tags.slice(0, 3).map((tag: string) => (
-                              <span 
-                                key={tag} 
-                                className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
-                              >
-                                {tag}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  ))}
-                  {bookmarkedExercises.length > 2 && (
-                    <div>
-                      <p 
-                        onClick={() => setBookmarksExpanded(!bookmarksExpanded)}
-                        className="text-xs text-base-40 font-regular hover:text-base-30 mt-2 cursor-pointer underline text-center transition-colors duration-200"
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {(bookmarksExpanded
+                      ? bookmarkedExercises
+                      : bookmarkedExercises.slice(0, 2)
+                    ).map((exercise: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleBookmarkedExerciseClick(exercise)}
+                        className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-base-5 cursor-pointer text-left duration-200 ease-in-out"
                       >
-                        {bookmarksExpanded ? "View Less" : "View More"}
-                      </p>
-                    </div>
-                  )}
-                </>
-              )}
+                        <div className="flex flex-col w-full">
+                          <span className="text-xs text-currentColor font-medium overflow-wrap break-words whitespace-pre-wrap">
+                            {exercise.title || `Exercise ${exercise.id}`}
+                          </span>
+                          {exercise.tags && exercise.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {exercise.tags.slice(0, 3).map((tag: string) => (
+                                <span
+                                  key={tag}
+                                  className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                    {bookmarkedExercises.length > 2 && (
+                      <div>
+                        <p
+                          onClick={() =>
+                            setBookmarksExpanded(!bookmarksExpanded)
+                          }
+                          className="text-xs text-base-40 font-regular hover:text-base-30 mt-2 cursor-pointer underline text-center transition-colors duration-200"
+                        >
+                          {bookmarksExpanded ? "View Less" : "View More"}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
             </div>
-          </div>
           )}
 
           {/* Pinned Section */}
-          {conversations.filter(c => c.pinned).length > 0 && (
+          {conversations.filter((c) => c.pinned).length > 0 && (
             <div className="px-4 py-3">
               <h3 className="text-xs font-semibold text-base-40 uppercase mb-2 flex items-center gap-1.5">
                 Pinned
               </h3>
               <div className="space-y-1">
-                {conversations.filter(c => c.pinned).map((conversation: Conversation, index: number) => (
-                  <div
-                    key={`pinned-${index}`}
-                    onClick={() => handleConversationClick(conversation)}
-                    className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
-                  >
-                    <div className="flex flex-row justify-between items-center">
-                      <div className="text-sm text-currentColor font-medium mb-1">
-                        {conversation.title}
-                      </div>
-                      <div
-                        onMouseEnter={() => chatMenuDropdown(Number(conversation.id))}
-                        onMouseLeave={() => setChatMenuOpen(-1)}
-                        className="relative"
-                      >
-                        <div className="text-xs text-base-40 hover:text-base-30 cursor-pointer transition-colors duration-200">
-                          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
-                            <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"></path>
-                          </svg>
-                        </div>
-                        {/* Delete and Unpin buttons */}
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{
-                            display: chatMenuOpen === Number(conversation.id) ? "flex" : "none",
-                            opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                            y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-                          }}
-                          transition={{ type: "spring", damping: 10, stiffness: 300 }}
-                          className="absolute top-6 right-0 z-50 flex gap-2"
-                        >
-                          <motion.div
-                            initial={{ x: 10, y: -2 }}
-                            animate={{
-                              x: chatMenuOpen === Number(conversation.id) ? 0 : 10,
-                              y: chatMenuOpen === Number(conversation.id) ? -2 : -2,
-                            }}
-                            transition={{
-                              x: { type: "spring", damping: 10, stiffness: 300 },
-                              y: { type: "spring", damping: 10, stiffness: 300 },
-                              scale: { duration: 0.1 },
-                            }}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              setChatMenuOpen(-1);
-                              await api.conversation.pinConversation(Number(conversation.id), (session?.user as any)?.idToken);
-                              if (user?.email) {
-                                const idToken = (session?.user as any)?.idToken;
-                                const conversationsData = await api.conversation.getConversations(user.email, idToken);
-                                setConversations(conversationsData);
-                              }
-                            }}
-                            className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
-                          >
-                            <Icon icon="octicon:pin-slash-16" className="w-4 h-4" />
-                          </motion.div>
-                          <motion.div
-                            transition={{ scale: { duration: 0.1 } }}
-                            onClick={async (e) => {
-                              e.stopPropagation();
-                              if (user?.email) {
-                                setChatMenuOpen(-1);
-                                await api.conversation.deleteConversation(Number(conversation.id), (session?.user as any)?.idToken);
-                                const idToken = (session?.user as any)?.idToken;
-                                const conversationsData = await api.conversation.getConversations(user.email, idToken);
-                                setConversations(conversationsData);
-                              }
-                            }}
-                            className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
-                          >
-                            <Icon icon="octicon:trash-16" className="w-4 h-4" />
-                          </motion.div>
-                        </motion.div>
-                      </div>
-                    </div>
-                    {conversation.exercises_count && (conversation?.exercises_correct_count ?? 0) + (conversation?.exercises_almost_count ?? 0) > 0 && (
-                      <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
-                        {conversation.exercises_correct_count && conversation.exercises_correct_count > 0 && (
-                          <div 
-                            className="bg-emerald-500 h-full"
-                            style={{ width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%` }}
-                          />
-                        )}
-                        {conversation.exercises_almost_count && conversation.exercises_almost_count > 0 && (
-                          <div 
-                            className="bg-amber-400 h-full"
-                            style={{ width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%` }}
-                          />
-                        )}
-                      </div>
-                    )}
-                    <div className="flex flex-wrap gap-1">
-                      {conversation?.tags && conversation?.tags?.length > 0 && (
-                        <div className="flex flex-wrap gap-1">
-                          {conversation.tags.slice(0, 2).map((tag) => (
-                            <span key={tag} className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200">
-                              {tag}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      {conversation?.tags && conversation?.tags?.length > 2 && (
-                        <span className="text-xs text-base-40">+ {conversation.tags.length - 2} more</span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Regular Chats Section */}
-          <div className="px-4 py-3 flex-1">
-            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-              Chats
-            </h3>
-            <div className="space-y-1">
-              {conversationsLoading ? (
-                // Loading skeletons
-                <>
-                  {[0, 1, 2, 3].map((idx) => (
-                    <div key={idx} className="w-full p-2 rounded-lg animate-pulse">
-                      <div className="flex flex-col w-full gap-2">
-                        <div className="h-4 bg-base-10 rounded w-2/3"></div>
-                        <div className="flex gap-1">
-                          <div className="h-5 bg-base-10 rounded w-14"></div>
-                          <div className="h-5 bg-base-10 rounded w-12"></div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </>
-              ) : conversations.length <= 0 ? (
-                <div className="w-full rounded-lg">
-                    <div className="flex flex-col w-full gap-2">
-                      <span className="text-xs text-base-40 font-regular">Your chats will show up here</span>
-                    </div>
-                </div>
-              ) : (
-                <>
-                  {conversations.filter(c => !c.pinned).map((conversation: Conversation, index: number) => (
+                {conversations
+                  .filter((c) => c.pinned)
+                  .map((conversation: Conversation, index: number) => (
                     <div
-                      key={`chat-${index}`}
+                      key={`pinned-${index}`}
                       onClick={() => handleConversationClick(conversation)}
                       className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
                     >
@@ -1153,11 +1109,13 @@ export default function ChatPage() {
                           {conversation.title}
                         </div>
                         <div
-                          onMouseEnter={() => chatMenuDropdown(Number(conversation.id))}
+                          onMouseEnter={() =>
+                            chatMenuDropdown(Number(conversation.id))
+                          }
                           onMouseLeave={() => setChatMenuOpen(-1)}
                           className="relative"
                         >
-                          <div className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200">
+                          <div className="text-xs text-base-40 hover:text-base-30 cursor-pointer transition-colors duration-200">
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
                               width="16"
@@ -1174,7 +1132,7 @@ export default function ChatPage() {
                               ></path>
                             </svg>
                           </div>
-                          {/* Delete and Pin buttons */}
+                          {/* Delete and Unpin buttons */}
                           <motion.div
                             initial={{ opacity: 0, y: -10 }}
                             animate={{
@@ -1182,21 +1140,45 @@ export default function ChatPage() {
                                 chatMenuOpen === Number(conversation.id)
                                   ? "flex"
                                   : "none",
-                              opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-                              y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
+                              opacity:
+                                chatMenuOpen === Number(conversation.id)
+                                  ? 1
+                                  : 0,
+                              y:
+                                chatMenuOpen === Number(conversation.id)
+                                  ? 0
+                                  : -10,
                             }}
-                            transition={{ type: "spring", damping: 10, stiffness: 300 }}
+                            transition={{
+                              type: "spring",
+                              damping: 10,
+                              stiffness: 300,
+                            }}
                             className="absolute top-6 right-0 z-50 flex gap-2"
                           >
                             <motion.div
-                            initial={{ x: 10, y: -2 }}
-                            animate={{
-                              x: chatMenuOpen === Number(conversation.id) ? 0 : 10,
-                              y: chatMenuOpen === Number(conversation.id) ? -2 : -2,
-                            }}
+                              initial={{ x: 10, y: -2 }}
+                              animate={{
+                                x:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? 0
+                                    : 10,
+                                y:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? -2
+                                    : -2,
+                              }}
                               transition={{
-                                x: { type: "spring", damping: 10, stiffness: 300 },
-                                y: { type: "spring", damping: 10, stiffness: 300 },
+                                x: {
+                                  type: "spring",
+                                  damping: 10,
+                                  stiffness: 300,
+                                },
+                                y: {
+                                  type: "spring",
+                                  damping: 10,
+                                  stiffness: 300,
+                                },
                                 scale: { duration: 0.1 },
                               }}
                               onClick={async (e) => {
@@ -1204,88 +1186,344 @@ export default function ChatPage() {
                                 setChatMenuOpen(-1);
                                 await api.conversation.pinConversation(
                                   Number(conversation.id),
-                                  (session?.user as any)?.idToken
+                                  (session?.user as any)?.idToken,
                                 );
                                 if (user?.email) {
-                                  const idToken = (session?.user as any)?.idToken;
+                                  const idToken = (session?.user as any)
+                                    ?.idToken;
                                   const conversationsData =
                                     await api.conversation.getConversations(
                                       user.email,
-                                      idToken
+                                      idToken,
                                     );
                                   setConversations(conversationsData);
                                 }
                               }}
                               className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
                             >
-                              <Icon icon="octicon:pin-16" className="w-4 h-4" />
+                              <Icon
+                                icon="octicon:pin-slash-16"
+                                className="w-4 h-4"
+                              />
                             </motion.div>
                             <motion.div
-                              transition={{
-                                x: { type: "spring", damping: 10, stiffness: 300 },
-                                y: { type: "spring", damping: 10, stiffness: 300 },
-                                scale: { duration: 0.1 },
-                              }}
+                              transition={{ scale: { duration: 0.1 } }}
                               onClick={async (e) => {
                                 e.stopPropagation();
                                 if (user?.email) {
                                   setChatMenuOpen(-1);
                                   await api.conversation.deleteConversation(
                                     Number(conversation.id),
-                                    (session?.user as any)?.idToken
+                                    (session?.user as any)?.idToken,
                                   );
-                                  const idToken = (session?.user as any)?.idToken;
+                                  const idToken = (session?.user as any)
+                                    ?.idToken;
                                   const conversationsData =
                                     await api.conversation.getConversations(
                                       user.email,
-                                      idToken
+                                      idToken,
                                     );
                                   setConversations(conversationsData);
                                 }
                               }}
                               className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
                             >
-                              <Icon icon="octicon:trash-16" className="w-4 h-4" />
+                              <Icon
+                                icon="octicon:trash-16"
+                                className="w-4 h-4"
+                              />
                             </motion.div>
                           </motion.div>
                         </div>
                       </div>
-                      {conversation.exercises_count && (conversation?.exercises_correct_count ?? 0) + (conversation?.exercises_almost_count ?? 0) > 0 && (
-                        <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
-                          {conversation.exercises_correct_count && conversation.exercises_correct_count > 0 ? (
-                            <div 
-                              className="bg-emerald-500 h-full"
-                              style={{ width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%` }}
-                            />
-                          ) : null}
-                          {conversation.exercises_almost_count && conversation.exercises_almost_count > 0 ? (
-                            <div 
-                              className="bg-amber-400 h-full"
-                              style={{ width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%` }}
-                            />
-                          ) : null}
-                        </div>
-                      )}
+                      {conversation.exercises_count &&
+                        (conversation?.exercises_correct_count ?? 0) +
+                          (conversation?.exercises_almost_count ?? 0) >
+                          0 && (
+                          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
+                            {conversation.exercises_correct_count &&
+                              conversation.exercises_correct_count > 0 && (
+                                <div
+                                  className="bg-emerald-500 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              )}
+                            {conversation.exercises_almost_count &&
+                              conversation.exercises_almost_count > 0 && (
+                                <div
+                                  className="bg-amber-400 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              )}
+                          </div>
+                        )}
                       <div className="flex flex-wrap gap-1">
-                        {
-                          conversation?.tags && conversation?.tags?.length > 0 && (
+                        {conversation?.tags &&
+                          conversation?.tags?.length > 0 && (
                             <div className="flex flex-wrap gap-1">
                               {conversation.tags.slice(0, 2).map((tag) => (
-                                <span key={tag} className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200">
+                                <span
+                                  key={tag}
+                                  className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
+                                >
                                   {tag}
                                 </span>
                               ))}
                             </div>
-                          )
-                        }
-                        {conversation?.tags && conversation?.tags?.length > 2 && (
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-xs text-base-40">+ {conversation.tags.length - 3} more</span>
-                          </div>
-                        )}
+                          )}
+                        {conversation?.tags &&
+                          conversation?.tags?.length > 2 && (
+                            <span className="text-xs text-base-40">
+                              + {conversation.tags.length - 2} more
+                            </span>
+                          )}
                       </div>
                     </div>
                   ))}
+              </div>
+            </div>
+          )}
+
+          {/* Regular Chats Section */}
+          <div className="px-4 py-3 flex-1">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+              Chats
+            </h3>
+            <div className="space-y-1">
+              {conversationsLoading ? (
+                // Loading skeletons
+                <>
+                  {[0, 1, 2, 3].map((idx) => (
+                    <div
+                      key={idx}
+                      className="w-full p-2 rounded-lg animate-pulse"
+                    >
+                      <div className="flex flex-col w-full gap-2">
+                        <div className="h-4 bg-base-10 rounded w-2/3"></div>
+                        <div className="flex gap-1">
+                          <div className="h-5 bg-base-10 rounded w-14"></div>
+                          <div className="h-5 bg-base-10 rounded w-12"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : conversations.length <= 0 ? (
+                <div className="w-full rounded-lg">
+                  <div className="flex flex-col w-full gap-2">
+                    <span className="text-xs text-base-40 font-regular">
+                      Your chats will show up here
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {conversations
+                    .filter((c) => !c.pinned)
+                    .map((conversation: Conversation, index: number) => (
+                      <div
+                        key={`chat-${index}`}
+                        onClick={() => handleConversationClick(conversation)}
+                        className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
+                      >
+                        <div className="flex flex-row justify-between items-center">
+                          <div className="text-sm text-currentColor font-medium mb-1">
+                            {conversation.title}
+                          </div>
+                          <div
+                            onMouseEnter={() =>
+                              chatMenuDropdown(Number(conversation.id))
+                            }
+                            onMouseLeave={() => setChatMenuOpen(-1)}
+                            className="relative"
+                          >
+                            <div className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
+                                ></path>
+                              </svg>
+                            </div>
+                            {/* Delete and Pin buttons */}
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{
+                                display:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? "flex"
+                                    : "none",
+                                opacity:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? 1
+                                    : 0,
+                                y:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? 0
+                                    : -10,
+                              }}
+                              transition={{
+                                type: "spring",
+                                damping: 10,
+                                stiffness: 300,
+                              }}
+                              className="absolute top-6 right-0 z-50 flex gap-2"
+                            >
+                              <motion.div
+                                initial={{ x: 10, y: -2 }}
+                                animate={{
+                                  x:
+                                    chatMenuOpen === Number(conversation.id)
+                                      ? 0
+                                      : 10,
+                                  y:
+                                    chatMenuOpen === Number(conversation.id)
+                                      ? -2
+                                      : -2,
+                                }}
+                                transition={{
+                                  x: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  y: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  scale: { duration: 0.1 },
+                                }}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  setChatMenuOpen(-1);
+                                  await api.conversation.pinConversation(
+                                    Number(conversation.id),
+                                    (session?.user as any)?.idToken,
+                                  );
+                                  if (user?.email) {
+                                    const idToken = (session?.user as any)
+                                      ?.idToken;
+                                    const conversationsData =
+                                      await api.conversation.getConversations(
+                                        user.email,
+                                        idToken,
+                                      );
+                                    setConversations(conversationsData);
+                                  }
+                                }}
+                                className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
+                              >
+                                <Icon
+                                  icon="octicon:pin-16"
+                                  className="w-4 h-4"
+                                />
+                              </motion.div>
+                              <motion.div
+                                transition={{
+                                  x: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  y: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  scale: { duration: 0.1 },
+                                }}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (user?.email) {
+                                    setChatMenuOpen(-1);
+                                    await api.conversation.deleteConversation(
+                                      Number(conversation.id),
+                                      (session?.user as any)?.idToken,
+                                    );
+                                    const idToken = (session?.user as any)
+                                      ?.idToken;
+                                    const conversationsData =
+                                      await api.conversation.getConversations(
+                                        user.email,
+                                        idToken,
+                                      );
+                                    setConversations(conversationsData);
+                                  }
+                                }}
+                                className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
+                              >
+                                <Icon
+                                  icon="octicon:trash-16"
+                                  className="w-4 h-4"
+                                />
+                              </motion.div>
+                            </motion.div>
+                          </div>
+                        </div>
+                        {conversation.exercises_count &&
+                          (conversation?.exercises_correct_count ?? 0) +
+                            (conversation?.exercises_almost_count ?? 0) >
+                            0 && (
+                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
+                              {conversation.exercises_correct_count &&
+                              conversation.exercises_correct_count > 0 ? (
+                                <div
+                                  className="bg-emerald-500 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              ) : null}
+                              {conversation.exercises_almost_count &&
+                              conversation.exercises_almost_count > 0 ? (
+                                <div
+                                  className="bg-amber-400 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              ) : null}
+                            </div>
+                          )}
+                        <div className="flex flex-wrap gap-1">
+                          {conversation?.tags &&
+                            conversation?.tags?.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {conversation.tags.slice(0, 2).map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          {conversation?.tags &&
+                            conversation?.tags?.length > 2 && (
+                              <div className="flex flex-wrap gap-1">
+                                <span className="text-xs text-base-40">
+                                  + {conversation.tags.length - 3} more
+                                </span>
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    ))}
                 </>
               )}
             </div>
@@ -1299,14 +1537,32 @@ export default function ChatPage() {
             <div className="flex items-center place-content-around w-full">
               <div className="flex gap-2 items-center">
                 <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
-                  <svg fill="#000000" width="800px" height="800px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14,11H10a2,2,0,0,1,0-4h5a1,1,0,0,1,1,1,1,1,0,0,0,2,0,3,3,0,0,0-3-3H13V3a1,1,0,0,0-2,0V5H10a4,4,0,0,0,0,8h4a2,2,0,0,1,0,4H9a1,1,0,0,1-1-1,1,1,0,0,0-2,0,3,3,0,0,0,3,3h2v2a1,1,0,0,0,2,0V19h1a4,4,0,0,0,0-8Z"/></svg>
+                  <svg
+                    fill="#000000"
+                    width="800px"
+                    height="800px"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M14,11H10a2,2,0,0,1,0-4h5a1,1,0,0,1,1,1,1,1,0,0,0,2,0,3,3,0,0,0-3-3H13V3a1,1,0,0,0-2,0V5H10a4,4,0,0,0,0,8h4a2,2,0,0,1,0,4H9a1,1,0,0,1-1-1,1,1,0,0,0-2,0,3,3,0,0,0,3,3h2v2a1,1,0,0,0,2,0V19h1a4,4,0,0,0,0-8Z" />
+                  </svg>
                 </div>
                 <span className="text-sm font-medium">Payments</span>
               </div>
-              <span className="font-light text-end">{user?.membership} member</span>
+              <div className="flex flex-col gap-2">
+                <span className="font-light text-center">
+                  {user?.membership ? user.membership + " member" : ""}
+                </span>
+                {user?.membership == "pro" && user?.membershipExpiresAt && (
+                  <span className="text-2xs">
+                    {user?.subscriptionActive ? "Expires" : "Renews"} at{" "}
+                    {new Date(user.membershipExpiresAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
             </div>
           </button>
-        </div>       
+        </div>
         {/* User Profile */}
         <div className="p-2 border-t border-theme-border">
           {/* Tokens Display */}
@@ -1314,13 +1570,31 @@ export default function ChatPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
-                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20"><path fill="currentColor" fillRule="evenodd" d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38" clipRule="evenodd" strokeWidth="0.4" stroke="currentColor"/></svg>                
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill="currentColor"
+                      fillRule="evenodd"
+                      d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38"
+                      clipRule="evenodd"
+                      strokeWidth="0.4"
+                      stroke="currentColor"
+                    />
+                  </svg>
                 </div>
                 <span className="text-xs font-medium text-base-40">Tokens</span>
               </div>
               <div className="flex items-center gap-1">
                 <span className="text-sm font-bold text-currentColor">
-                  {tokenData ? (tokenData.token_limit - tokenData.token_used).toLocaleString() : 0}
+                  {tokenData
+                    ? (
+                        tokenData.token_limit - tokenData.token_used
+                      ).toLocaleString()
+                    : 0}
                 </span>
                 <span className="text-xs text-base-40">remaining</span>
               </div>
@@ -1328,9 +1602,11 @@ export default function ChatPage() {
             {tokenData && (
               <div className="mt-2">
                 <div className="h-1.5 bg-violet-200 rounded-full overflow-hidden">
-                  <motion.div 
+                  <motion.div
                     initial={{ width: 0 }}
-                    animate={{ width: `${Math.min(((tokenData.token_limit - tokenData.token_used) / tokenData.token_limit) * 100, 100)}%` }}
+                    animate={{
+                      width: `${Math.min(((tokenData.token_limit - tokenData.token_used) / tokenData.token_limit) * 100, 100)}%`,
+                    }}
                     transition={{ duration: 0.8, ease: "easeOut" }}
                     className="h-full bg-gradient-to-r from-violet-400 to-purple-500"
                   />
@@ -1439,7 +1715,9 @@ export default function ChatPage() {
                           }
                     }
                   >
-                    <div className="text-sm text-slate-900"><Markdown compact>{message.text as string}</Markdown></div>
+                    <div className="text-sm text-slate-900">
+                      <Markdown compact>{message.text as string}</Markdown>
+                    </div>
                   </motion.div>
                 </div>
               ) : (
@@ -1455,10 +1733,10 @@ export default function ChatPage() {
             })}
             <AnimatePresence mode="wait">
               {loading && streamStage && (
-                <StreamingThoughts 
+                <StreamingThoughts
                   key="streaming"
-                  stage={streamStage} 
-                  thoughts={thoughtStream} 
+                  stage={streamStage}
+                  thoughts={thoughtStream}
                 />
               )}
             </AnimatePresence>
@@ -1502,7 +1780,10 @@ export default function ChatPage() {
                       {difficultyLevels[difficultyIndex]}
                     </motion.div>
                   </AnimatePresence>
-                  <Icon icon="iconamoon:arrow-down-2-bold" className="text-primary-text w-4 h-4" />
+                  <Icon
+                    icon="iconamoon:arrow-down-2-bold"
+                    className="text-primary-text w-4 h-4"
+                  />
                 </div>
               </button>
               <button className="cursor-pointer font-semibold px-4 py-1.5 rounded-full bg-base-10 text-text-70 text-sm hover:bg-base-20 transition-all h-8 flex items-center">
@@ -1516,7 +1797,10 @@ export default function ChatPage() {
                 {loading ? (
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
                 ) : (
-                  <svg viewBox="0 0 24 24" className="text-primary-text w-4 h-4">
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="text-primary-text w-4 h-4"
+                  >
                     <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
                   </svg>
                 )}

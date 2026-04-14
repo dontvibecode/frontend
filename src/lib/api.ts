@@ -119,6 +119,8 @@ const transformUserResponse = (data: any): import("@/types").User => {
     email: data.email,
     preferences: transformPreferencesToCamelCase(data.preferences),
     membership: data.membership,
+    subscriptionActive: data.subscription_active,
+    membershipExpiresAt: data.membership_expires_at,
   };
 };
 
