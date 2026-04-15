@@ -926,6 +926,9 @@ export default function ChatPage() {
         onClose={() => setShowPaymentModal(false)}
         idToken={(session?.user as any)?.idToken}
         membership={user?.membership}
+        subscriptionActive={user?.subscriptionActive}
+        userEmail={user?.email || ""}
+        setUser={(user) => setUser(user)}
       />
 
       {/* User Profile Popup */}
@@ -1554,8 +1557,8 @@ export default function ChatPage() {
                   {user?.membership ? user.membership + " member" : ""}
                 </span>
                 {user?.membership == "pro" && user?.membershipExpiresAt && (
-                  <span className="text-2xs">
-                    {user?.subscriptionActive ? "Expires" : "Renews"} at{" "}
+                  <span className="text-xs">
+                    {user?.subscriptionActive ? "Renews" : "Expires"} at{" "}
                     {new Date(user.membershipExpiresAt).toLocaleString()}
                   </span>
                 )}

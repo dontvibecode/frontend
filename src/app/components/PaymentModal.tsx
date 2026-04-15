@@ -9,7 +9,8 @@ import {
   useStripe,
   useElements,
 } from "@stripe/react-stripe-js";
-import { paymentAPI } from "@/lib/api";
+import api, { paymentAPI } from "@/lib/api";
+import { User } from "@/types";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
@@ -20,6 +21,9 @@ interface PaymentModalProps {
   onClose: () => void;
   idToken: string;
   membership?: "free" | "pro";
+  subscriptionActive?: boolean | null;
+  userEmail: string;
+  setUser: (user: User) => void;
 }
 
 export default function PaymentModal({
@@ -27,11 +31,26 @@ export default function PaymentModal({
   onClose,
   idToken,
   membership,
-}: PaymentModalProps) {
+  subscriptionActive,
+  userEmail,
+  setUser,
+}: PaymentModalProps) {  
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"subscription" | "tokens">("subscription");
+
+  const refetchUser = async () => {
+    if (userEmail && idToken) {
+      try {
+        const response = await api.user.getUser(userEmail, idToken);
+        console.log("refetch user response: ", { response });
+        setUser(response);
+      } catch (err) {
+        console.error("Failed to refetch user data:", err);
+      }
+    }
+  }
 
   useEffect(() => {
     if (!isOpen) {
@@ -164,7 +183,7 @@ export default function PaymentModal({
                   </div>
                 )}
 
-                {membership == "free" && !loading && !error && clientSecret && (
+                {(mode == "tokens" || (membership == "free" && !loading && !error)) && clientSecret && (
                   <Elements
                     key={clientSecret}
                     stripe={stripePromise}
@@ -179,10 +198,10 @@ export default function PaymentModal({
                       },
                     }}
                   >
-                    <CheckoutForm onClose={onClose} />
+                    <CheckoutForm onClose={onClose} refetchUser={refetchUser} />
                   </Elements>
                 )}
-                {membership === "pro" && !loading && !error && clientSecret && (
+                {mode == "subscription" && membership === "pro" && !loading && !error && clientSecret && (
                   <Elements
                     key={clientSecret}
                     stripe={stripePromise}
@@ -197,7 +216,11 @@ export default function PaymentModal({
                       },
                     }}
                   >
-                    <CancellationForm onClose={onClose} idToken={idToken} />
+                    {subscriptionActive ? (
+                      <CancellationForm onClose={onClose} idToken={idToken} refetchUser={refetchUser} />
+                    ) : (
+                      <ResumptionForm onClose={onClose} idToken={idToken} refetchUser={refetchUser} />
+                    )}
                   </Elements>
                 )}
               </div>
@@ -209,7 +232,7 @@ export default function PaymentModal({
   );
 }
 
-function CheckoutForm({ onClose }: { onClose: () => void }) {
+function CheckoutForm({ onClose, refetchUser }: { onClose: () => void; refetchUser: () => void }) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -238,6 +261,8 @@ function CheckoutForm({ onClose }: { onClose: () => void }) {
       setSuccess(true);
       setSubmitting(false);
     }
+
+    refetchUser();
   };
 
   if (success) {
@@ -316,7 +341,15 @@ function CheckoutForm({ onClose }: { onClose: () => void }) {
   );
 }
 
-function CancellationForm({ onClose, idToken }: { onClose: () => void; idToken: string }) {
+function CancellationForm({
+  onClose,
+  idToken,
+  refetchUser,
+}: {
+  onClose: () => void;
+  idToken: string;
+  refetchUser: () => void;
+}) {
   const stripe = useStripe();
   const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
@@ -343,6 +376,7 @@ function CancellationForm({ onClose, idToken }: { onClose: () => void; idToken: 
       setSubmitting(false);
     }
 
+    refetchUser();
   };
 
   if (success && periodEnd) {
@@ -368,7 +402,8 @@ function CancellationForm({ onClose, idToken }: { onClose: () => void; idToken: 
           Cancellation successful
         </h3>
         <p className="mt-1 text-sm text-text-70 dark:text-text-30">
-          You will keep Pro membership privileges until {new Date(periodEnd).toLocaleString()}.
+          You will keep Pro membership privileges until{" "}
+          {new Date(periodEnd).toLocaleString()}.
         </p>
         <button
           onClick={onClose}
@@ -396,6 +431,107 @@ function CancellationForm({ onClose, idToken }: { onClose: () => void; idToken: 
           className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Processing..." : "Cancel Pro Subscription"}
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={submitting}
+          className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
+        >
+          Back
+        </button>
+      </div>
+    </form>
+  );
+}
+
+function ResumptionForm({
+  onClose,
+  idToken,
+  refetchUser,
+}: {
+  onClose: () => void;
+  idToken: string;
+  refetchUser: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!stripe || !elements) return;
+
+    setSubmitting(true);
+    setError(null);
+
+    try {
+      const result = await paymentAPI.resumeSubscription(idToken);
+      if (result) {
+        setSuccess(true);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Failed to cancel subscription.");
+    } finally {
+      setSubmitting(false);
+    }
+
+    refetchUser();
+  };
+
+  if (success) {
+    return (
+      <div className="text-center py-6">
+        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="text-green-600 dark:text-green-400"
+          >
+            <path d="M20 6 9 17l-5-5" />
+          </svg>
+        </div>
+        <h3 className="text-lg font-semibold text-primary-text">
+          Cancellation reverted
+        </h3>
+        <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+          Your Pro subscription has been continued. 
+        </p>
+        <button
+          onClick={onClose}
+          className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
+        >
+          Done
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {error && (
+        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+          {error}
+        </div>
+      )}
+
+      {/* Actions */}
+      <div className="mt-6 space-y-3">
+        <button
+          type="submit"
+          disabled={!stripe || submitting}
+          className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {submitting ? "Processing..." : "Resume Pro Subscription"}
         </button>
         <button
           type="button"

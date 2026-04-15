@@ -909,6 +909,27 @@ export const paymentAPI = {
 
     return parseJsonWithWarningCheck(response);
   },
+
+  /**
+   * Resume a cancelled Pro subscription (if still within the current billing period)
+   */
+  resumeSubscription: async (
+    idToken?: string
+  ): Promise<{ status: string; message: string; active_until: string } | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/payments/resume/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(response, "Failed to resume subscription");
+      if (isTokenWarning) return null;
+    }
+    return parseJsonWithWarningCheck(response);
+  }
 };
 
 // ============================================================================
