@@ -95,7 +95,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   }, [data.exercises]);
 
   useEffect(() => {
-    if(data.feedback) {
+    if (data.feedback) {
       setFeedbackData({
         ...data.feedback,
         correctness: data.correctness,
@@ -136,11 +136,11 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
     setSaving(true);
     try {
       const exerciseFileIds = Object.keys(editedCode).map(
-        (exerciseFilename) => 
+        (exerciseFilename) =>
           data.exercises?.find(
             (exercise: any) => exercise.filename === exerciseFilename
           )?.id
-        );
+      );
       const response = await api.exercise.saveCodeProgress({
         user_submissions: Object.values(editedCode),
         exercise_file_ids: exerciseFileIds,
@@ -211,23 +211,23 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
     }
   };
 
-  if(!currentExercise) return null;
+  if (!currentExercise) return null;
 
   return (
     <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
-        <div className="flex items-center gap-2 ml-2"> 
-          <div className={`${correctnessColor(data.correctness)} w-2 h-2 rounded-full`}/>
-          <h2 className="text-xl font-semibold text-gray-900">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
+        <div className="flex items-center gap-2 ml-2">
+          <div className={`${correctnessColor(data.correctness)} w-2 h-2 rounded-full`} />
+          <h2 className="text-xl font-semibold text-primary-text">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
         </div>
-        <motion.button 
-          onClick={() => bookmarkExercise(data.id)} 
+        <motion.button
+          onClick={() => bookmarkExercise(data.id)}
           whileHover={{ scale: 1 }}
           whileTap={{ scale: 0.95 }}
           className="cursor-pointer p-2 hover:bg-gray-100 rounded-lg transition-colors"
         >
           <svg
-            className="w-5 h-5 text-gray-600"
+            className="w-5 h-5 text-text-70"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -236,16 +236,16 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
               strokeLinecap="round"
               strokeLinejoin="round"
               strokeWidth={2}
-              className={isBookmarked ? "text-blue-500" : "text-gray-600"}
+              className={isBookmarked ? "text-blue-500" : "text-text-70"}
               fill={isBookmarked ? "currentColor" : "transparent"}
               d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
             />
           </svg>
         </motion.button>
       </div>
-      <p className="text-black font-medium text-lg mb-4">{currentExercise.text || 'Exercise ' + (index + 1)}</p>
+      <p className="text-primary-text font-medium text-lg mb-4">{currentExercise.text || 'Exercise ' + (index + 1)}</p>
       <div className="bg-[#2D2D2D] px-4 py-2 rounded-t-lg">
-        <span className="text-gray-300 text-sm">{currentExercise.filename}</span>
+        <span className="text-text-70 text-sm">{currentExercise.filename}</span>
       </div>
       {data.exercises && data.exercises.length > 1 && (
         <div className="bg-[#252526] flex items-center overflow-x-auto border-b border-[#1E1E1E]">
@@ -317,12 +317,12 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
               <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <span className="text-sm text-amber-800">You have unsaved changes</span>
+              <span className="text-sm text-black">You have unsaved changes</span>
             </div>
             <button
               onClick={saveCodeProgress}
               disabled={saving}
-              className="cursor-pointer text-sm font-medium text-amber-700 hover:text-amber-900 hover:bg-amber-100 px-3 py-1 rounded-md transition-colors"
+              className="cursor-pointer text-sm font-medium text-black hover:text-black/90 hover:bg-amber-100 px-3 py-1 rounded-md transition-colors"
             >
               {saving ? 'Saving...' : 'Save now'}
             </button>
@@ -335,24 +335,24 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
           <button
             onClick={handleSubmit}
             disabled={submitting}
-            className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl py-3 px-5"
+            className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-primary-text disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-base-10 rounded-2xl py-3 px-5"
           >
             {submitting ? (
               <>
-                <svg className="animate-spin w-4 h-4 text-black" fill="none" viewBox="0 0 24 24">
+                <svg className="animate-spin w-4 h-4 text-primary-text" fill="none" viewBox="0 0 24 24">
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span className="text-sm text-black m-0 font-medium tracking-wide">Checking...</span>
+                <span className="text-sm text-background m-0 font-medium tracking-wide">Checking...</span>
               </>
             ) : (
-              <span className="text-sm text-black m-0 font-medium tracking-wide">Submit</span>
+              <span className="text-sm text-background m-0 font-medium tracking-wide">Submit</span>
             )}
           </button>
           <button
             onClick={saveCodeProgress}
             disabled={saving || !hasUnsavedChanges()}
-            className="cursor-pointer flex items-center gap-2 px-4 py-3 text-gray-600 hover:text-gray-900 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl transition-colors group border border-gray-200"
+            className="cursor-pointer flex items-center gap-2 px-4 py-3 text-primary-text bg-base-10 hover:text-primary-text hover:bg-base-15 disabled:opacity-80 disabled:hover:bg-base-10 disabled:cursor-not-allowed rounded-xl transition-colors group border border-base-10"
           >
             {saving ? (
               <>
@@ -360,21 +360,21 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                <span className="text-sm font-medium">Saving...</span>
+                <span className="text-sm font-medium text-primary-text">Saving...</span>
               </>
             ) : (
               <>
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
                 </svg>
-                <span className="text-sm font-medium">Save</span>
+                <span className="text-sm font-medium text-primary-text">Save</span>
               </>
             )}
           </button>
         </div>
         <button
           onClick={() => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: currentExercise.code }))}
-          className="flex cursor-pointer items-center gap-2 px-4 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors group"
+          className="flex cursor-pointer items-center gap-2 px-4 py-2 text-text-70 hover:text-primary-text hover:bg-base-5 rounded-lg transition-colors group"
         >
           <svg
             className="w-4 h-4 group-hover:rotate-[-45deg] transition-transform"
@@ -416,10 +416,10 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-emerald-900 mb-1">
-                    {feedbackData.heading}
+                    <Markdown>{feedbackData.heading}</Markdown>
                   </h3>
                   <p className="text-sm text-emerald-700/80 leading-relaxed whitespace-pre-wrap">
-                    {feedbackData.summary}
+                    <Markdown>{feedbackData.summary}</Markdown>
                   </p>
                 </div>
               </div>
@@ -457,10 +457,10 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-amber-900 mb-1">
-                    {feedbackData.heading}
+                    <Markdown>{feedbackData.heading}</Markdown>
                   </h3>
                   <p className="text-sm text-amber-700/80 leading-relaxed whitespace-pre-wrap">
-                    {feedbackData.summary}
+                    <Markdown>{feedbackData.summary}</Markdown>
                   </p>
                 </div>
               </div>
@@ -557,11 +557,11 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
                 </div>
                 <div className="flex-1">
                   <h3 className="text-lg font-semibold text-rose-900 mb-1">
-                    {feedbackData.heading}
+                    <Markdown>{feedbackData.heading}</Markdown>
                   </h3>
-                  <p className="text-sm text-rose-700/80 leading-relaxed whitespace-pre-wrap">
-                    {feedbackData.summary}
-                  </p>
+                  <span className="text-sm text-rose-700/80 leading-relaxed whitespace-pre-wrap">
+                    <Markdown>{feedbackData.summary}</Markdown>
+                  </span>
                 </div>
               </div>
 
@@ -670,7 +670,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
   const fetchExercises = async () => {
     setLoading(true);
     const minTimePromise = new Promise<void>((resolve) => setTimeout(resolve, 1000));
-    
+
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
       console.error('No idToken found in session');
@@ -712,7 +712,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
       const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
 
       // Use exercise_id from response
-      const exerciseId = parsedResponse.exercise_id;
+      const exerciseId = parsedResponse.id;
 
       // Transform exercise_files array to files format
       const newExerciseData = {
@@ -721,7 +721,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
         bookmarked: false,
         title: null,
         tags: [],
-        files: parsedResponse.exercise_files.map((exercise: any, idx: number) => ({
+        files: parsedResponse.files.map((exercise: any, idx: number) => ({
           ...exercise,
           id: idx,
           exercise_id: exerciseId,
@@ -747,20 +747,21 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
       console.error('No idToken found in session');
       return false;
     }
-    
+
     try {
       const response = await api.exercise.bookmarkExercise(exerciseId, idToken);
       console.log('Bookmark response:', response);
-      
+
       // Update fetchedExercises with the new bookmark state
       setFetchedExercises((prev: any) => {
         if (!prev) return prev;
-        
+        if (!response) return prev;
+
         // Find the key that matches this exercise id
         const exerciseKey = Object.keys(prev).find(
           key => !isNaN(Number(key)) && prev[key].id === exerciseId
         );
-        
+
         if (exerciseKey) {
           return {
             ...prev,
@@ -774,9 +775,9 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
         }
         return prev;
       });
-      
+
       // Notify parent about bookmark change
-      if (onBookmarkChange) {
+      if (onBookmarkChange && response) {
         onBookmarkChange(exerciseId, response.bookmarked, {
           id: response.id,
           message_id: message.id,
@@ -787,14 +788,14 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           tags: response.tags,
         });
       }
-      
-      return response.bookmarked;
+
+      return response?.bookmarked ?? false;
     } catch (error) {
       console.error('Failed to bookmark exercise:', error);
       return false;
     }
   };
-  
+
   return (
     <AnimatePresence mode="popLayout">
       {lessonExpanded ? (
@@ -804,14 +805,14 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: "100%", opacity: 0 }}
           transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="absolute inset-0 z-50 bg-white overflow-y-auto"
+          className="absolute inset-0 z-30 bg-background overflow-y-auto"
         >
           {/* Close button */}
           <button
             onClick={() => setLessonExpanded(false)}
-            className="cursor-pointer absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-lg transition-colors z-10"
+            className="cursor-pointer absolute top-4 right-4 p-2 hover:bg-base-10 rounded-lg transition-colors z-10"
           >
-            <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg className="w-6 h-6 text-text-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
@@ -819,20 +820,20 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
             <ExpandedSkeletonLoader />
           ) : (
             <div className="p-8 pb-0 pt-16 flex flex-col gap-2">
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">Expanded Lesson View</h1>
-  
+              <h1 className="text-2xl font-bold text-primary-text mb-2">Expanded Lesson View</h1>
+
               {/* Progress Stats Component */}
               {fetchedExercises && (() => {
                 const exercises = Object.keys(fetchedExercises)
                   .filter(key => !isNaN(Number(key)))
                   .map(key => fetchedExercises[key]);
-                
+
                 const total = exercises.length;
                 const completed = exercises.filter((ex: any) => ex.correctness === 2).length;
                 const partial = exercises.filter((ex: any) => ex.correctness === 1).length;
                 const incorrect = exercises.filter((ex: any) => ex.correctness === 0).length;
                 const notStarted = exercises.filter((ex: any) => ex.correctness === null).length;
-                
+
                 // Get language stats from files
                 const languageCount: Record<string, number> = {};
                 exercises.forEach((ex: any) => {
@@ -840,7 +841,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                     const ext = file.filename?.split('.').pop()?.toLowerCase() || 'other';
                     const langMap: Record<string, string> = {
                       'js': 'JavaScript',
-                      'ts': 'TypeScript', 
+                      'ts': 'TypeScript',
                       'tsx': 'TypeScript',
                       'jsx': 'JavaScript',
                       'py': 'Python',
@@ -853,21 +854,19 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                     languageCount[lang] = (languageCount[lang] || 0) + 1;
                   });
                 });
-                
+
                 const totalFiles = Object.values(languageCount).reduce((a, b) => a + b, 0);
                 const topLanguages = Object.entries(languageCount)
                   .sort((a, b) => b[1] - a[1])
                   .slice(0, 3);
-                
+
                 const completionPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
                 const partialPercent = total > 0 ? Math.round((partial / total) * 100) : 0;
                 const incorrectPercent = total > 0 ? Math.round((incorrect / total) * 100) : 0;
-                
+
                 return (
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="bg-gradient-to-br from-slate-50 to-gray-100 rounded-2xl p-5 mb-4 border border-gray-200/60"
+                  <div
+                    className="bg-container-primary rounded-2xl p-5 mb-4 border border-base-5"
                   >
                     {/* Main Progress Section */}
                     <div className="flex items-center justify-between mb-4">
@@ -922,48 +921,48 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                             />
                           </svg>
                           <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-lg font-bold text-gray-900">{completionPercent}%</span>
+                            <span className="text-lg font-bold text-primary-text">{completionPercent}%</span>
                           </div>
                         </div>
                         <div>
-                          <h3 className="text-lg font-semibold text-gray-900">Exercise Progress</h3>
-                          <p className="text-sm text-gray-500">{completed} of {total} completed</p>
+                          <h3 className="text-lg font-semibold text-primary-text">Exercise Progress</h3>
+                          <p className="text-sm text-text-70">{completed} of {total} completed</p>
                         </div>
                       </div>
-                      
+
                       {/* Quick Stats */}
                       <div className="flex gap-4">
-                        <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
                           <div className="flex items-center justify-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <span className="text-xl font-bold text-gray-900">{completed}</span>
+                            <span className="text-xl font-bold text-primary-text">{completed}</span>
                           </div>
-                          <span className="text-xs text-gray-500">Completed</span>
+                          <span className="text-xs text-text-70">Completed</span>
                         </div>
-                        <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
                           <div className="flex items-center justify-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                            <span className="text-xl font-bold text-gray-900">{partial}</span>
+                            <span className="text-xl font-bold text-primary-text">{partial}</span>
                           </div>
-                          <span className="text-xs text-gray-500">Meh</span>
+                          <span className="text-xs text-text-70">Partial</span>
                         </div>
-                        <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
                           <div className="flex items-center justify-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                            <span className="text-xl font-bold text-gray-900">{incorrect}</span>
+                            <span className="text-xl font-bold text-primary-text">{incorrect}</span>
                           </div>
-                          <span className="text-xs text-gray-500">Incorrect</span>
+                          <span className="text-xs text-text-70">Incorrect</span>
                         </div>
-                        <div className="text-center px-4 py-2 bg-white rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
                           <div className="flex items-center justify-center gap-1.5">
                             <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-                            <span className="text-xl font-bold text-gray-900">{notStarted}</span>
+                            <span className="text-xl font-bold text-primary-text">{notStarted}</span>
                           </div>
-                          <span className="text-xs text-gray-500">Not Started</span>
+                          <span className="text-xs text-text-70">Not Started</span>
                         </div>
                       </div>
                     </div>
-                    
+
                     {/* Full Width Progress Bar */}
                     {/* <div className="mb-4">
                       <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden flex">
@@ -987,11 +986,11 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                         />
                       </div>
                     </div> */}
-                    
+
                     {/* Language Stats */}
                     {topLanguages.length > 0 && (
-                      <div className="flex items-center gap-3 pt-3 border-t-1 border-gray-300">
-                        <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">Languages:</span>
+                      <div className="flex items-center gap-3 pt-3 border-t-1 border-base-10">
+                        <span className="text-xs font-medium text-text-70 uppercase tracking-wide">Languages:</span>
                         <div className="flex gap-2 flex-wrap">
                           {topLanguages.map(([lang, count]) => {
                             const percent = Math.round((count / totalFiles) * 100);
@@ -1006,7 +1005,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                             };
                             const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200';
                             return (
-                              <span 
+                              <span
                                 key={lang}
                                 className={`text-xs px-2 py-1 rounded-lg border ${colorClass} font-medium`}
                               >
@@ -1025,12 +1024,11 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                         )}
                       </div>
                     )}
-                  </motion.div>
+                  </div>
                 );
               })()}
-  
               {fetchedExercises && Object.keys(fetchedExercises)
-                .filter(key => !isNaN(Number(key))) 
+                .filter(key => !isNaN(Number(key)))
                 .map((exerciseId, idx) => {
                   const exerciseData = fetchedExercises[exerciseId];
                   return (
@@ -1066,25 +1064,25 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                   index={0}
                 />
               )} */}
-  
+
               <div className="relative rounded-t-xl overflow-hidden">
                 <div className="absolute inset-0 z-10 backdrop-blur-xs bg-white/0 flex items-end justify-center">
-                  <div className="rounded-t-xl bg-white py-4 w-[80%] flex items-center justify-center">
+                  <div className="rounded-t-xl bg-container-primary py-4 w-[80%] flex items-center justify-center">
                     <button
-                      className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-white/30 rounded-2xl py-3 px-5"
+                      className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-base-10 rounded-2xl py-3 px-5"
                       onClick={generateExercises}
                       disabled={generatingExercises}
                     >
                       {generatingExercises ? (
                         <>
-                          <svg className="animate-spin w-4 h-4 text-black" fill="none" viewBox="0 0 24 24">
+                          <svg className="animate-spin w-4 h-4 text-primary-text" fill="none" viewBox="0 0 24 24">
                             <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                             <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                           </svg>
-                          <span className="text-sm text-black m-0 font-medium tracking-wide">Generating...</span>
+                          <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Generating...</span>
                         </>
                       ) : (
-                        <span className="text-sm text-black m-0 font-medium tracking-wide">Unlock more exercises</span>
+                        <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Unlock more exercises</span>
                       )}
                     </button>
                   </div>
@@ -1118,10 +1116,10 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -100 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="max-w-4xl mx-auto p-6 bg-white mt-6 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.04)]"
+          className="max-w-4xl mx-auto p-6 bg-background mt-6 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.04)]"
         >
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-gray-200">
-            <h1 className="text-3xl font-bold text-gray-900">
+          <div className="flex items-center justify-between mb-6 pb-4 border-b border-base-10">
+            <h1 className="text-3xl font-bold text-primary-text">
               {jsonData.lessonTitle ?? (jsonData as any).lesson_title ?? (jsonData.exercises?.[0]?.filename?.replace('.java', '').replace('.py', '').replace('.js', '') || 'Lesson')}
             </h1>
             {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
@@ -1143,27 +1141,27 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
           {/* User Prompt */}
           {userPrompt && (
-            <div className="mb-6 bg-white rounded-lg p-4 border border-gray-200">
-              <div className="text-sm font-bold text-gray-500 mb-1">Prompt:</div>
-              <p className="text-gray-800 text-base leading-relaxed">{userPrompt}</p>
+            <div className="mb-6 bg-base-5 rounded-lg p-4 border border-base-10">
+              <div className="text-sm font-bold text-text-70 mb-1">Prompt:</div>
+              <p className="text-text-90 text-base leading-relaxed">{userPrompt}</p>
             </div>
           )}
 
           {/* Breakdown/Explanation */}
           {jsonData.breakdown && (
-            <div className="mb-6 leading-relaxed text-gray-800">
+            <div className="mb-6 leading-relaxed text-text-90">
               <Markdown>{jsonData.breakdown}</Markdown>
             </div>
           )}
 
           {jsonData.explanation && (
-            <div className="mb-8 leading-relaxed text-gray-700">
+            <div className="mb-8 leading-relaxed text-text-90">
               <Markdown>{jsonData.explanation}</Markdown>
             </div>
           )}
 
           {/* Exercise Tabs */}
-          {jsonData.exercises && jsonData.exercises.length > 1 && (
+          {/* {jsonData.exercises && jsonData.exercises.length > 1 && (
             <div className="mb-6">
               <div className="inline-flex p-1 bg-gray-100 rounded-xl">
                 {jsonData.exercises.map((exercise, index) => (
@@ -1186,12 +1184,12 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                 ))}
               </div>
             </div>
-          )}
+          )} */}
 
           {currentExercise && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-semibold text-gray-900">Activity:</h2>
+                <h2 className="text-xl font-semibold text-primary-text">Activity:</h2>
                 {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                   <svg
                     className="w-5 h-5 text-gray-600"
@@ -1209,17 +1207,17 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                 </button> */}
               </div>
 
-              <p className="text-gray-700 mb-4 leading-relaxed">
+              <p className="text-text-90 mb-4 leading-relaxed">
                 {currentExercise.text}
               </p>
 
               {/* Code Editor */}
               <div className="bg-[#1E1E1E] rounded-lg mb-4">
                 <div className="bg-[#2D2D2D] px-4 py-2 flex items-center justify-between border-b border-gray-700">
-                  <span className="text-gray-300 text-sm">
+                  <span className="text-text-70 text-sm">
                     {currentExercise.filename}
                   </span>
-                  <button className="text-gray-400 hover:text-gray-200 transition-colors">
+                  <button className="text-text-70 hover:text-text-90 transition-colors">
                     <svg
                       className="w-4 h-4"
                       fill="none"
@@ -1247,7 +1245,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                         'tsx': 'text-blue-400',
                         'jsx': 'text-blue-300',
                       };
-                      const iconColor = iconColors[ext] || 'text-gray-400';
+                      const iconColor = iconColors[ext] || 'text-text-70';
 
                       return (
                         <button
@@ -1255,7 +1253,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                           onClick={() => setActiveExerciseIndex(index)}
                           className={`cursor-pointer group relative flex items-center gap-2 px-3 py-2 text-[13px] font-normal transition-colors duration-150 border-r border-[#1E1E1E] min-w-max ${activeExerciseIndex === index
                             ? 'bg-[#1E1E1E] text-white'
-                            : 'bg-[#2D2D2D] text-gray-400 hover:bg-[#2A2A2A] hover:text-gray-300'
+                            : 'bg-[#2D2D2D] text-text-70 hover:bg-[#2A2A2A] hover:text-text-90'
                             }`}
                         >
                           {/* Active tab top accent */}
@@ -1376,7 +1374,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           {/* Sources Section */}
           {jsonData.recommendedReadings && jsonData.recommendedReadings.length > 0 && (
             <div>
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">Sources</h2>
+              <h2 className="text-xl font-semibold text-primary-text mb-4">Sources</h2>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {jsonData.recommendedReadings.map((reading, index) => (
                   <a
@@ -1384,17 +1382,17 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                     href={reading.Url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="block bg-gray-100 rounded-lg p-4 hover:bg-gray-200 transition-colors group h-40 flex flex-col"
+                    className="block bg-base-10 rounded-lg p-4 hover:bg-base-20 transition-colors group h-40 flex flex-col"
                   >
                     <div className="flex-1 mb-2">
-                      <h3 className="text-sm font-semibold text-gray-800 group-hover:text-blue-600 transition-colors mb-1 line-clamp-2">
+                      <h3 className="text-sm font-semibold text-text-90 group-hover:primary-text transition-colors mb-1 line-clamp-2">
                         {reading.title}
                       </h3>
-                      <p className="text-xs text-gray-600 line-clamp-2">
+                      <p className="text-xs text-text-70 line-clamp-2">
                         {reading.sourceDescription}
                       </p>
                     </div>
-                    <div className="text-xs text-gray-500">
+                    <div className="text-xs text-text-70">
                       {reading.readingTime} min read
                     </div>
                   </a>

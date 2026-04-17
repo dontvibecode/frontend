@@ -8,6 +8,7 @@ import Link from "next/link";
 interface LoginModalProps {
   isOpen: boolean;
   onClose: () => void;
+  canClose: boolean;
 }
 
 function GoogleButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
@@ -98,7 +99,7 @@ function GoogleButton({ children, onClick }: { children: React.ReactNode; onClic
   );
 }
 
-export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
+export default function LoginModal({ isOpen, onClose, canClose }: LoginModalProps) {
   const [isLoading, setIsLoading] = useState(false);
 
   const handleGoogleLogin = async () => {
@@ -125,7 +126,7 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.2 }}
             className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            onClick={onClose}
+            onClick={canClose ? onClose : undefined}
           />
 
           {/* Modal */}
@@ -138,14 +139,16 @@ export default function LoginModal({ isOpen, onClose }: LoginModalProps) {
           >
             <div className="bg-white py-8 px-6 drop-shadow-2xl border border-gray-200 rounded-2xl mx-4">
               {/* Close Button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
+              {canClose && (
+                <button
+                  onClick={onClose}
+                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
 
               {/* Logo */}
               <div className="text-center mb-6">

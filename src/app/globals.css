@@ -1,22 +1,110 @@
 @import "tailwindcss";
 
 :root {
+  color-scheme: light;
   --background: #ffffff;
   --foreground: #171717;
+  --primary-text: #171717;
+  --loading: #cdcdcd;
+  --container-primary: #fbfbfb;
+  --container-secondary: #e1e1e1;
+  --text-90: rgba(0, 0, 0, 0.9);
+  --text-80: rgba(0, 0, 0, 0.8);
+  --text-70: rgba(0, 0, 0, 0.7);
+  --base-5: rgba(0, 0, 0, 0.05);
+  --base-10: rgba(0, 0, 0, 0.1);
+  --base-15: rgba(0, 0, 0, 0.15);
+  --base-20: rgba(0, 0, 0, 0.2);
+  --base-25: rgba(0, 0, 0, 0.25);
+  --base-30: rgba(0, 0, 0, 0.3);
+  --base-35: rgba(0, 0, 0, 0.35);
+  --base-40: rgba(0, 0, 0, 0.4);
+  --text-5: rgba(0, 0, 0, 0.05);
+  --text-10: rgba(0, 0, 0, 0.1);
+  --text-15: rgba(0, 0, 0, 0.15);
+  --text-20: rgba(0, 0, 0, 0.2);
+  --text-25: rgba(0, 0, 0, 0.25);
+  --text-30: rgba(0, 0, 0, 0.3);
+  --text-35: rgba(0, 0, 0, 0.35);
+  --text-40: rgba(0, 0, 0, 0.4);
+  --opaque-button: rgba(0, 0, 0, 0.1);
+  --opaque-button-hover: rgba(0, 0, 0, 0.15);
+  --theme-border: #e1e1e1;
+  --button-border: rgba(0, 0, 0, 0.1);
+  --button-border-hover: rgba(0, 0, 0, 0.05);
+  --secondary-text: #ffffff;
+}
+
+/* Class-based dark mode (controlled by ThemeProvider) */
+.dark {
+  color-scheme: dark;
+  --background: #0a0a0a; /*dim : 202124*/
+  --foreground: #ededed;
+  --primary-text: #ffffff;  
+  --loading: #444444;
+  --container-primary: #1a1a1a;
+  --container-secondary: #5e5e5e;
+  --text-90: rgba(255, 255, 255, 0.9);
+  --text-80: rgba(255, 255, 255, 0.8);
+  --text-70: rgba(255, 255, 255, 0.7);
+  --base-5: rgba(255, 255, 255, 0.05);
+  --base-10: rgba(255, 255, 255, 0.1);
+  --base-15: rgba(255, 255, 255, 0.15);
+  --base-20: rgba(255, 255, 255, 0.2);
+  --base-25: rgba(255, 255, 255, 0.25);
+  --base-30: rgba(255, 255, 255, 0.3);
+  --base-35: rgba(255, 255, 255, 0.35);
+  --base-40: rgba(255, 255, 255, 0.4);
+  --text-5: rgba(255, 255, 255, 0.05);
+  --text-10: rgba(255, 255, 255, 0.1);
+  --text-15: rgba(255, 255, 255, 0.15);
+  --text-20: rgba(255, 255, 255, 0.2);
+  --text-25: rgba(255, 255, 255, 0.25);
+  --text-30: rgba(255, 255, 255, 0.3);
+  --text-35: rgba(255, 255, 255, 0.35);
+  --text-40: rgba(255, 255, 255, 0.4);
+  --opaque-button: rgba(255, 255, 255, 0.1);
+  --opaque-button-hover: rgba(255, 255, 255, 0.15);
+  --theme-border: rgba(255, 255, 255, 0.2);
+  --button-border: rgba(255, 255, 255, 0.2);
+  --button-border-hover: rgba(255, 255, 255, 0.25);
+  --secondary-text: #171717;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-primary-text: var(--primary-text);
+  --color-secondary-text: var(--secondary-text);
+  --color-loading: var(--loading);
+  --color-container-primary: var(--container-primary);
+  --color-container-secondary: var(--container-secondary);
+  --color-text-70: var(--text-70);
+  --color-text-80: var(--text-80);
+  --color-text-90: var(--text-90);
+  --color-base-5: var(--base-5);
+  --color-base-10: var(--base-10);
+  --color-base-15: var(--base-15);
+  --color-base-20: var(--base-20);
+  --color-base-25: var(--base-25);
+  --color-base-30: var(--base-30);
+  --color-base-35: var(--base-35);
+  --color-base-40: var(--base-40);
+  --color-text-5: var(--text-5);
+  --color-text-10: var(--text-10);
+  --color-text-15: var(--text-15);
+  --color-text-20: var(--text-20);
+  --color-text-25: var(--text-25);
+  --color-text-30: var(--text-30);
+  --color-text-35: var(--text-35);
+  --color-text-40: var(--text-40);
+  --color-opaque-button: var(--opaque-button);
+  --color-opaque-button-hover: var(--opaque-button-hover);
+  --color-theme-border: var(--theme-border);
+  --color-button-border: var(--button-border);
+  --color-button-border-hover: var(--button-border-hover);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -66,16 +154,14 @@ body {
   background-clip: padding-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .sidebar-scroll {
-    /* Firefox dark mode */
-    scrollbar-color: #a7a7a7 transparent;
-  }
-  
-  .sidebar-scroll::-webkit-scrollbar-thumb {
-    background: #a7a7a7;
-    border: 3px solid #fafafa;
-  }
+.dark .sidebar-scroll {
+  /* Firefox dark mode */
+  scrollbar-color: #a7a7a7 transparent;
+}
+
+.dark .sidebar-scroll::-webkit-scrollbar-thumb {
+  background: #a7a7a7;
+  border: 3px solid #1a1a1a;
 }
 
 
@@ -101,15 +187,13 @@ body {
   background-clip: padding-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  .main-scroll {
-    /* Firefox dark mode */
-    scrollbar-color: #a7a7a7 transparent;
-  }
-  
-  .main-scroll::-webkit-scrollbar-thumb {
-    background: #a7a7a7;
-    border: 3px solid #e5e5e5;
-  }
+.dark .main-scroll {
+  /* Firefox dark mode */
+  scrollbar-color: #a7a7a7 transparent;
+}
+
+.dark .main-scroll::-webkit-scrollbar-thumb {
+  background: #a7a7a7;
+  border: 3px solid #1a1a1a;
 }
 

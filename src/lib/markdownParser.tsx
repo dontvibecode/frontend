@@ -89,7 +89,7 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
     {
       regex: /~~(.+?)~~/,
       render: (match, key) => (
-        <del key={key} className="line-through text-gray-500">
+        <del key={key} className="line-through text-text-70">
           {match[1]}
         </del>
       ),
@@ -100,7 +100,7 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
       render: (match, key) => (
         <code
           key={key}
-          className="bg-gray-100 text-rose-600 px-1.5 py-0.5 rounded text-sm font-mono"
+          className="bg-base-10 text-rose-600 px-1.5 py-0.5 rounded text-sm font-mono"
         >
           {match[1]}
         </code>
@@ -115,7 +115,7 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
           href={match[2]}
           target="_blank"
           rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-800 underline"
+          className="text-primary-text hover:text-primary-text-hover underline"
         >
           {match[1]}
         </a>
@@ -161,7 +161,7 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
 /**
  * Parses a full markdown string and returns React elements
  */
-export function parseMarkdown(markdown: string): React.ReactElement {
+export function parseMarkdown(markdown: string, compact: boolean = false): React.ReactElement {
   if (!markdown) return <></>;
 
   const lines = markdown.split('\n');
@@ -173,10 +173,11 @@ export function parseMarkdown(markdown: string): React.ReactElement {
   const flushList = () => {
     if (currentList) {
       const ListTag = currentList.type;
+      const baseClass = currentList.type === 'ul' ? 'list-disc list-inside space-y-1' : 'list-decimal list-inside space-y-1';
       elements.push(
         <ListTag
           key={`list-${lineIndex}`}
-          className={currentList.type === 'ul' ? 'list-disc list-inside space-y-1 my-2' : 'list-decimal list-inside space-y-1 my-2'}
+          className={compact ? baseClass : `${baseClass} my-2`}
         >
           {currentList.items}
         </ListTag>
@@ -191,9 +192,9 @@ export function parseMarkdown(markdown: string): React.ReactElement {
       elements.push(
         <pre
           key={`code-${codeBlock.startIndex}`}
-          className="bg-gray-100 border border-gray-200 rounded-lg p-3 my-3 overflow-x-auto"
+          className={`bg-base-10 border border-base-10 rounded-lg p-3 overflow-x-auto ${compact ? '' : 'my-3'}`}
         >
-          <code className="text-sm font-mono text-black whitespace-pre">{code}</code>
+          <code className="text-sm font-mono text-primary-text whitespace-pre">{code}</code>
         </pre>
       );
       codeBlock = null;
@@ -233,7 +234,7 @@ export function parseMarkdown(markdown: string): React.ReactElement {
     // Horizontal rule: ---, ***, ___
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmedLine)) {
       flushList();
-      elements.push(<hr key={`hr-${lineIndex}`} className="my-4 border-gray-200" />);
+      elements.push(<hr key={`hr-${lineIndex}`} className={`border-gray-200 ${compact ? '' : 'my-4'}`} />);
       continue;
     }
 
@@ -270,7 +271,7 @@ export function parseMarkdown(markdown: string): React.ReactElement {
       elements.push(
         <blockquote
           key={`blockquote-${lineIndex}`}
-          className="border-l-4 border-gray-300 pl-4 py-1 my-2 text-gray-600 italic"
+          className={`border-l-4 border-gray-300 pl-4 py-1 text-gray-600 italic ${compact ? '' : 'my-2'}`}
         >
           {content}
         </blockquote>
@@ -306,7 +307,7 @@ export function parseMarkdown(markdown: string): React.ReactElement {
     flushList();
     const content = parseInlineMarkdown(trimmedLine, `p-${lineIndex}`);
     elements.push(
-      <p key={`p-${lineIndex}`} className="my-2">
+      <p key={`p-${lineIndex}`} className={compact ? '' : 'my-2'}>
         {content}
       </p>
     );
@@ -322,8 +323,8 @@ export function parseMarkdown(markdown: string): React.ReactElement {
 /**
  * A React component wrapper for parsing markdown
  */
-export function Markdown({ children }: { children: string }) {
-  return parseMarkdown(children);
+export function Markdown({ children, compact = false }: { children: string; compact?: boolean }) {
+  return parseMarkdown(children, compact);
 }
 
 export default parseMarkdown;

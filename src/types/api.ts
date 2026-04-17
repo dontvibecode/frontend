@@ -6,6 +6,7 @@ export interface MessageData {
   fromUser?: boolean;
   modelUsed: string;
   isSending?: boolean;
+  thought?: string;
   json: InstructorResponse | null;
 }
 
@@ -25,7 +26,8 @@ export interface Exercise {
 export interface InstructorResponse {
   lessonTitle?: string;
   offTopic?: boolean;
-  offTopicMessage?: string;
+  offTopicMessage?: string; 
+  thought?: string;
   breakdown?: string;
   explanation?: string;
   recommendedReadings?: RecommendedReading[];
@@ -43,6 +45,9 @@ export interface Conversation {
   title: string;
   lastActive: string;
   pinned: boolean;
+  exercises_count?: number;
+  exercises_almost_count?: number;
+  exercises_correct_count?: number;
 }
 export const ExperienceLevels = ['Beginner', 'Novice', 'Junior', 'Senior'] as const;
 
@@ -68,4 +73,12 @@ export interface User {
   email: string;
   preferences?: UserPreferences;
   tokens?: number;
+  membership: "free" | "pro";
+  subscriptionActive?: boolean | null;
+  membershipExpiresAt?: string | null;
+}
+
+export interface TokenData {
+  token_used: number;
+  token_limit: number;
 }

@@ -1,5 +1,7 @@
+import { useRef, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Markdown } from "@/lib/markdownParser";
+import { Icon } from "@iconify/react";
 
 const ThinkingAnimation = () => {
   const fillDuration = 0.5;
@@ -71,13 +73,21 @@ export const StreamingThoughts = ({
   stage: 'routing' | 'routing_thought' | 'instructor' | 'instructor_thought' | 'complete' | 'error' | null;
   thoughts: string;
 }) => {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
+  }, [thoughts]);
+
   if (!stage) return null;
 
   const stageInfo: Record<string, { label: string; icon: string; component?: React.ReactElement }> = {
     routing: { label: '', icon: '', component: <ThinkingAnimation /> },
     routing_thought: { label: '', icon: '', component: <ThinkingAnimation /> },
-    instructor: { label: 'Creating your lesson', icon: '✦' },
-    instructor_thought: { label: 'Generating content', icon: '✦' },
+    instructor: { label: 'Creating your lesson', icon: 'fluent:search-sparkle-24-filled' },
+    instructor_thought: { label: 'Generating content', icon: 'fluent:notepad-sparkle-24-regular' },
   };
 
   const info = stageInfo[stage];
@@ -97,18 +107,13 @@ export const StreamingThoughts = ({
           >
             {/* Stage indicator */}
             <div className="flex items-center gap-2">
-
-
               <motion.span
-                className="text-indigo-400"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
+                className="text-slate-400"
               >
-                {info.icon}
+                <Icon icon={info.icon} className="w-4 h-4" />
               </motion.span>
               <span
-                className="text-sm font-medium text-gray-500 tracking-wide"
-                style={{ fontFamily: "'SF Mono', 'Fira Code', monospace" }}
+                className="text-sm font-medium text-slate-400 tracking-wide"
               >
                 {info.label}
               </span>
@@ -118,7 +123,7 @@ export const StreamingThoughts = ({
                 {[0, 1, 2].map((dotIdx) => (
                   <motion.span
                     key={dotIdx}
-                    className="w-1 h-1 rounded-full bg-indigo-300"
+                    className="w-1 h-1 rounded-full bg-gray-300"
                     animate={{
                       opacity: [0.2, 1, 0.2],
                       scale: [0.8, 1, 0.8],
@@ -137,13 +142,15 @@ export const StreamingThoughts = ({
             {/* Streaming thoughts */}
             {thoughts && (
               <motion.div
-                className="text-sm text-gray-600 italic border-l-2 border-indigo-200 pl-3 ml-4 max-h-48 overflow-y-auto"
+                ref={scrollRef}
+                className="text-sm text-slate-500 font-thin font-light tracking-wide border-l-2 border-slate-300 pl-3 ml-2 max-h-48 overflow-y-auto scrollbar-hide"
                 initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
+                animate={{ opacity: [0.6, 1, 0.6] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
               >
                 <Markdown>{thoughts}</Markdown>
                 <motion.span
-                  className="inline-block w-2 h-4 bg-indigo-400 ml-0.5"
+                  className="inline-block w-2 h-4 bg-gray-400 ml-0.5"
                   animate={{ opacity: [1, 0, 1] }}
                   transition={{ duration: 0.8, repeat: Infinity }}
                 />

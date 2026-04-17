@@ -106,146 +106,23 @@ function PricingSection() {
           </div>
         </div>
 
-        {/* Tokens Section */}
-        <div className="grid grid-cols-3 border-b border-gray-100 bg-gray-50/30">
-          <div className="p-3 flex items-center">
-            <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Tokens</span>
-          </div>
-          <div className="p-3 border-x border-gray-100"></div>
-          <div className="p-3 bg-gray-50/50"></div>
-        </div>
+        {/* Features */}
         {[
-          { feature: "Monthly tokens included", free: "5,000", paid: "50,000", tooltip: "Tokens refresh monthly" },
-          { feature: "Models", free: "Gemini 2.5 Pro", paid: "Gemini Pro, Sonnet", tooltip: "Tokens refresh monthly" },
+          { feature: "Monthly tokens", free: "200,000", paid: "1,000,000", tooltip: "Tokens refresh monthly" },
+          { feature: "Conversation context", free: "6 messages", paid: "25 messages", tooltip: "Messages per conversation" },
+          { feature: "Submissions with explanation", free: "1 per day", paid: "Unlimited", tooltip: "Get detailed explanations for your code submissions" },
+          { feature: "Exercises per lesson", free: "2", paid: "10", tooltip: "Number of exercises available per lesson" },
+          { feature: "Additional tokens", free: "Standard price", paid: "Cheaper rates", tooltip: "Purchase extra tokens when needed" },
         ].map((row, index) => (
-          <div key={`tokens-${index}`} className="grid grid-cols-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
+          <div key={`feature-${index}`} className="grid grid-cols-3 border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
             <div className="p-4 flex items-center">
               <span className="text-sm text-gray-700 border-b border-dashed border-gray-300 cursor-help" title={row.tooltip}>{row.feature}</span>
             </div>
             <div className="p-4 flex items-center justify-center border-x border-gray-100">
-              {typeof row.free === "boolean" ? (
-                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {row.free}
-                </span>
-              )}
+              <span className="text-sm text-gray-500">{row.free}</span>
             </div>
             <div className="p-4 flex items-center justify-center bg-gray-50/50">
-              <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {row.paid}
-              </span>
-            </div>
-          </div>
-        ))}
-
-        {/* Lesson Generation Section */}
-        <div className="grid grid-cols-3 border-b border-gray-100 bg-gray-50/30">
-          <div className="p-3 flex items-center">
-            <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Lessons</span>
-          </div>
-          <div className="p-3 border-x border-gray-100"></div>
-          <div className="p-3 bg-gray-50/50"></div>
-        </div>
-        {[
-          { feature: "Generate lessons", free: "500 tokens", paid: "500 tokens", tooltip: "AI-generated coding lessons tailored to you" },
-          { feature: "Fast lesson generation", free: false, paid: "750 tokens", tooltip: "Generate lessons 2x faster with premium models" },
-          { feature: "Lesson history", free: "7 days", paid: "Unlimited", tooltip: "Access your past lessons" },
-        ].map((row, index) => (
-          <div key={`lessons-${index}`} className="grid grid-cols-3 border-b border-gray-50 hover:bg-gray-50/50 transition-colors">
-            <div className="p-4 flex items-center">
-              <span className="text-sm text-gray-700 border-b border-dashed border-gray-300 cursor-help" title={row.tooltip}>{row.feature}</span>
-            </div>
-            <div className="p-4 flex items-center justify-center border-x border-gray-100">
-              {typeof row.free === "boolean" ? (
-                <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {row.free}
-                </span>
-              )}
-            </div>
-            <div className="p-4 flex items-center justify-center bg-gray-50/50">
-              <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-                {row.paid}
-              </span>
-            </div>
-          </div>
-        ))}
-
-        {/* Exercises Section */}
-        <div className="grid grid-cols-3 border-b border-gray-100 bg-gray-50/30">
-          <div className="p-3 flex items-center">
-            <span className="text-xs font-semibold text-gray-900 uppercase tracking-wide">Exercises</span>
-          </div>
-          <div className="p-3 border-x border-gray-100"></div>
-          <div className="p-3 bg-gray-50/50"></div>
-        </div>
-        {[
-          { feature: "Interactive exercises", free: true, paid: true, tooltip: "Hands-on coding practice" },
-          { feature: "Real-time AI feedback", free: "150 tokens", paid: "150 tokens", tooltip: "Get instant feedback on your solutions" },
-          { feature: "Generate additional exercises", free: "5 per lesson", paid: "Unlimited", tooltip: "Create more practice problems" },
-          { feature: "Solution explanations", free: "5 per day", paid: "Unlimited", tooltip: "Detailed breakdowns of optimal solutions" },
-        ].map((row, index) => (
-          <div key={`exercises-${index}`} className="grid grid-cols-3 border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
-            <div className="p-4 flex items-center">
-              <span className="text-sm text-gray-700 border-b border-dashed border-gray-300 cursor-help" title={row.tooltip}>{row.feature}</span>
-            </div>
-            <div className="p-4 flex items-center justify-center border-x border-gray-100">
-              {typeof row.free === "boolean" ? (
-                row.free ? (
-                  <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                )
-              ) : (
-                <span className="text-sm text-gray-500 flex items-center gap-1">
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {row.free}
-                </span>
-              )}
-            </div>
-            <div className="p-4 flex items-center justify-center bg-gray-50/50">
-              {typeof row.paid === "boolean" ? (
-                row.paid ? (
-                  <svg className="w-5 h-5 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                ) : (
-                  <svg className="w-5 h-5 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                )
-              ) : (
-                <span className="text-sm font-medium text-gray-700 flex items-center gap-1">
-                  <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                  </svg>
-                  {row.paid}
-                </span>
-              )}
+              <span className="text-sm font-medium text-gray-700">{row.paid}</span>
             </div>
           </div>
         ))}

@@ -12,96 +12,223 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
-import { Conversation, Exercise, MessageData, User, UserPreferences } from "@/types/api";
+import {
+  Conversation,
+  Exercise,
+  MessageData,
+  TokenData,
+  User,
+  UserPreferences,
+} from "@/types/api";
 import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
 import SearchModal from "../components/SearchModal";
 import { StreamingThoughts } from "../components/StreamingThoughts";
+import { Icon } from "@iconify/react";
+import { Markdown } from "@/lib/markdownParser";
+import PaymentModal from "../components/PaymentModal";
 
-const GeneratingLessonAnimation = () => {
-  const steps = [
-    { text: "Generating Lesson", icon: "✦" },
-    { text: "Understanding problem", icon: "◈" },
-    { text: "Creating exercises", icon: "◇" },
-    { text: "Finding sources", icon: "○" },
+const TypewriterHero = () => {
+  const lines = [
+    "Code like it matters.",
+    "Think deeper.",
+    "Build better. No AI crutches.",
   ];
-  const stepDuration = 1.2;
-  const totalDuration = steps.length * stepDuration + 0.5;
+
+  const [displayedLines, setDisplayedLines] = useState<string[]>([]);
+  const [currentLineIndex, setCurrentLineIndex] = useState(0);
+  const [currentCharIndex, setCurrentCharIndex] = useState(0);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
+
+  useEffect(() => {
+    const typeSpeed = 50;
+    const deleteSpeed = 30;
+    const pauseAfterLine = 800;
+    const pauseAfterComplete = 2500;
+    const pauseBeforeDelete = 1500;
+
+    if (isPaused) return;
+
+    const currentLine = lines[currentLineIndex];
+
+    // Typing phase
+    if (!isDeleting && currentCharIndex <= currentLine.length) {
+      const timeout = setTimeout(() => {
+        const newLines = [...displayedLines];
+        newLines[currentLineIndex] = currentLine.slice(0, currentCharIndex);
+        setDisplayedLines(newLines);
+
+        if (currentCharIndex === currentLine.length) {
+          // Finished typing current line
+          if (currentLineIndex < lines.length - 1) {
+            // Move to next line after pause
+            setIsPaused(true);
+            setTimeout(() => {
+              setCurrentLineIndex(currentLineIndex + 1);
+              setCurrentCharIndex(0);
+              setIsPaused(false);
+            }, pauseAfterLine);
+          } else {
+            // All lines typed, pause then start deleting
+            setIsPaused(true);
+            setTimeout(() => {
+              setIsDeleting(true);
+              setIsPaused(false);
+            }, pauseAfterComplete);
+          }
+        } else {
+          setCurrentCharIndex(currentCharIndex + 1);
+        }
+      }, typeSpeed);
+
+      return () => clearTimeout(timeout);
+    }
+
+    // Deleting phase
+    if (isDeleting) {
+      const totalChars = displayedLines.join("").length;
+
+      if (totalChars === 0) {
+        // All deleted, restart
+        setIsPaused(true);
+        setTimeout(() => {
+          setIsDeleting(false);
+          setCurrentLineIndex(0);
+          setCurrentCharIndex(0);
+          setDisplayedLines([]);
+          setIsPaused(false);
+        }, pauseBeforeDelete);
+        return;
+      }
+
+      const timeout = setTimeout(() => {
+        const newLines = [...displayedLines];
+        // Find last non-empty line and remove a character
+        for (let i = newLines.length - 1; i >= 0; i--) {
+          if (newLines[i] && newLines[i].length > 0) {
+            newLines[i] = newLines[i].slice(0, -1);
+            if (newLines[i].length === 0 && i > 0) {
+              newLines.pop();
+            }
+            break;
+          } else if (i > 0) {
+            newLines.pop();
+          }
+        }
+        setDisplayedLines(newLines);
+      }, deleteSpeed);
+
+      return () => clearTimeout(timeout);
+    }
+  }, [
+    currentCharIndex,
+    currentLineIndex,
+    isDeleting,
+    isPaused,
+    displayedLines,
+    lines,
+  ]);
+
+  // Determine which line should show the cursor
+  const getCursorLineIndex = () => {
+    if (isDeleting) {
+      for (let i = displayedLines.length - 1; i >= 0; i--) {
+        if (displayedLines[i] && displayedLines[i].length > 0) return i;
+      }
+      return 0;
+    }
+    return currentLineIndex;
+  };
+
+  const cursorLineIndex = getCursorLineIndex();
 
   return (
     <motion.div
-      className="h-fit w-full flex flex-col items-start justify-start gap-3 py-4 px-4"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
+      initial={{ opacity: 0, scale: 0.9 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ duration: 0.5 }}
+      className="text-center"
     >
-      {steps.map((step, idx) => (
-        <motion.div
-          key={idx}
-          className="flex items-center gap-3"
-          initial={{ opacity: 0, y: 10, x: 0 }}
-          animate={{ opacity: [0, 0, 1, 1], y: [20, 20, 0, 0] }}
-          transition={{
-            duration: totalDuration,
-            repeat: Infinity,
-            times: [
-              0,
-              (idx * stepDuration) / totalDuration,
-              (idx * stepDuration + 0.2) / totalDuration,
-              1
-            ],
-            ease: "easeOut",
-          }}
-        >
-          <div className="relative overflow-hidden">
-            <span 
-              className="text-sm font-medium text-gray-400 tracking-wide"
-              style={{ fontFamily: "'SF Mono', 'Fira Code', monospace" }}
-            >
-              {step.text}
-            </span>
-            <motion.div
-              className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent"
-              style={{ 
-                maskImage: "linear-gradient(to right, transparent, black, transparent)",
-                WebkitMaskImage: "linear-gradient(to right, transparent, black, transparent)",
-              }}
-              initial={{ x: "-100%" }}
-              animate={{ x: "200%" }}
-              transition={{
-                duration: 2,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: idx * stepDuration,
-              }}
-            />
-          </div>
-          
-          <div className="flex gap-0.5">
-            {[0, 1, 2].map((dotIdx) => (
+      {lines.map((line, index) => {
+        const Tag = index === 0 ? "h1" : "h2";
+        const displayedText = displayedLines[index] || "";
+        const showCursor = index === cursorLineIndex;
+
+        return (
+          <Tag
+            key={index}
+            className={`text-5xl monospace md:text-6xl font-light text-base-30 ${index < lines.length - 1 ? "mb-4" : ""}`}
+          >
+            {displayedText}
+            {showCursor && (
               <motion.span
-                key={dotIdx}
-                className="w-1 h-1 rounded-full bg-indigo-300"
-                animate={{ 
-                  opacity: [0.2, 1, 0.2],
-                  scale: [0.8, 1, 0.8],
-                }}
-                transition={{
-                  duration: 0.8,
-                  repeat: Infinity,
-                  ease: "easeInOut",
-                  delay: idx * stepDuration + dotIdx * 0.15,
-                }}
+                className="inline-block w-8 h-12 mb-1 md:h-14 bg-base-30 ml-1 align-middle"
+                animate={{ opacity: [0.8, 0, 0.8] }}
+                transition={{ duration: 1, repeat: Infinity }}
               />
-            ))}
-          </div>
-        </motion.div>
-      ))}
+            )}
+          </Tag>
+        );
+      })}
     </motion.div>
   );
 };
 
+const ThoughtDropdown = ({ thought }: { thought: string }) => {
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  // Count the number of steps by counting bold headers (lines starting with **)
+  const stepCount = useMemo(() => {
+    const matches = thought.match(/\*\*[^*]+\*\*/g);
+    return matches ? matches.length : 1;
+  }, [thought]);
+
+  return (
+    <div className="mb-4">
+      <button
+        onClick={() => setIsExpanded(!isExpanded)}
+        className="flex items-center gap-2 text-sm text-base-40 cursor-pointer hover:text-text-70 transition-colors"
+      >
+        <motion.svg
+          animate={{ rotate: isExpanded ? 90 : 0 }}
+          transition={{ duration: 0.2 }}
+          className="w-3 h-3"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M9 5l7 7-7 7"
+          />
+        </motion.svg>
+        <span className="font-medium">
+          Thought for {stepCount} step{stepCount !== 1 ? "s" : ""}
+        </span>
+      </button>
+
+      <AnimatePresence>
+        {isExpanded && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2, ease: "easeInOut" }}
+            className="overflow-hidden scrollbar-hide"
+          >
+            <div className="mt-3 pl-5 border-l-2 border-base-20 text-sm text-text-70 space-y-3 max-h-64 overflow-y-auto scrollbar-hide">
+              <Markdown>{thought}</Markdown>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
 
 export const AIResponse = ({
   message,
@@ -119,8 +246,10 @@ export const AIResponse = ({
 
   if (!jsonData || Object.keys(jsonData).length === 0 || !message) {
     return (
-      <div className="bg-white border border-gray-200 rounded-2xl p-3">
-        <p className="text-sm text-gray-700">{message?.text}</p>
+      <div className="bg-base-10 border border-theme-border rounded-2xl p-3">
+        <div className="text-sm text-text-90">
+          <Markdown compact>{message?.text as string}</Markdown>
+        </div>
       </div>
     );
   }
@@ -133,35 +262,31 @@ export const AIResponse = ({
           response: message,
         })
       }
-      className="cursor-pointer bg-white border border-gray-200 rounded-2xl p-3"
+      className="cursor-pointer bg-container-primary  border border-theme-border rounded-2xl p-3"
     >
       {/* Breakdown */}
-      <h1 className="text-xl text-gray-700 mb-3 font-semibold">
+      <h1 className="text-xl text-primary-text mb-3 font-semibold">
         {jsonData.lessonTitle ??
           (jsonData as any).lesson_title ??
           "No Title Available"}
       </h1>
+
+      {message.thought && <ThoughtDropdown thought={message.thought} />}
+
       {jsonData.breakdown && (
-        <p className="text-sm text-gray-700 mb-3 font-regular">
+        <p className="text-sm text-primary-text mb-3 font-regular">
           {jsonData.breakdown}
         </p>
       )}
 
-      {/* Explanation */}
-      {/* {jsonData.explanation && (
-        <p className="text-sm text-gray-600 mb-4">
-          {jsonData.explanation}
-        </p>
-      )} */}
-
       {/* Lesson Content Card */}
       {(jsonData.exercises || jsonData.recommendedReadings) && (
-        <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">
+        <div className="bg-base-5 rounded-xl p-4 border border-theme-border">
           <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-gray-500 uppercase">
+            <span className="text-xs font-semibold text-primary-text uppercase">
               Lesson
             </span>
-            <button className="text-gray-400 hover:text-gray-600">
+            <button className="text-primary-text hover:text-primary-text">
               <svg
                 className="w-4 h-4"
                 fill="none"
@@ -181,23 +306,25 @@ export const AIResponse = ({
           {/* Exercises/Activities */}
           {jsonData.exercises && jsonData.exercises.length > 0 && (
             <div className="mb-4">
-              <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+              <h4 className="text-xs font-semibold text-primary-text mb-2 flex items-center gap-1">
                 <span>🎯</span> Activities
               </h4>
               <div className="space-y-2">
                 {jsonData.exercises.map((exercise, index) => (
                   <div
                     key={index}
-                    className="p-3 bg-white rounded-lg border border-gray-200"
+                    className="p-3 bg-base-5 rounded-lg border border-base-10"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex-1">
                         <div className="font-medium text-sm mb-1">
                           {exercise.filename}
                         </div>
-                        <p className="text-xs text-gray-600">{exercise.text}</p>
+                        <p className="text-xs text-primary-text">
+                          {exercise.text}
+                        </p>
                       </div>
-                      <div className="w-5 h-5 rounded-full border-2 border-gray-300 flex-shrink-0"></div>
+                      <div className="w-5 h-5 rounded-full border-2 border-theme-border flex-shrink-0"></div>
                     </div>
                   </div>
                 ))}
@@ -209,7 +336,7 @@ export const AIResponse = ({
           {jsonData.recommendedReadings &&
             jsonData.recommendedReadings.length > 0 && (
               <div>
-                <h4 className="text-xs font-semibold text-gray-700 mb-2 flex items-center gap-1">
+                <h4 className="text-xs font-semibold text-primary-text mb-2 flex items-center gap-1">
                   <span>📖</span> Reading
                 </h4>
                 <div className="grid grid-cols-2 gap-2">
@@ -219,15 +346,15 @@ export const AIResponse = ({
                       href={reading.Url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="bg-white rounded-lg border border-gray-200 p-3 hover:border-gray-300 hover:shadow-sm transition-all group"
+                      className="bg-base-5 rounded-lg border border-base-10 p-3 hover:border-theme-border hover:shadow-sm transition-all group"
                     >
-                      <h5 className="text-xs font-semibold text-gray-800 mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
+                      <h5 className="text-xs font-semibold text-primary-text mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
                         {reading.title}
                       </h5>
-                      <p className="text-xs text-gray-500 mb-2 line-clamp-2">
+                      <p className="text-xs text-primary-text mb-2 line-clamp-2">
                         {reading.sourceDescription}
                       </p>
-                      <div className="flex items-center gap-1 text-xs text-gray-400">
+                      <div className="flex items-center gap-1 text-xs text-primary-text">
                         <svg
                           className="w-3 h-3"
                           fill="none"
@@ -249,19 +376,24 @@ export const AIResponse = ({
               </div>
             )}
           <div>
-            <h4 className="text-xs font-semibold text-gray-700 my-2 flex items-center gap-1">
+            <h4 className="text-xs font-semibold text-primary-text my-2 flex items-center gap-1">
               <span>🏷️</span> Tags
             </h4>
             {jsonData.tags && jsonData.tags.length > 0 && (
               <div className="flex flex-wrap gap-1">
                 {jsonData.tags.map((tag) => (
-                  <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded">
+                  <span
+                    key={tag}
+                    className="text-xs px-2 py-0.5 bg-base-10 text-primary-text rounded"
+                  >
                     {tag}
                   </span>
                 ))}
               </div>
             )}
-            <p className="text-xs font-semibold text-gray-300 uppercase mt-3">{new Date(message.created_at).toLocaleString().split(',')[0]}</p>
+            <p className="text-xs font-regular text-text-90 uppercase mt-3">
+              {new Date(message.created_at).toLocaleString().split(",")[0]}
+            </p>
           </div>
         </div>
       )}
@@ -286,24 +418,36 @@ export default function ChatPage() {
   const router = useRouter();
   const [message, setMessage] = useState("");
   const [streamStage, setStreamStage] = useState<
-    'routing' | 'routing_thought' | 'instructor' | 'instructor_thought' | 'complete' | 'error' | null
+    | "routing"
+    | "routing_thought"
+    | "instructor"
+    | "instructor_thought"
+    | "complete"
+    | "error"
+    | null
   >(null);
-  const [thoughtStream, setThoughtStream] = useState<string>('');
+  const [thoughtStream, setThoughtStream] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [selectedLesson, setSelectedLesson] = useState<any>(null);
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [conversationsLoading, setConversationsLoading] = useState(true);
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(
-    new Map()
+    new Map(),
   );
   const [lessonExpanded, setLessonExpanded] = useState(false);
   const [lessonLoading, setLessonLoading] = useState(false);
   const [showSkeletonMinTime, setShowSkeletonMinTime] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>([]);
+  const [tokenData, setTokenData] = useState<TokenData | null>(null);
+  const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>(
+    [],
+  );
+  const [bookmarksLoading, setBookmarksLoading] = useState(true);
   const [bookmarksExpanded, setBookmarksExpanded] = useState(false);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
@@ -337,18 +481,28 @@ export default function ChatPage() {
             return;
           }
 
-          const conversationsData = await api.conversation.getConversations(
-            session?.user?.email as string,
-            idToken
-          );
-          setConversations(conversationsData);
+          // Fetch both in parallel, with minimum 1 second delay
+          const [conversationsData, bookmarkedExercisesData] =
+            await Promise.all([
+              api.conversation.getConversations(
+                session?.user?.email as string,
+                idToken,
+              ),
+              api.conversation.getBookmarkedExercises(
+                session?.user?.email as string,
+                idToken,
+              ),
+              new Promise((resolve) => setTimeout(resolve, 1000)), // minimum 1 second
+            ]);
 
-          const bookmarkedExercises = await api.conversation.getBookmarkedExercises(
-            session?.user?.email as string,
-            idToken
-          );
-          setBookmarkedExercises(bookmarkedExercises);
+          // Set both values at the same time
+          setConversations(conversationsData);
+          setBookmarkedExercises(bookmarkedExercisesData);
+          setConversationsLoading(false);
+          setBookmarksLoading(false);
         } catch (error: any) {
+          setConversationsLoading(false);
+          setBookmarksLoading(false);
           console.error("Error loading conversations:", error);
           if (isTokenError(error)) {
             await signOut({ redirect: false });
@@ -366,7 +520,14 @@ export default function ChatPage() {
       if (session?.user?.email && idToken) {
         try {
           const response = await api.user.getUser(session.user.email, idToken);
+          console.log("user response: ", { response });
           setUser(response);
+          // Fetch token usage
+          const tokenUsage = await api.user.getTokenUsage(
+            session.user.email,
+            idToken,
+          );
+          setTokenData(tokenUsage);
         } catch (error) {
           const response = await api.user.createUser(
             {
@@ -374,9 +535,19 @@ export default function ChatPage() {
               email: session.user.email as string,
               method: "google",
             },
-            idToken
+            idToken,
           );
           setUser(response);
+          // Fetch token usage for new user
+          try {
+            const tokenUsage = await api.user.getTokenUsage(
+              session.user.email,
+              idToken,
+            );
+            setTokenData(tokenUsage);
+          } catch (e) {
+            console.error("Failed to fetch token usage:", e);
+          }
         }
       }
     };
@@ -388,7 +559,7 @@ export default function ChatPage() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "k") {
         e.preventDefault();
-        setSearchOpen(prev => !prev);
+        setSearchOpen((prev) => !prev);
         setSearchQuery("");
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "n") {
@@ -413,7 +584,7 @@ export default function ChatPage() {
       console.log("Selected conversation:", conversation);
       const messagesData = await api.conversation.getConversationMessages(
         Number(conversation.id),
-        (session?.user as any)?.idToken
+        (session?.user as any)?.idToken,
       );
       setConversationId(Number(conversation.id));
       setMessages(messagesData);
@@ -433,11 +604,11 @@ export default function ChatPage() {
     // Start loading with minimum 1 second display
     setLessonLoading(true);
     setShowSkeletonMinTime(true);
-    const minTimePromise = new Promise<void>((resolve) => 
+    const minTimePromise = new Promise<void>((resolve) =>
       setTimeout(() => {
         setShowSkeletonMinTime(false);
         resolve();
-      }, 1000)
+      }, 1000),
     );
 
     try {
@@ -453,12 +624,12 @@ export default function ChatPage() {
       console.log("Conversation ID:", conversationId);
       const messagesData = await api.conversation.getConversationMessages(
         conversationId,
-        idToken
+        idToken,
       );
 
       // Find the message that contains this exercise
       const exerciseMessage = messagesData.find(
-        (msg: MessageData) => msg.id === exercise.message_id
+        (msg: MessageData) => msg.id === exercise.message_id,
       );
 
       if (exerciseMessage) {
@@ -468,11 +639,10 @@ export default function ChatPage() {
 
         // Find the user's prompt (previous message from user)
         const messageIndex = messagesData.findIndex(
-          (msg: MessageData) => msg.id === exercise.message_id
+          (msg: MessageData) => msg.id === exercise.message_id,
         );
-        const userPrompt = messageIndex > 0 
-          ? messagesData[messageIndex - 1]?.text || ""
-          : "";
+        const userPrompt =
+          messageIndex > 0 ? messagesData[messageIndex - 1]?.text || "" : "";
 
         // Wait for minimum time before showing the lesson
         await minTimePromise;
@@ -500,7 +670,11 @@ export default function ChatPage() {
     }
   };
 
-  const handleBookmarkChange = (exerciseId: number, bookmarked: boolean, exerciseData: any) => {
+  const handleBookmarkChange = (
+    exerciseId: number,
+    bookmarked: boolean,
+    exerciseData: any,
+  ) => {
     if (bookmarked) {
       // Add to bookmarked exercises list
       setBookmarkedExercises((prev) => {
@@ -512,8 +686,8 @@ export default function ChatPage() {
       });
     } else {
       // Remove from bookmarked exercises list
-      setBookmarkedExercises((prev) => 
-        prev.filter((ex: any) => ex.id !== exerciseId)
+      setBookmarkedExercises((prev) =>
+        prev.filter((ex: any) => ex.id !== exerciseId),
       );
     }
   };
@@ -566,32 +740,35 @@ export default function ChatPage() {
       ]);
 
       // Use streaming API
-    const response = await api.message.sendMessageStreaming(
-      {
-        created_at: new Date().toISOString(),
-        text: currentMessage,
-        conversation: conversationId,
-        from_user: true,
-        model_used: "placeholder",
-        json: {},
-        experience_level: difficultyLevels[difficultyIndex],
-      },
-      (event) => {
-        // Update stage
-        setStreamStage(event.stage);
+      const response = await api.message.sendMessageStreaming(
+        {
+          created_at: new Date().toISOString(),
+          text: currentMessage,
+          conversation: conversationId,
+          from_user: true,
+          model_used: "placeholder",
+          json: {},
+          experience_level: difficultyLevels[difficultyIndex],
+        },
+        (event) => {
+          // Update stage
+          setStreamStage(event.stage);
 
-        // Handle thought streams - append new thoughts
-        if (event.stage === 'routing_thought' || event.stage === 'instructor_thought') {
-          setThoughtStream((prev) => prev + (event.data as string));
-        }
+          // Handle thought streams - append new thoughts
+          if (
+            event.stage === "routing_thought" ||
+            event.stage === "instructor_thought"
+          ) {
+            setThoughtStream((prev) => prev + (event.data as string));
+          }
 
-        // Clear thoughts when moving from routing to instructor
-        if (event.stage === 'instructor') {
-          setThoughtStream('');
-        }
-      },
-      idToken
-    );
+          // Clear thoughts when moving from routing to instructor
+          if (event.stage === "instructor") {
+            setThoughtStream("");
+          }
+        },
+        idToken,
+      );
 
       if (
         response.json &&
@@ -613,7 +790,7 @@ export default function ChatPage() {
 
       const messagesData = await api.conversation.getConversationMessages(
         response.conversation,
-        (session?.user as any)?.idToken
+        (session?.user as any)?.idToken,
       );
 
       console.log({ messagesData });
@@ -653,7 +830,7 @@ export default function ChatPage() {
     } finally {
       setLoading(false);
       setStreamStage(null);
-      setThoughtStream('');
+      setThoughtStream("");
     }
   };
 
@@ -690,7 +867,7 @@ export default function ChatPage() {
       await api.user.updateUser(
         session?.user?.email as string,
         updatedUserData,
-        idToken
+        idToken,
       );
 
       setShowUserProfilePopup(false);
@@ -715,645 +892,925 @@ export default function ChatPage() {
     setSearchQuery("");
   };
 
-  return(<div>Coming soon</div>)
+  return (
+    <div className="flex h-screen bg-background">
+      {/* Login Modal */}
+      <LoginModal
+        isOpen={showLoginModal}
+        canClose={false}
+        onClose={() => setShowLoginModal(false)}
+      />
 
-  // return (
-  //   <div className="flex h-screen bg-white">
-  //     {/* Login Modal */}
-  //     <LoginModal
-  //       isOpen={showLoginModal}
-  //       onClose={() => setShowLoginModal(false)}
-  //     />
-      
-  //     {/* Search Modal */}
-  //     <SearchModal
-  //       isOpen={searchOpen}
-  //       onClose={closeSearch}
-  //       searchQuery={searchQuery}
-  //       setSearchQuery={setSearchQuery}
-  //       conversations={conversations}
-  //       bookmarkedExercises={bookmarkedExercises}
-  //       onSelectConversation={(conversation) => {
-  //         handleConversationClick(conversation);
-  //         closeSearch();
-  //       }}
-  //       onSelectExercise={(exercise) => {
-  //         handleBookmarkedExerciseClick(exercise);
-  //         closeSearch();
-  //       }}
-  //     />
+      {/* Search Modal */}
+      <SearchModal
+        isOpen={searchOpen}
+        onClose={closeSearch}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        conversations={conversations}
+        bookmarkedExercises={bookmarkedExercises}
+        onSelectConversation={(conversation) => {
+          handleConversationClick(conversation);
+          closeSearch();
+        }}
+        onSelectExercise={(exercise) => {
+          handleBookmarkedExerciseClick(exercise);
+          closeSearch();
+        }}
+      />
 
-  //     {/* User Profile Popup */}
-  //     <UserProfilePopup
-  //       isOpen={showUserProfilePopup}
-  //       closePopup={() => setShowUserProfilePopup(false)}
-  //       user={user}
-  //       onEditUser={onEditUser}
-  //     />
-  //     <aside className="w-64 border-r border-gray-200 flex flex-col">
-  //       <div className="p-4 border-b border-gray-200">
-  //         <div
-  //           onClick={() => router.push("/")}
-  //           className="flex items-center gap-2 cursor-pointer"
-  //         >
-  //           <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
-  //         </div>
-  //       </div>
-  //       <div className="relative flex-1 overflow-y-auto">
-  //         <div className="sticky top-0 left-0 right-0 z-20 px-4 py-3 flex flex-col items-center gap-2">
-  //           <button
-  //             onClick={openSearch}
-  //             className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-black/10 rounded-2xl p-3 mx-auto"
-  //           >
-  //             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" className="text-black">
-  //               <g fill="none" fillRule="evenodd" stroke="black" strokeWidth={0}>
-  //                 <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z"/>
-  //                 <path fill="currentColor" d="M10.5 2a8.5 8.5 0 1 0 5.262 15.176l3.652 3.652a1 1 0 0 0 1.414-1.414l-3.652-3.652A8.5 8.5 0 0 0 10.5 2M4 10.5a6.5 6.5 0 1 1 13 0a6.5 6.5 0 0 1-13 0"/>
-  //               </g>
-  //             </svg>              
-  //             <span className="text-sm text-black m-0 font-medium tracking-wide">Search</span>
-  //             <div className="absolute top-0 bottom-0 right-0 flex items-center justify-center px-2">
-  //               <span className="flex items-center gap-1">
-  //                 <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">Ctrl</kbd>
-  //                 <kbd className="px-1.5 py-0.5 bg-white border border-gray-200 rounded text-[10px] text-gray-500 font-medium">K</kbd>
-  //               </span>              
-  //             </div>
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        idToken={(session?.user as any)?.idToken}
+        membership={user?.membership}
+        subscriptionActive={user?.subscriptionActive}
+        userEmail={user?.email || ""}
+        setUser={(user) => setUser(user)}
+        setTokenData={setTokenData}
+      />
 
+      {/* User Profile Popup */}
+      <UserProfilePopup
+        isOpen={showUserProfilePopup}
+        closePopup={() => setShowUserProfilePopup(false)}
+        user={user}
+        onEditUser={onEditUser}
+      />
+      <aside className="w-64 border-r border-theme-border flex flex-col">
+        <div className="p-4 border-b border-theme-border">
+          <div
+            onClick={() => router.push("/")}
+            className="flex items-center gap-2 cursor-pointer"
+          >
+            <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
+          </div>
+        </div>
+        <div className="relative flex-1 overflow-y-auto">
+          <div className="sticky top-0 left-0 right-0 z-20 px-4 py-3 flex flex-col items-center gap-2">
+            <button
+              onClick={openSearch}
+              className="cursor-pointer w-full flex flex-row items-center gap-2 bg-opaque-button hover:bg-opaque-button-hover transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-button-border hover:border-button-border-hover rounded-2xl p-3 mx-auto"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="20"
+                height="20"
+                viewBox="0 0 24 24"
+                className="text-currentColor"
+              >
+                <g
+                  fill="none"
+                  fillRule="evenodd"
+                  stroke="currentColor"
+                  strokeWidth={0}
+                >
+                  <path d="m12.593 23.258l-.011.002l-.071.035l-.02.004l-.014-.004l-.071-.035q-.016-.005-.024.005l-.004.01l-.017.428l.005.02l.01.013l.104.074l.015.004l.012-.004l.104-.074l.012-.016l.004-.017l-.017-.427q-.004-.016-.017-.018m.265-.113l-.013.002l-.185.093l-.01.01l-.003.011l.018.43l.005.012l.008.007l.201.093q.019.005.029-.008l.004-.014l-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014l-.034.614q.001.018.017.024l.015-.002l.201-.093l.01-.008l.004-.011l.017-.43l-.003-.012l-.01-.01z" />
+                  <path
+                    fill="currentColor"
+                    d="M10.5 2a8.5 8.5 0 1 0 5.262 15.176l3.652 3.652a1 1 0 0 0 1.414-1.414l-3.652-3.652A8.5 8.5 0 0 0 10.5 2M4 10.5a6.5 6.5 0 1 1 13 0a6.5 6.5 0 0 1-13 0"
+                  />
+                </g>
+              </svg>
+              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">
+                Search
+              </span>
+              <div className="text-base-40 absolute top-0 bottom-0 right-0 flex items-center justify-center px-2">
+                <span className="flex items-center gap-1">
+                  <kbd className="px-1.5 py-0.5 bg-background border border-button-border rounded text-[10px] font-medium">
+                    Ctrl
+                  </kbd>
+                  <kbd className="px-1.5 py-0.5 bg-background border border-button-border rounded text-[10px] font-medium">
+                    K
+                  </kbd>
+                </span>
+              </div>
+            </button>
+            <button
+              onClick={() => {
+                setConversationId(null);
+                setMessages([]);
+                setLessonExpanded(false);
+                setSelectedLesson(null);
+              }}
+              className="cursor-pointer w-full flex flex-row items-center gap-2 bg-opaque-button hover:bg-opaque-button-hover transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-button-border hover:border-button-border-hover rounded-2xl p-3 text-primary-text mx-auto"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width={20}
+                height={20}
+                viewBox="0 0 24 24"
+                className="text-currentColor"
+              >
+                <g
+                  fill="none"
+                  stroke="currentColor"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.8}
+                >
+                  <path d="M10.371 4.25H8.25a5 5 0 0 0-5 5v6.5a5 5 0 0 0 5 5h6.5a5 5 0 0 0 5-5v-2.121"></path>
+                  <path d="M12.299 14.75a1.86 1.86 0 0 0 1.316-.545l6.59-6.59a1.86 1.86 0 0 0 0-2.633l-1.187-1.187a1.86 1.86 0 0 0-2.633 0l-6.59 6.59a1.86 1.86 0 0 0-.545 1.316v3.049z"></path>
+                </g>
+              </svg>
+              <span className="text-sm text-currentColor m-0 font-medium tracking-wide">
+                New Chat
+              </span>
+            </button>
+          </div>
 
+          {bookmarkedExercises.length > 0 && (
+            <div className="px-4 py-3">
+              <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+                Bookmarked Exercises
+              </h3>
+              <div className="space-y-1">
+                {bookmarksLoading ? (
+                  // Loading skeletons
+                  <>
+                    {[0, 1].map((idx) => (
+                      <div
+                        key={idx}
+                        className="w-full p-2 rounded-lg animate-pulse"
+                      >
+                        <div className="flex flex-col w-full gap-2">
+                          <div className="h-3 bg-base-10 rounded w-3/4"></div>
+                          <div className="flex gap-1">
+                            <div className="h-5 bg-base-10 rounded w-12"></div>
+                            <div className="h-5 bg-base-10 rounded w-16"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </>
+                ) : (
+                  <>
+                    {(bookmarksExpanded
+                      ? bookmarkedExercises
+                      : bookmarkedExercises.slice(0, 2)
+                    ).map((exercise: any, idx: number) => (
+                      <button
+                        key={idx}
+                        onClick={() => handleBookmarkedExerciseClick(exercise)}
+                        className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-base-5 cursor-pointer text-left duration-200 ease-in-out"
+                      >
+                        <div className="flex flex-col w-full">
+                          <span className="text-xs text-currentColor font-medium overflow-wrap break-words whitespace-pre-wrap">
+                            {exercise.title || `Exercise ${exercise.id}`}
+                          </span>
+                          {exercise.tags && exercise.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {exercise.tags.slice(0, 3).map((tag: string) => (
+                                <span
+                                  key={tag}
+                                  className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </button>
+                    ))}
+                    {bookmarkedExercises.length > 2 && (
+                      <div>
+                        <p
+                          onClick={() =>
+                            setBookmarksExpanded(!bookmarksExpanded)
+                          }
+                          className="text-xs text-base-40 font-regular hover:text-base-30 mt-2 cursor-pointer underline text-center transition-colors duration-200"
+                        >
+                          {bookmarksExpanded ? "View Less" : "View More"}
+                        </p>
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            </div>
+          )}
 
-  //           </button>
-  //           <button
-  //             onClick={() => {
-  //               setConversationId(null);
-  //               setMessages([]);
-  //               setLessonExpanded(false);
-  //               setSelectedLesson(null);
-  //             }}
-  //             className="cursor-pointer w-full flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-black/10 rounded-2xl p-3 mx-auto"
-  //           >
-  //             <svg xmlns="http://www.w3.org/2000/svg" width={20} height={20} viewBox="0 0 24 24" className="text-black">
-  //               <g fill="none" stroke="black" strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8}>
-  //                 <path d="M10.371 4.25H8.25a5 5 0 0 0-5 5v6.5a5 5 0 0 0 5 5h6.5a5 5 0 0 0 5-5v-2.121">
-  //                 </path>
-  //                 <path d="M12.299 14.75a1.86 1.86 0 0 0 1.316-.545l6.59-6.59a1.86 1.86 0 0 0 0-2.633l-1.187-1.187a1.86 1.86 0 0 0-2.633 0l-6.59 6.59a1.86 1.86 0 0 0-.545 1.316v3.049z">
-  //                 </path>
-  //               </g>
-  //             </svg>
-  //             <span className="text-sm text-black m-0 font-medium tracking-wide">New Chat</span>
-  //           </button>
-  //         </div>
+          {/* Pinned Section */}
+          {conversations.filter((c) => c.pinned).length > 0 && (
+            <div className="px-4 py-3">
+              <h3 className="text-xs font-semibold text-base-40 uppercase mb-2 flex items-center gap-1.5">
+                Pinned
+              </h3>
+              <div className="space-y-1">
+                {conversations
+                  .filter((c) => c.pinned)
+                  .map((conversation: Conversation, index: number) => (
+                    <div
+                      key={`pinned-${index}`}
+                      onClick={() => handleConversationClick(conversation)}
+                      className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
+                    >
+                      <div className="flex flex-row justify-between items-center">
+                        <div className="text-sm text-currentColor font-medium mb-1">
+                          {conversation.title}
+                        </div>
+                        <div
+                          onMouseEnter={() =>
+                            chatMenuDropdown(Number(conversation.id))
+                          }
+                          onMouseLeave={() => setChatMenuOpen(-1)}
+                          className="relative"
+                        >
+                          <div className="text-xs text-base-40 hover:text-base-30 cursor-pointer transition-colors duration-200">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                fill="none"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth="2"
+                                d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
+                              ></path>
+                            </svg>
+                          </div>
+                          {/* Delete and Unpin buttons */}
+                          <motion.div
+                            initial={{ opacity: 0, y: -10 }}
+                            animate={{
+                              display:
+                                chatMenuOpen === Number(conversation.id)
+                                  ? "flex"
+                                  : "none",
+                              opacity:
+                                chatMenuOpen === Number(conversation.id)
+                                  ? 1
+                                  : 0,
+                              y:
+                                chatMenuOpen === Number(conversation.id)
+                                  ? 0
+                                  : -10,
+                            }}
+                            transition={{
+                              type: "spring",
+                              damping: 10,
+                              stiffness: 300,
+                            }}
+                            className="absolute top-6 right-0 z-50 flex gap-2"
+                          >
+                            <motion.div
+                              initial={{ x: 10, y: -2 }}
+                              animate={{
+                                x:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? 0
+                                    : 10,
+                                y:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? -2
+                                    : -2,
+                              }}
+                              transition={{
+                                x: {
+                                  type: "spring",
+                                  damping: 10,
+                                  stiffness: 300,
+                                },
+                                y: {
+                                  type: "spring",
+                                  damping: 10,
+                                  stiffness: 300,
+                                },
+                                scale: { duration: 0.1 },
+                              }}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                setChatMenuOpen(-1);
+                                await api.conversation.pinConversation(
+                                  Number(conversation.id),
+                                  (session?.user as any)?.idToken,
+                                );
+                                if (user?.email) {
+                                  const idToken = (session?.user as any)
+                                    ?.idToken;
+                                  const conversationsData =
+                                    await api.conversation.getConversations(
+                                      user.email,
+                                      idToken,
+                                    );
+                                  setConversations(conversationsData);
+                                }
+                              }}
+                              className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
+                            >
+                              <Icon
+                                icon="octicon:pin-slash-16"
+                                className="w-4 h-4"
+                              />
+                            </motion.div>
+                            <motion.div
+                              transition={{ scale: { duration: 0.1 } }}
+                              onClick={async (e) => {
+                                e.stopPropagation();
+                                if (user?.email) {
+                                  setChatMenuOpen(-1);
+                                  await api.conversation.deleteConversation(
+                                    Number(conversation.id),
+                                    (session?.user as any)?.idToken,
+                                  );
+                                  const idToken = (session?.user as any)
+                                    ?.idToken;
+                                  const conversationsData =
+                                    await api.conversation.getConversations(
+                                      user.email,
+                                      idToken,
+                                    );
+                                  setConversations(conversationsData);
+                                }
+                              }}
+                              className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
+                            >
+                              <Icon
+                                icon="octicon:trash-16"
+                                className="w-4 h-4"
+                              />
+                            </motion.div>
+                          </motion.div>
+                        </div>
+                      </div>
+                      {conversation.exercises_count &&
+                        (conversation?.exercises_correct_count ?? 0) +
+                          (conversation?.exercises_almost_count ?? 0) >
+                          0 && (
+                          <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
+                            {conversation.exercises_correct_count &&
+                              conversation.exercises_correct_count > 0 && (
+                                <div
+                                  className="bg-emerald-500 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              )}
+                            {conversation.exercises_almost_count &&
+                              conversation.exercises_almost_count > 0 && (
+                                <div
+                                  className="bg-amber-400 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              )}
+                          </div>
+                        )}
+                      <div className="flex flex-wrap gap-1">
+                        {conversation?.tags &&
+                          conversation?.tags?.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {conversation.tags.slice(0, 2).map((tag) => (
+                                <span
+                                  key={tag}
+                                  className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        {conversation?.tags &&
+                          conversation?.tags?.length > 2 && (
+                            <span className="text-xs text-base-40">
+                              + {conversation.tags.length - 2} more
+                            </span>
+                          )}
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          )}
 
-  //         {/* Sandbox Section */}
-  //         <div className="px-4 py-3">
-  //           <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-  //             Bookmarked Exercises
-  //           </h3>
-  //           <div className="space-y-1">
-  //             {(bookmarksExpanded ? bookmarkedExercises : bookmarkedExercises.slice(0, 2)).map((exercise: any, idx: number) => (
-  //               <button 
-  //                 key={idx} 
-  //                 onClick={() => handleBookmarkedExerciseClick(exercise)} 
-  //                 className="w-full group flex items-center gap-2 p-2 rounded-lg hover:bg-gray-100 cursor-pointer text-left duration-200 ease-in-out"
-  //               >
-  //                 <div className="flex flex-col w-full">
-  //                   <span className="text-xs text-black font-medium overflow-wrap break-words whitespace-pre-wrap">
-  //                     {exercise.title || `Exercise ${exercise.id}`}
-  //                   </span>
-  //                   {exercise.tags && exercise.tags.length > 0 && (
-  //                     <div className="flex flex-wrap gap-1 mt-1">
-  //                       {exercise.tags.slice(0, 3).map((tag: string) => (
-  //                         <span 
-  //                           key={tag} 
-  //                           className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200"
-  //                         >
-  //                           {tag}
-  //                         </span>
-  //                       ))}
-  //                     </div>
-  //                   )}
-  //                 </div>
-  //               </button>
-  //             ))}
-  //             {bookmarkedExercises.length > 2 && (
-  //               <div>
-  //                 <p 
-  //                   onClick={() => setBookmarksExpanded(!bookmarksExpanded)}
-  //                   className="text-xs text-gray-400 font-semibold hover:text-gray-500 mt-2 cursor-pointer underline text-center transition-colors duration-200"
-  //                 >
-  //                   {bookmarksExpanded ? "View Less" : "View More"}
-  //                 </p>
-  //               </div>
-  //             )}
-  //           </div>
-  //         </div>
+          {/* Regular Chats Section */}
+          <div className="px-4 py-3 flex-1">
+            <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
+              Chats
+            </h3>
+            <div className="space-y-1">
+              {conversationsLoading ? (
+                // Loading skeletons
+                <>
+                  {[0, 1, 2, 3].map((idx) => (
+                    <div
+                      key={idx}
+                      className="w-full p-2 rounded-lg animate-pulse"
+                    >
+                      <div className="flex flex-col w-full gap-2">
+                        <div className="h-4 bg-base-10 rounded w-2/3"></div>
+                        <div className="flex gap-1">
+                          <div className="h-5 bg-base-10 rounded w-14"></div>
+                          <div className="h-5 bg-base-10 rounded w-12"></div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              ) : conversations.length <= 0 ? (
+                <div className="w-full rounded-lg">
+                  <div className="flex flex-col w-full gap-2">
+                    <span className="text-xs text-base-40 font-regular">
+                      Your chats will show up here
+                    </span>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {conversations
+                    .filter((c) => !c.pinned)
+                    .map((conversation: Conversation, index: number) => (
+                      <div
+                        key={`chat-${index}`}
+                        onClick={() => handleConversationClick(conversation)}
+                        className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
+                      >
+                        <div className="flex flex-row justify-between items-center">
+                          <div className="text-sm text-currentColor font-medium mb-1">
+                            {conversation.title}
+                          </div>
+                          <div
+                            onMouseEnter={() =>
+                              chatMenuDropdown(Number(conversation.id))
+                            }
+                            onMouseLeave={() => setChatMenuOpen(-1)}
+                            className="relative"
+                          >
+                            <div className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200">
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                width="16"
+                                height="16"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  fill="none"
+                                  stroke="currentColor"
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="2"
+                                  d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
+                                ></path>
+                              </svg>
+                            </div>
+                            {/* Delete and Pin buttons */}
+                            <motion.div
+                              initial={{ opacity: 0, y: -10 }}
+                              animate={{
+                                display:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? "flex"
+                                    : "none",
+                                opacity:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? 1
+                                    : 0,
+                                y:
+                                  chatMenuOpen === Number(conversation.id)
+                                    ? 0
+                                    : -10,
+                              }}
+                              transition={{
+                                type: "spring",
+                                damping: 10,
+                                stiffness: 300,
+                              }}
+                              className="absolute top-6 right-0 z-50 flex gap-2"
+                            >
+                              <motion.div
+                                initial={{ x: 10, y: -2 }}
+                                animate={{
+                                  x:
+                                    chatMenuOpen === Number(conversation.id)
+                                      ? 0
+                                      : 10,
+                                  y:
+                                    chatMenuOpen === Number(conversation.id)
+                                      ? -2
+                                      : -2,
+                                }}
+                                transition={{
+                                  x: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  y: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  scale: { duration: 0.1 },
+                                }}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  setChatMenuOpen(-1);
+                                  await api.conversation.pinConversation(
+                                    Number(conversation.id),
+                                    (session?.user as any)?.idToken,
+                                  );
+                                  if (user?.email) {
+                                    const idToken = (session?.user as any)
+                                      ?.idToken;
+                                    const conversationsData =
+                                      await api.conversation.getConversations(
+                                        user.email,
+                                        idToken,
+                                      );
+                                    setConversations(conversationsData);
+                                  }
+                                }}
+                                className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
+                              >
+                                <Icon
+                                  icon="octicon:pin-16"
+                                  className="w-4 h-4"
+                                />
+                              </motion.div>
+                              <motion.div
+                                transition={{
+                                  x: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  y: {
+                                    type: "spring",
+                                    damping: 10,
+                                    stiffness: 300,
+                                  },
+                                  scale: { duration: 0.1 },
+                                }}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (user?.email) {
+                                    setChatMenuOpen(-1);
+                                    await api.conversation.deleteConversation(
+                                      Number(conversation.id),
+                                      (session?.user as any)?.idToken,
+                                    );
+                                    const idToken = (session?.user as any)
+                                      ?.idToken;
+                                    const conversationsData =
+                                      await api.conversation.getConversations(
+                                        user.email,
+                                        idToken,
+                                      );
+                                    setConversations(conversationsData);
+                                  }
+                                }}
+                                className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
+                              >
+                                <Icon
+                                  icon="octicon:trash-16"
+                                  className="w-4 h-4"
+                                />
+                              </motion.div>
+                            </motion.div>
+                          </div>
+                        </div>
+                        {conversation.exercises_count &&
+                          (conversation?.exercises_correct_count ?? 0) +
+                            (conversation?.exercises_almost_count ?? 0) >
+                            0 && (
+                            <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
+                              {conversation.exercises_correct_count &&
+                              conversation.exercises_correct_count > 0 ? (
+                                <div
+                                  className="bg-emerald-500 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              ) : null}
+                              {conversation.exercises_almost_count &&
+                              conversation.exercises_almost_count > 0 ? (
+                                <div
+                                  className="bg-amber-400 h-full"
+                                  style={{
+                                    width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%`,
+                                  }}
+                                />
+                              ) : null}
+                            </div>
+                          )}
+                        <div className="flex flex-wrap gap-1">
+                          {conversation?.tags &&
+                            conversation?.tags?.length > 0 && (
+                              <div className="flex flex-wrap gap-1">
+                                {conversation.tags.slice(0, 2).map((tag) => (
+                                  <span
+                                    key={tag}
+                                    className="text-xs px-2 py-0.5 bg-base-10 text-base-40 rounded group-hover:bg-base-5 transition-colors duration-200"
+                                  >
+                                    {tag}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+                          {conversation?.tags &&
+                            conversation?.tags?.length > 2 && (
+                              <div className="flex flex-wrap gap-1">
+                                <span className="text-xs text-base-40">
+                                  + {conversation.tags.length - 3} more
+                                </span>
+                              </div>
+                            )}
+                        </div>
+                      </div>
+                    ))}
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+        <div className="p-2 border-t border-theme-border">
+          <button
+            className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
+            onClick={() => setShowPaymentModal(true)}
+          >
+            <div className="flex items-center place-content-around w-full">
+              <div className="flex gap-2 items-center">
+                <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
+                  <svg
+                    fill="#000000"
+                    width="800px"
+                    height="800px"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path d="M14,11H10a2,2,0,0,1,0-4h5a1,1,0,0,1,1,1,1,1,0,0,0,2,0,3,3,0,0,0-3-3H13V3a1,1,0,0,0-2,0V5H10a4,4,0,0,0,0,8h4a2,2,0,0,1,0,4H9a1,1,0,0,1-1-1,1,1,0,0,0-2,0,3,3,0,0,0,3,3h2v2a1,1,0,0,0,2,0V19h1a4,4,0,0,0,0-8Z" />
+                  </svg>
+                </div>
+                <span className="text-sm font-medium">Payments</span>
+              </div>
+              <div className="flex flex-col gap-2">
+                <span className="font-light text-center">
+                  {user?.membership ? user.membership + " member" : ""}
+                </span>
+                {user?.membership == "pro" && user?.membershipExpiresAt && (
+                  <span className="text-xs">
+                    {user?.subscriptionActive ? "Renews" : "Expires"} at{" "}
+                    {new Date(user.membershipExpiresAt).toLocaleString()}
+                  </span>
+                )}
+              </div>
+            </div>
+          </button>
+        </div>
+        {/* User Profile */}
+        <div className="p-2 border-t border-theme-border">
+          {/* Tokens Display */}
+          <div className="mb-2 p-2 bg-base-10 rounded-lg border border-theme-border">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="14"
+                    height="14"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fill="currentColor"
+                      fillRule="evenodd"
+                      d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38"
+                      clipRule="evenodd"
+                      strokeWidth="0.4"
+                      stroke="currentColor"
+                    />
+                  </svg>
+                </div>
+                <span className="text-xs font-medium text-base-40">Tokens</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-sm font-bold text-currentColor">
+                  {tokenData
+                    ? (
+                        tokenData.token_limit - tokenData.token_used
+                      ).toLocaleString()
+                    : 0}
+                </span>
+                <span className="text-xs text-base-40">remaining</span>
+              </div>
+            </div>
+            {tokenData && (
+              <div className="mt-2">
+                <div className="h-1.5 bg-violet-200 rounded-full overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{
+                      width: `${Math.min(((tokenData.token_limit - tokenData.token_used) / tokenData.token_limit) * 100, 100)}%`,
+                    }}
+                    transition={{ duration: 0.8, ease: "easeOut" }}
+                    className="h-full bg-gradient-to-r from-violet-400 to-purple-500"
+                  />
+                </div>
+              </div>
+            )}
+          </div>
+          <button
+            className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
+            onClick={handleUserProfileClick}
+          >
+            <div className="flex items-center gap-2">
+              {user?.preferences?.profileImage ? (
+                <img
+                  src={user.preferences.profileImage}
+                  alt={session?.user?.name || "User"}
+                  className="w-8 h-8 rounded-full"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-full bg-loading flex items-center justify-center text-white text-sm font-semibold">
+                  {user?.username?.charAt(0)?.toUpperCase() ||
+                    session?.user?.name?.charAt(0)?.toUpperCase() ||
+                    "U"}
+                </div>
+              )}
+              <span className="text-sm font-medium">{user?.username}</span>
+            </div>
+          </button>
+        </div>
+      </aside>
 
-  //         {/* Pinned Section */}
-  //         {conversations.filter(c => c.pinned).length > 0 && (
-  //           <div className="px-4 py-3">
-  //             <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2 flex items-center gap-1.5">
-  //               Pinned
-  //             </h3>
-  //             <div className="space-y-1">
-  //               {conversations.filter(c => c.pinned).map((conversation: Conversation, index: number) => (
-  //                 <div
-  //                   key={`pinned-${index}`}
-  //                   onClick={() => handleConversationClick(conversation)}
-  //                   className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer duration-200 ease-in-out"
-  //                 >
-  //                   <div className="flex flex-row justify-between items-center">
-  //                     <div className="text-sm text-black font-medium mb-1">
-  //                       {conversation.title}
-  //                     </div>
-  //                     <div
-  //                       onClick={(e) => { e.stopPropagation(); chatMenuDropdown(Number(conversation.id)); }}
-  //                       className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
-  //                     >
-  //                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24">
-  //                         <path fill="none" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"></path>
-  //                       </svg>
-  //                     </div>
-  //                   </div>
-  //                   <div className="flex flex-wrap gap-1">
-  //                     {conversation?.tags && conversation?.tags?.length > 0 && (
-  //                       <div className="flex flex-wrap gap-1">
-  //                         {conversation.tags.slice(0, 2).map((tag) => (
-  //                           <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200">
-  //                             {tag}
-  //                           </span>
-  //                         ))}
-  //                       </div>
-  //                     )}
-  //                     {conversation?.tags && conversation?.tags?.length > 2 && (
-  //                       <span className="text-xs text-gray-500">+ {conversation.tags.length - 2} more</span>
-  //                     )}
-  //                   </div>
-  //                   {/* Delete and Unpin buttons */}
-  //                   <motion.div
-  //                     initial={{ opacity: 0, y: -10 }}
-  //                     animate={{
-  //                       display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
-  //                       opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-  //                       y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-  //                     }}
-  //                     onClick={async (e) => {
-  //                       e.stopPropagation();
-  //                       if (user?.email) {
-  //                         setChatMenuOpen(-1);
-  //                         await api.conversation.deleteConversation(Number(conversation.id), (session?.user as any)?.idToken);
-  //                         const idToken = (session?.user as any)?.idToken;
-  //                         const conversationsData = await api.conversation.getConversations(user.email, idToken);
-  //                         setConversations(conversationsData);
-  //                       }
-  //                     }}
-  //                     transition={{ type: "spring", damping: 10, stiffness: 300 }}
-  //                     className="absolute -bottom-10 right-0 z-20"
-  //                   >
-  //                     <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-  //                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-  //                         <path fill="currentColor" stroke="currentColor" strokeWidth="0.4" d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"></path>
-  //                       </svg>
-  //                     </div>
-  //                   </motion.div>
-  //                   <motion.div
-  //                     initial={{ opacity: 0, y: -10 }}
-  //                     animate={{
-  //                       display: chatMenuOpen === Number(conversation.id) ? "block" : "none",
-  //                       opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-  //                       y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-  //                     }}
-  //                     onClick={async (e) => {
-  //                       e.stopPropagation();
-  //                       setChatMenuOpen(-1);
-  //                       await api.conversation.pinConversation(Number(conversation.id), (session?.user as any)?.idToken);
-  //                       if (user?.email) {
-  //                         const idToken = (session?.user as any)?.idToken;
-  //                         const conversationsData = await api.conversation.getConversations(user.email, idToken);
-  //                         setConversations(conversationsData);
-  //                       }
-  //                     }}
-  //                     transition={{ type: "spring", damping: 10, stiffness: 300 }}
-  //                     className="absolute -bottom-6 right-10 z-20"
-  //                   >
-  //                     <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-  //                       <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24">
-  //                         <path fill="currentColor" d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2z"/>
-  //                       </svg>
-  //                     </div>
-  //                   </motion.div>
-  //                 </div>
-  //               ))}
-  //             </div>
-  //           </div>
-  //         )}
+      {/* Middle - Lesson Window */}
+      <main className="relative flex-1 p-4 bg-base-10 overflow-y-auto overflow-x-hidden scrollbar-hide">
+        {selectedLesson ? (
+          <Lesson
+            setLessonExpanded={setLessonExpanded}
+            message={selectedLesson.response}
+            userPrompt={selectedLesson.originalMessage}
+            lessonExpanded={lessonExpanded}
+            abilityLevel={difficultyLevels[difficultyIndex]}
+            tabSize={user?.preferences?.tabSize ?? 2}
+            initialExpandedLesson={lessonExpanded}
+            onBookmarkChange={handleBookmarkChange}
+          />
+        ) : (
+          <div className="h-full flex items-center justify-center">
+            <TypewriterHero />
+          </div>
+        )}
+      </main>
 
-  //         {/* Regular Chats Section */}
-  //         <div className="px-4 py-3 flex-1">
-  //           <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
-  //             Chats
-  //           </h3>
-  //           <div className="space-y-1">
-  //             {conversations.filter(c => !c.pinned).map((conversation: Conversation, index: number) => (
-  //                 <div
-  //                   key={`chat-${index}`}
-  //                   onClick={() => handleConversationClick(conversation)}
-  //                   className="relative p-2 rounded-lg hover:bg-gray-100 group cursor-pointer duration-200 ease-in-out"
-  //                 >
-  //                   <div className="flex flex-row justify-between items-center">
-  //                     <div className="text-sm text-black font-medium mb-1">
-  //                       {conversation.title}
-  //                     </div>
-  //                     <div
-  //                       onClick={() => chatMenuDropdown(Number(conversation.id))}
-  //                       className="text-xs text-gray-400 hover:text-black cursor-pointer transition-colors duration-200"
-  //                     >
-  //                       <svg
-  //                         xmlns="http://www.w3.org/2000/svg"
-  //                         width="16"
-  //                         height="16"
-  //                         viewBox="0 0 24 24"
-  //                       >
-  //                         <path
-  //                           fill="none"
-  //                           stroke="currentColor"
-  //                           strokeLinecap="round"
-  //                           strokeLinejoin="round"
-  //                           strokeWidth="2"
-  //                           d="M4 12a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0m7 0a1 1 0 1 0 2 0 1 1 0 1 0-2 0"
-  //                         ></path>
-  //                       </svg>
-  //                     </div>
-  //                   </div>
-  //                   <div className="flex flex-wrap gap-1">
-  //                     {
-  //                       conversation?.tags && conversation?.tags?.length > 0 && (
-  //                         <div className="flex flex-wrap gap-1">
-  //                           {conversation.tags.slice(0, 2).map((tag) => (
-  //                             <span key={tag} className="text-xs px-2 py-0.5 bg-gray-100 text-gray-700 rounded group-hover:bg-gray-200 transition-colors duration-200">
-  //                               {tag}
-  //                             </span>
-  //                           ))}
-  //                         </div>
-  //                       )
-  //                     }
-  //                     {conversation?.tags && conversation?.tags?.length > 2 && (
-  //                       <div className="flex flex-wrap gap-1">
-  //                         <span className="text-xs text-gray-500">+ {conversation.tags.length - 3} more</span>
-  //                       </div>
-  //                     )}
-  //                   </div>
-  //                   {/* Delete and Pin buttons remain the same */}
-  //                   <motion.div
-  //                     initial={{ opacity: 0, y: -10 }}
-  //                     animate={{
-  //                       display:
-  //                         chatMenuOpen === Number(conversation.id)
-  //                           ? "block"
-  //                           : "none",
-  //                       opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-  //                       y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-  //                     }}
-  //                     onClick={async () => {
-  //                       if (user?.email) {
-  //                         setChatMenuOpen(-1);
-  //                         await api.conversation.deleteConversation(
-  //                           Number(conversation.id),
-  //                           (session?.user as any)?.idToken
-  //                         );
-  //                         const idToken = (session?.user as any)?.idToken;
-  //                         const conversationsData =
-  //                           await api.conversation.getConversations(
-  //                             user.email,
-  //                             idToken
-  //                           );
-  //                         setConversations(conversationsData);
-  //                       }
-  //                     }}
-  //                     transition={{ type: "spring", damping: 10, stiffness: 300 }}
-  //                     className="absolute -bottom-10 right-0 z-20"
-  //                   >
-  //                     <div className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-  //                       <svg
-  //                         xmlns="http://www.w3.org/2000/svg"
-  //                         width="20"
-  //                         height="20"
-  //                         viewBox="0 0 24 24"
-  //                       >
-  //                         <g fill="none">
-  //                           <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
-  //                           <path
-  //                             fill="currentColor"
-  //                             stroke="currentColor"
-  //                             strokeWidth="0.4"
-  //                             d="M14.28 2a2 2 0 0 1 1.897 1.368L16.72 5H20a1 1 0 1 1 0 2l-.003.071-.867 12.143A3 3 0 0 1 16.138 22H7.862a3 3 0 0 1-2.992-2.786L4.003 7.07 4 7a1 1 0 0 1 0-2h3.28l.543-1.632A2 2 0 0 1 9.721 2zm3.717 5H6.003l.862 12.071a1 1 0 0 0 .997.929h8.276a1 1 0 0 0 .997-.929zM10 10a1 1 0 0 1 .993.883L11 11v5a1 1 0 0 1-1.993.117L9 16v-5a1 1 0 0 1 1-1m4 0a1 1 0 0 1 1 1v5a1 1 0 1 1-2 0v-5a1 1 0 0 1 1-1m.28-6H9.72l-.333 1h5.226z"
-  //                           ></path>
-  //                         </g>
-  //                       </svg>
-  //                     </div>
-  //                   </motion.div>
-  //                   <motion.div
-  //                     initial={{ opacity: 0, y: -10 }}
-  //                     animate={{
-  //                       display:
-  //                         chatMenuOpen === Number(conversation.id)
-  //                           ? "block"
-  //                           : "none",
-  //                       opacity: chatMenuOpen === Number(conversation.id) ? 1 : 0,
-  //                       y: chatMenuOpen === Number(conversation.id) ? 0 : -10,
-  //                     }}
-  //                     onClick={async () => {
-  //                       setChatMenuOpen(-1);
-  //                       await api.conversation.pinConversation(
-  //                         Number(conversation.id),
-  //                         (session?.user as any)?.idToken
-  //                       );
-  //                       if (user?.email) {
-  //                         const idToken = (session?.user as any)?.idToken;
-  //                         const conversationsData =
-  //                           await api.conversation.getConversations(
-  //                             user.email,
-  //                             idToken
-  //                           );
-  //                         setConversations(conversationsData);
-  //                       }
-  //                     }}
-  //                     transition={{ type: "spring", damping: 10, stiffness: 300 }}
-  //                     className="absolute -bottom-6 right-10 rotate-45 z-20"
-  //                   >
-  //                     <div className="bg-black/80 text-white backdrop-blur-md border border-black/10 rounded-3xl p-2 mx-auto">
-  //                       <svg
-  //                         xmlns="http://www.w3.org/2000/svg"
-  //                         width="20"
-  //                         height="20"
-  //                         viewBox="0 0 24 24"
-  //                       >
-  //                         <g fill="none" fillRule="evenodd">
-  //                           <path d="m12.593 23.258-.011.002-.071.035-.02.004-.014-.004-.071-.035q-.016-.005-.024.005l-.004.01-.017.428.005.02.01.013.104.074.015.004.012-.004.104-.074.012-.016.004-.017-.017-.427q-.004-.016-.017-.018m.265-.113-.013.002-.185.093-.01.01-.003.011.018.43.005.012.008.007.201.093q.019.005.029-.008l.004-.014-.034-.614q-.005-.018-.02-.022m-.715.002a.02.02 0 0 0-.027.006l-.006.014-.034.614q.001.018.017.024l.015-.002.201-.093.01-.008.004-.011.017-.43-.003-.012-.01-.01z"></path>
-  //                           <path
-  //                             fill="currentColor"
-  //                             stroke="currentColor"
-  //                             strokeWidth="0.4"
-  //                             d="M8.867 2a2 2 0 0 0-1.98 1.717l-.515 3.605a9 9 0 0 1-1.71 4.128l-1.318 1.758c-.443.59-.265 1.525.528 1.82.746.278 2.839.88 7.128.963V22a1 1 0 1 0 2 0v-6.01c4.29-.082 6.382-.684 7.128-.962.793-.295.97-1.23.528-1.82l-1.319-1.758a9 9 0 0 1-1.71-4.128l-.514-3.605A2 2 0 0 0 15.133 2zm0 2h6.266l.515 3.605c.261 1.83.98 3.565 2.09 5.045l.606.808C17.209 13.71 15.204 14 12 14s-5.21-.29-6.344-.542l.607-.808a11 11 0 0 0 2.09-5.045L8.866 4Z"
-  //                           ></path>
-  //                         </g>
-  //                       </svg>
-  //                     </div>
-  //                   </motion.div>
-  //                 </div>
-  //               ))}
-  //           </div>
-  //         </div>
-  //       </div>       
-  //       {/* User Profile */}
-  //       <div className="p-2 border-t border-gray-200">
-  //         {/* Tokens Display */}
-  //         <div className="mb-2 p-2 bg-gradient-to-r from-violet-50 to-purple-50 rounded-lg border border-violet-100">
-  //           <div className="flex items-center justify-between">
-  //             <div className="flex items-center gap-2">
-  //               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-blue-500 to-pink-300 flex items-center justify-center text-white">
-  //                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 20 20"><path fill="currentColor" fillRule="evenodd" d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38" clipRule="evenodd" strokeWidth="0.4" stroke="currentColor"/></svg>                
-  //               </div>
-  //               <span className="text-xs font-medium text-gray-600">Tokens</span>
-  //             </div>
-  //             <div className="flex items-center gap-1">
-  //               <span className="text-sm font-bold text-gray-900">{user?.tokens?.toLocaleString() ?? 0}</span>
-  //               <span className="text-xs text-gray-400">remaining</span>
-  //             </div>
-  //           </div>
-  //           {user?.tokens !== undefined && (
-  //             <div className="mt-2">
-  //               <div className="h-1.5 bg-violet-200 rounded-full overflow-hidden">
-  //                 <motion.div 
-  //                   initial={{ width: 0 }}
-  //                   animate={{ width: `${Math.min((user.tokens / 10000) * 100, 100)}%` }}
-  //                   transition={{ duration: 0.8, ease: "easeOut" }}
-  //                   className="h-full bg-gradient-to-r from-violet-400 to-purple-500"
-  //                 />
-  //               </div>
-  //             </div>
-  //           )}
-  //         </div>
-  //         <button
-  //           className="w-full flex items-center gap-2 cursor-pointer hover:bg-gray-100 rounded-lg p-2 transition-colors duration-200"
-  //           onClick={handleUserProfileClick}
-  //         >
-  //           <div className="flex items-center gap-2">
-  //             {session?.user?.image ? (
-  //               <img
-  //                 src={session.user.image}
-  //                 alt={session.user.name || "User"}
-  //                 className="w-8 h-8 rounded-full"
-  //               />
-  //             ) : (
-  //               <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center text-white text-sm font-semibold">
-  //                 {user?.username}
-  //               </div>
-  //             )}
-  //             <span className="text-sm font-medium">{user?.username}</span>
-  //           </div>
-  //         </button>
-  //       </div>
-  //     </aside>
+      {lessonExpanded && (
+        <aside
+          onClick={() => setLessonExpanded(false)}
+          className="cursor-pointer border-l px-4 py-6 border-theme-border flex flex-col bg-base-10 overflow-hidden justify-start items-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            className="text-primary-text opacity-40"
+          >
+            <path
+              fill="none"
+              stroke="currentColor"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth="2"
+              d="M12 21.25a9.25 9.25 0 1 0-8.307-5.177c.108.22.144.468.089.706l-.816 3.536a.6.6 0 0 0 .72.72l3.535-.817a1.06 1.06 0 0 1 .706.09A9.2 9.2 0 0 0 12 21.25M7.97 9.886h8.06m-8.06 4.228h5.748"
+            ></path>
+          </svg>
+        </aside>
+      )}
 
-  //     {/* Middle - Lesson Window */}
-  //     <main className="relative flex-1 p-4 bg-gray-50 overflow-y-auto overflow-x-hidden scrollbar-hide">
-  //       {selectedLesson ? (
-  //         <Lesson
-  //           setLessonExpanded={setLessonExpanded}
-  //           message={selectedLesson.response}
-  //           userPrompt={selectedLesson.originalMessage}
-  //           lessonExpanded={lessonExpanded}
-  //           abilityLevel={difficultyLevels[difficultyIndex]}
-  //           tabSize={user?.preferences?.tab_size ?? 2}
-  //           initialExpandedLesson={lessonExpanded}
-  //           onBookmarkChange={handleBookmarkChange}
-  //         />
-  //       ) : (
-  //         <div className="h-full flex items-center justify-center">
-  //           <motion.div
-  //             initial={{ opacity: 0, scale: 0.9 }}
-  //             animate={{ opacity: 1, scale: 1 }}
-  //             transition={{ duration: 0.5 }}
-  //             className="text-center"
-  //           >
-  //             <h1 className="text-5xl md:text-6xl font-bold text-gray-300 mb-4">
-  //               Code like it matters.
-  //             </h1>
-  //             <h2 className="text-5xl md:text-6xl font-bold text-gray-300 mb-4">
-  //               Think deeper.
-  //             </h2>
-  //             <h2 className="text-5xl md:text-6xl font-bold text-gray-300">
-  //               Build better. No AI crutches.
-  //             </h2>
+      {!lessonExpanded && (
+        <aside className="w-96 border-l border-theme-border flex flex-col bg-base">
+          <div
+            className="flex-1 overflow-y-auto p-4 space-y-4"
+            id="chat-container"
+          >
+            {messages.map((message: MessageData, index: number) => {
+              return !!(message.fromUser || (message as any).from_user) ? (
+                <div key={index} className="w-full flex justify-end">
+                  <motion.div
+                    className="w-fit bg-blue-100 rounded-2xl p-3 self-end"
+                    animate={
+                      message.isSending
+                        ? {
+                            opacity: [0.6, 1, 0.6],
+                          }
+                        : {
+                            opacity: 1,
+                            scale: 1,
+                          }
+                    }
+                    transition={
+                      message.isSending
+                        ? {
+                            duration: 1.5,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                          }
+                        : {
+                            duration: 0.2,
+                          }
+                    }
+                  >
+                    <div className="text-sm text-slate-900">
+                      <Markdown compact>{message.text as string}</Markdown>
+                    </div>
+                  </motion.div>
+                </div>
+              ) : (
+                <AIResponse
+                  key={index}
+                  message={message}
+                  previousMessage={
+                    messages[index - 1]?.text || "**NO PREVIOUS MESSAGE FOUND**"
+                  }
+                  setSelectedLesson={setSelectedLesson}
+                />
+              );
+            })}
+            <AnimatePresence mode="wait">
+              {loading && streamStage && (
+                <StreamingThoughts
+                  key="streaming"
+                  stage={streamStage}
+                  thoughts={thoughtStream}
+                />
+              )}
+            </AnimatePresence>
+          </div>
 
-  //             {/* Cursor Graphic */}
-  //             <motion.div
-  //               className="absolute top-1/2 left-1/2"
-  //               animate={{
-  //                 x: [-20, 20, -20],
-  //                 y: [-20, 20, -20],
-  //               }}
-  //               transition={{
-  //                 duration: 4,
-  //                 repeat: Infinity,
-  //                 ease: "easeInOut",
-  //               }}
-  //             >
-  //               <Image
-  //                 src="/cursor.png"
-  //                 alt="Cursor"
-  //                 width={150}
-  //                 height={150}
-  //                 className="opacity-50"
-  //               />
-  //             </motion.div>
-  //           </motion.div>
-  //         </div>
-  //       )}
-  //     </main>
-
-  //     {lessonExpanded && (
-  //       <aside
-  //         onClick={() => setLessonExpanded(false)}
-  //         className="cursor-pointer border-l px-4 py-6 border-gray-200 flex flex-col bg-gray-100 overflow-hidden justify-start items-center"
-  //       >
-  //         <svg
-  //           xmlns="http://www.w3.org/2000/svg"
-  //           width="24"
-  //           height="24"
-  //           viewBox="0 0 24 24"
-  //           className="text-black opacity-40"
-  //         >
-  //           <path
-  //             fill="none"
-  //             stroke="currentColor"
-  //             strokeLinecap="round"
-  //             strokeLinejoin="round"
-  //             strokeWidth="2"
-  //             d="M12 21.25a9.25 9.25 0 1 0-8.307-5.177c.108.22.144.468.089.706l-.816 3.536a.6.6 0 0 0 .72.72l3.535-.817a1.06 1.06 0 0 1 .706.09A9.2 9.2 0 0 0 12 21.25M7.97 9.886h8.06m-8.06 4.228h5.748"
-  //           ></path>
-  //         </svg>
-  //       </aside>
-  //     )}
-
-  //     {!lessonExpanded && (
-  //       <aside className="w-96 border-l border-gray-200 flex flex-col bg-white">
-  //         <div
-  //           className="flex-1 overflow-y-auto p-4 space-y-4"
-  //           id="chat-container"
-  //         >
-  //           {messages.map((message: MessageData, index: number) => {
-  //             return !!(message.fromUser || (message as any).from_user) ? (
-  //               <div key={index} className="w-full flex justify-end">
-  //                 <motion.div
-  //                   className="w-fit bg-gray-100 rounded-2xl p-3 self-end"
-  //                   animate={
-  //                     message.isSending
-  //                       ? {
-  //                           opacity: [0.6, 1, 0.6],
-  //                         }
-  //                       : {
-  //                           opacity: 1,
-  //                           scale: 1,
-  //                         }
-  //                   }
-  //                   transition={
-  //                     message.isSending
-  //                       ? {
-  //                           duration: 1.5,
-  //                           repeat: Infinity,
-  //                           ease: "easeInOut",
-  //                         }
-  //                       : {
-  //                           duration: 0.2,
-  //                         }
-  //                   }
-  //                 >
-  //                   <p className="text-sm text-gray-800">{message.text}</p>
-  //                 </motion.div>
-  //               </div>
-  //             ) : (
-  //               <AIResponse
-  //                 key={index}
-  //                 message={message}
-  //                 previousMessage={
-  //                   messages[index - 1]?.text || "**NO PREVIOUS MESSAGE FOUND**"
-  //                 }
-  //                 setSelectedLesson={setSelectedLesson}
-  //               />
-  //             );
-  //           })}
-  //           {/* <ThinkingAnimation />
-  //           <GeneratingLessonAnimation /> */}
-  //           <AnimatePresence mode="wait">
-  //             {loading && streamStage && (
-  //               <StreamingThoughts 
-  //                 key="streaming"
-  //                 stage={streamStage} 
-  //                 thoughts={thoughtStream} 
-  //               />
-  //             )}
-  //           </AnimatePresence>
-  //         </div>
-
-  //         <div className="p-4 border-t border-gray-200">
-  //           <textarea
-  //             rows={4}
-  //             onChange={(e) => setMessage(e.target.value)}
-  //             onKeyDown={(e) => {
-  //               if (e.key === "Enter" && !e.shiftKey) {
-  //                 e.preventDefault();
-  //                 sendMessage();
-  //               }
-  //             }}
-  //             disabled={loading}
-  //             className="w-full h-20 p-2 border border-gray-200 rounded-lg text-sm resize-none text-black placeholder-gray-400 disabled:bg-gray-50"
-  //             placeholder="What's not working? Let's think it through."
-  //             value={message}
-  //           />
-  //           <div className="flex items-center gap-2">
-  //             <button
-  //               onClick={cycleDifficulty}
-  //               className="cursor-pointer font-semibold px-4 py-2 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all overflow-hidden relative h-9 min-w-18"
-  //             >
-  //               <AnimatePresence mode="popLayout" initial={false}>
-  //                 <motion.div
-  //                   key={difficultyLevels[difficultyIndex]}
-  //                   initial={{ opacity: 0, y: -20 }}
-  //                   animate={{ opacity: 1, y: 0 }}
-  //                   exit={{ opacity: 0, y: 20 }}
-  //                   whileHover={{ y: 2 }}
-  //                   transition={{
-  //                     duration: 0.25,
-  //                     ease: "easeInOut",
-  //                     type: "spring",
-  //                     damping: 10,
-  //                     stiffness: 300,
-  //                   }}
-  //                 >
-  //                   {difficultyLevels[difficultyIndex]}
-  //                 </motion.div>
-  //               </AnimatePresence>
-  //             </button>
-  //             <button className="cursor-pointer px-4 py-1.5 rounded-full bg-gray-100 text-gray-700 text-sm hover:bg-gray-200 transition-all">
-  //               Gemini
-  //             </button>
-  //             <button
-  //               onClick={sendMessage}
-  //               disabled={loading || !message.trim()}
-  //               className="ml-auto w-8 h-8 rounded-full bg-black flex items-center justify-center hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
-  //             >
-  //               {loading ? (
-  //                 <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-  //               ) : (
-  //                 <svg viewBox="0 0 24 24" fill="white" className="w-4 h-4">
-  //                   <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
-  //                 </svg>
-  //               )}
-  //             </button>
-  //           </div>
-  //         </div>
-  //       </aside>
-  //     )}
-  //   </div>
-  // );
+          <div className="p-4 border-t border-theme-border">
+            <textarea
+              rows={4}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  sendMessage();
+                }
+              }}
+              disabled={loading}
+              className="w-full h-20 p-2 outline-none border border-theme-border rounded-lg text-sm resize-none text-primary-text placeholder-text-70 text-70 disabled:bg-gray-50"
+              placeholder="What's not working? Let's think it through."
+              value={message}
+            />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={cycleDifficulty}
+                className="cursor-pointer font-semibold px-4 py-1.5 rounded-full bg-base-10 text-text-70 text-sm hover:bg-base-20 transition-all overflow-hidden relative h-8 min-w-18"
+              >
+                <div className="flex items-center gap-1">
+                  <AnimatePresence mode="popLayout" initial={false}>
+                    <motion.div
+                      key={difficultyLevels[difficultyIndex]}
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 20 }}
+                      transition={{
+                        duration: 0.25,
+                        ease: "easeInOut",
+                        type: "spring",
+                        damping: 10,
+                        stiffness: 300,
+                      }}
+                    >
+                      {difficultyLevels[difficultyIndex]}
+                    </motion.div>
+                  </AnimatePresence>
+                  <Icon
+                    icon="iconamoon:arrow-down-2-bold"
+                    className="text-primary-text w-4 h-4"
+                  />
+                </div>
+              </button>
+              <button className="cursor-pointer font-semibold px-4 py-1.5 rounded-full bg-base-10 text-text-70 text-sm hover:bg-base-20 transition-all h-8 flex items-center">
+                Gemini
+              </button>
+              <button
+                onClick={sendMessage}
+                disabled={loading || !message.trim()}
+                className="ml-auto w-8 h-8 rounded-full bg-primary-text flex items-center justify-center hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
+              >
+                {loading ? (
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <svg
+                    viewBox="0 0 24 24"
+                    className="text-primary-text w-4 h-4"
+                  >
+                    <path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z" />
+                  </svg>
+                )}
+              </button>
+            </div>
+          </div>
+        </aside>
+      )}
+    </div>
+  );
 }
