@@ -10,7 +10,7 @@ import {
   useElements,
 } from "@stripe/react-stripe-js";
 import api, { paymentAPI } from "@/lib/api";
-import { User } from "@/types";
+import { TokenData, User } from "@/types";
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!,
@@ -24,6 +24,7 @@ interface PaymentModalProps {
   subscriptionActive?: boolean | null;
   userEmail: string;
   setUser: (user: User) => void;
+  setTokenData: (tokenData: TokenData | null) => void;
 }
 
 export default function PaymentModal({
@@ -34,11 +35,17 @@ export default function PaymentModal({
   subscriptionActive,
   userEmail,
   setUser,
-}: PaymentModalProps) {  
+  setTokenData,
+}: PaymentModalProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [mode, setMode] = useState<"subscription" | "tokens">("subscription");
+  const [showUpdatePayment, setShowUpdatePayment] = useState(false);
+  const [setupClientSecret, setSetupClientSecret] = useState<string | null>(
+    null,
+  );
+  const [setupLoading, setSetupLoading] = useState(false);
 
   const refetchUser = async () => {
     if (userEmail && idToken) {
@@ -50,12 +57,25 @@ export default function PaymentModal({
         console.error("Failed to refetch user data:", err);
       }
     }
-  }
+  };
+
+  const refetchTokenData = async () => {
+    if (userEmail && idToken) {
+      try {
+        const tokenUsage = await api.user.getTokenUsage(userEmail, idToken);
+        setTokenData(tokenUsage);
+      } catch (err) {
+        console.error("Failed to refetch token data:", err);
+      }
+    }
+  };
 
   useEffect(() => {
     if (!isOpen) {
       setClientSecret(null);
       setError(null);
+      setShowUpdatePayment(false);
+      setSetupClientSecret(null);
       return;
     }
 
@@ -96,6 +116,26 @@ export default function PaymentModal({
 
     fetchClientSecret();
   }, [isOpen, mode, idToken]);
+
+  const handleUpdatePaymentClick = async () => {
+    if (showUpdatePayment) {
+      setShowUpdatePayment(false);
+      setSetupClientSecret(null);
+      return;
+    }
+    setSetupLoading(true);
+    try {
+      const result = await paymentAPI.createSetupIntent(idToken);
+      if (result) {
+        setSetupClientSecret(result.client_secret);
+        setShowUpdatePayment(true);
+      }
+    } catch (err: any) {
+      setError(err.message || "Failed to initialize payment method update");
+    } finally {
+      setSetupLoading(false);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -156,23 +196,12 @@ export default function PaymentModal({
                     Add 200,000 tokens to your balance
                   </p>
                 </button>
-                {/* <h2 className="text-xl font-semibold text-primary-text">
-                  {mode === "subscription"
-                    ? "Subscribe to Pro"
-                    : "Buy Tokens"}
-                </h2>
-                <p className="mt-1 text-sm text-text-70 dark:text-text-30">
-                  {mode === "subscription"
-                    ? "Unlock 5M tokens/month and unlimited exercises"
-                    : `Add ${tokenAmount?.toLocaleString()} tokens to your balance`}
-                </p> */}
               </div>
 
               {/* Body */}
               <div className="p-6">
                 {loading && (
                   <div className="flex flex-col gap-6 items-center justify-center py-12">
-                    {membership == "free" && <h1>Loading payment portal...</h1>}
                     <div className="w-6 h-6 border-2 border-base-20 border-t-primary-text rounded-full animate-spin" />
                   </div>
                 )}
@@ -183,46 +212,106 @@ export default function PaymentModal({
                   </div>
                 )}
 
-                {(mode == "tokens" || (membership == "free" && !loading && !error)) && clientSecret && (
-                  <Elements
-                    key={clientSecret}
-                    stripe={stripePromise}
-                    options={{
-                      clientSecret,
-                      appearance: {
-                        theme: "stripe",
-                        variables: {
-                          borderRadius: "10px",
-                          fontFamily: "inherit",
+                {(mode == "tokens" ||
+                  (membership == "free" && !loading && !error)) &&
+                  clientSecret && (
+                    <Elements
+                      key={clientSecret}
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret,
+                        appearance: {
+                          theme: "stripe",
+                          variables: {
+                            borderRadius: "10px",
+                            fontFamily: "inherit",
+                          },
                         },
-                      },
-                    }}
-                  >
-                    <CheckoutForm onClose={onClose} refetchUser={refetchUser} />
-                  </Elements>
-                )}
-                {mode == "subscription" && membership === "pro" && !loading && !error && clientSecret && (
-                  <Elements
-                    key={clientSecret}
-                    stripe={stripePromise}
-                    options={{
-                      clientSecret,
-                      appearance: {
-                        theme: "stripe",
-                        variables: {
-                          borderRadius: "10px",
-                          fontFamily: "inherit",
-                        },
-                      },
-                    }}
-                  >
-                    {subscriptionActive ? (
-                      <CancellationForm onClose={onClose} idToken={idToken} refetchUser={refetchUser} />
-                    ) : (
-                      <ResumptionForm onClose={onClose} idToken={idToken} refetchUser={refetchUser} />
+                      }}
+                    >
+                      <CheckoutForm
+                        onClose={onClose}
+                        refetchUser={refetchUser}
+                        refetchTokenData={refetchTokenData}
+                      />
+                    </Elements>
+                  )}
+                {mode == "subscription" && membership === "pro" && !loading && (
+                  <div className="mt-4">
+                    {!showUpdatePayment && (
+                      <button
+                        type="button"
+                        onClick={handleUpdatePaymentClick}
+                        disabled={setupLoading}
+                        className="bg-zinc-700 p-4 w-full py-3 px-4 bg-transparent border border-base-10 text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {setupLoading ? "Loading..." : "Payment Method"}
+                      </button>
                     )}
-                  </Elements>
+                    {showUpdatePayment && setupClientSecret && (
+                      <div className="bg-zinc-700 p-4 rounded-xl">
+                        <Elements
+                          key={setupClientSecret}
+                          stripe={stripePromise}
+                          options={{
+                            clientSecret: setupClientSecret,
+                            appearance: {
+                              theme: "stripe",
+                              variables: {
+                                borderRadius: "10px",
+                                fontFamily: "inherit",
+                              },
+                            },
+                          }}
+                        >
+                          <UpdatePaymentMethodForm
+                            onClose={() => {
+                              setShowUpdatePayment(false);
+                              setSetupClientSecret(null);
+                            }}
+                            idToken={idToken}
+                          />
+                        </Elements>
+                      </div>
+                    )}
+                  </div>
                 )}
+                {mode == "subscription" &&
+                  membership === "pro" &&
+                  !loading &&
+                  !error &&
+                  clientSecret && (
+                    <Elements
+                      key={clientSecret}
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret,
+                        appearance: {
+                          theme: "stripe",
+                          variables: {
+                            borderRadius: "10px",
+                            fontFamily: "inherit",
+                          },
+                        },
+                      }}
+                    >
+                      {subscriptionActive ? (
+                        <CancellationForm
+                          onClose={onClose}
+                          idToken={idToken}
+                          refetchUser={refetchUser}
+                          refetchTokenData={refetchTokenData}
+                        />
+                      ) : (
+                        <ResumptionForm
+                          onClose={onClose}
+                          idToken={idToken}
+                          refetchUser={refetchUser}
+                          refetchTokenData={refetchTokenData}
+                        />
+                      )}
+                    </Elements>
+                  )}
               </div>
             </div>
           </motion.div>
@@ -230,318 +319,457 @@ export default function PaymentModal({
       )}
     </AnimatePresence>
   );
-}
 
-function CheckoutForm({ onClose, refetchUser }: { onClose: () => void; refetchUser: () => void }) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+  function CheckoutForm({
+    onClose,
+    refetchUser,
+    refetchTokenData,
+  }: {
+    onClose: () => void;
+    refetchUser: () => void;
+    refetchTokenData: () => void;
+  }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!stripe || !elements) return;
 
-    setSubmitting(true);
-    setError(null);
+      setSubmitting(true);
+      setError(null);
 
-    const { error: stripeError } = await stripe.confirmPayment({
-      elements,
-      confirmParams: {
-        return_url: window.location.href,
-      },
-      redirect: "if_required",
-    });
+      const { error: stripeError } = await stripe.confirmPayment({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: "if_required",
+      });
 
-    if (stripeError) {
-      setError(stripeError.message || "Payment failed");
-      setSubmitting(false);
-    } else {
-      setSuccess(true);
-      setSubmitting(false);
-    }
-
-    refetchUser();
-  };
-
-  if (success) {
-    return (
-      <div className="text-center py-6">
-        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-green-600 dark:text-green-400"
-          >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
-        </div>
-        <h3 className="text-lg font-semibold text-primary-text">
-          Payment successful
-        </h3>
-        <p className="mt-1 text-sm text-text-70 dark:text-text-30">
-          Your account has been updated.
-        </p>
-        <button
-          onClick={onClose}
-          className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
-        >
-          Done
-        </button>
-      </div>
-    );
-  }
-
-  return (
-    <form onSubmit={handleSubmit}>
-      <PaymentElement
-        options={{
-          layout: {
-            type: "accordion",
-            defaultCollapsed: false,
-            radios: "always",
-            spacedAccordionItems: false,
-          },
-        }}
-      />
-
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
-          {error}
-        </div>
-      )}
-
-      {/* Actions */}
-      <div className="mt-6 space-y-3">
-        <button
-          type="submit"
-          disabled={!stripe || submitting}
-          className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? "Processing..." : "Pay now"}
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={submitting}
-          className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
-        >
-          Cancel
-        </button>
-      </div>
-    </form>
-  );
-}
-
-function CancellationForm({
-  onClose,
-  idToken,
-  refetchUser,
-}: {
-  onClose: () => void;
-  idToken: string;
-  refetchUser: () => void;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-  const [periodEnd, setPeriodEnd] = useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const result = await paymentAPI.cancelSubscription(idToken);
-      if (result) {
+      if (stripeError) {
+        setError(stripeError.message || "Payment failed");
+        setSubmitting(false);
+      } else {
         setSuccess(true);
-        setPeriodEnd(result.active_until);
+        setSubmitting(false);
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to cancel subscription.");
-    } finally {
-      setSubmitting(false);
+
+      refetchUser();
+      refetchTokenData();
+    };
+
+    if (success) {
+      return (
+        <div className="text-center py-6">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-green-600 dark:text-green-400"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-primary-text">
+            Payment successful
+          </h3>
+          <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+            Your account has been updated.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
+          >
+            Done
+          </button>
+        </div>
+      );
     }
 
-    refetchUser();
-  };
-
-  if (success && periodEnd) {
     return (
-      <div className="text-center py-6">
-        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-green-600 dark:text-green-400"
+      <form onSubmit={handleSubmit}>
+        <PaymentElement
+          options={{
+            layout: {
+              type: "accordion",
+              defaultCollapsed: false,
+              radios: "always",
+              spacedAccordionItems: false,
+            },
+          }}
+        />
+
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-6 space-y-3">
+          <button
+            type="submit"
+            disabled={!stripe || submitting}
+            className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
+            {submitting ? "Processing..." : "Pay now"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
+          >
+            Cancel
+          </button>
         </div>
-        <h3 className="text-lg font-semibold text-primary-text">
-          Cancellation successful
-        </h3>
-        <p className="mt-1 text-sm text-text-70 dark:text-text-30">
-          You will keep Pro membership privileges until{" "}
-          {new Date(periodEnd).toLocaleString()}.
-        </p>
-        <button
-          onClick={onClose}
-          className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
-        >
-          Done
-        </button>
-      </div>
+      </form>
     );
   }
 
-  return (
-    <form onSubmit={handleSubmit}>
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
-          {error}
-        </div>
-      )}
+  function CancellationForm({
+    onClose,
+    idToken,
+    refetchUser,
+    refetchTokenData,
+  }: {
+    onClose: () => void;
+    idToken: string;
+    refetchUser: () => void;
+    refetchTokenData: () => void;
+  }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
+    const [periodEnd, setPeriodEnd] = useState<string | null>(null);
 
-      {/* Actions */}
-      <div className="mt-6 space-y-3">
-        <button
-          type="submit"
-          disabled={!stripe || submitting}
-          className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? "Processing..." : "Cancel Pro Subscription"}
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={submitting}
-          className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
-        >
-          Back
-        </button>
-      </div>
-    </form>
-  );
-}
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!stripe || !elements) return;
 
-function ResumptionForm({
-  onClose,
-  idToken,
-  refetchUser,
-}: {
-  onClose: () => void;
-  idToken: string;
-  refetchUser: () => void;
-}) {
-  const stripe = useStripe();
-  const elements = useElements();
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
+      setSubmitting(true);
+      setError(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!stripe || !elements) return;
-
-    setSubmitting(true);
-    setError(null);
-
-    try {
-      const result = await paymentAPI.resumeSubscription(idToken);
-      if (result) {
-        setSuccess(true);
+      try {
+        const result = await paymentAPI.cancelSubscription(idToken);
+        if (result) {
+          setSuccess(true);
+          setPeriodEnd(result.active_until);
+        }
+      } catch (err: any) {
+        setError(err?.message || "Failed to cancel subscription.");
+      } finally {
+        setSubmitting(false);
       }
-    } catch (err: any) {
-      setError(err?.message || "Failed to cancel subscription.");
-    } finally {
-      setSubmitting(false);
+
+      refetchUser();
+      refetchTokenData();
+    };
+
+    if (success && periodEnd) {
+      return (
+        <div className="text-center py-6">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-green-600 dark:text-green-400"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-primary-text">
+            Cancellation successful
+          </h3>
+          <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+            You will keep Pro membership privileges until{" "}
+            {new Date(periodEnd).toLocaleString()}.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
+          >
+            Done
+          </button>
+        </div>
+      );
     }
 
-    refetchUser();
-  };
-
-  if (success) {
     return (
-      <div className="text-center py-6">
-        <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="text-green-600 dark:text-green-400"
+      <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-6 space-y-3">
+          <button
+            type="submit"
+            disabled={!stripe || submitting}
+            className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <path d="M20 6 9 17l-5-5" />
-          </svg>
+            {submitting ? "Processing..." : "Cancel Pro Subscription"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
+          >
+            Back
+          </button>
         </div>
-        <h3 className="text-lg font-semibold text-primary-text">
-          Cancellation reverted
-        </h3>
-        <p className="mt-1 text-sm text-text-70 dark:text-text-30">
-          Your Pro subscription has been continued. 
-        </p>
-        <button
-          onClick={onClose}
-          className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
-        >
-          Done
-        </button>
-      </div>
+      </form>
     );
   }
 
-  return (
-    <form onSubmit={handleSubmit}>
-      {error && (
-        <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
-          {error}
-        </div>
-      )}
+  function ResumptionForm({
+    onClose,
+    idToken,
+    refetchUser,
+    refetchTokenData,
+  }: {
+    onClose: () => void;
+    idToken: string;
+    refetchUser: () => void;
+    refetchTokenData: () => void;
+  }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
 
-      {/* Actions */}
-      <div className="mt-6 space-y-3">
-        <button
-          type="submit"
-          disabled={!stripe || submitting}
-          className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? "Processing..." : "Resume Pro Subscription"}
-        </button>
-        <button
-          type="button"
-          onClick={onClose}
-          disabled={submitting}
-          className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
-        >
-          Back
-        </button>
-      </div>
-    </form>
-  );
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!stripe || !elements) return;
+
+      setSubmitting(true);
+      setError(null);
+
+      try {
+        const result = await paymentAPI.resumeSubscription(idToken);
+        if (result) {
+          setSuccess(true);
+        }
+      } catch (err: any) {
+        setError(err?.message || "Failed to cancel subscription.");
+      } finally {
+        setSubmitting(false);
+      }
+
+      refetchUser();
+      refetchTokenData();
+    };
+
+    if (success) {
+      return (
+        <div className="text-center py-6">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-green-600 dark:text-green-400"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-primary-text">
+            Cancellation reverted
+          </h3>
+          <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+            Your Pro subscription has been continued.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
+          >
+            Done
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <form onSubmit={handleSubmit}>
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
+        {/* Actions */}
+        <div className="mt-6 space-y-3">
+          <button
+            type="submit"
+            disabled={!stripe || submitting}
+            className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Processing..." : "Resume Pro Subscription"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
+          >
+            Back
+          </button>
+        </div>
+      </form>
+    );
+  }
+
+  function UpdatePaymentMethodForm({
+    onClose,
+    idToken,
+  }: {
+    onClose: () => void;
+    idToken: string;
+  }) {
+    const stripe = useStripe();
+    const elements = useElements();
+    const [submitting, setSubmitting] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const [success, setSuccess] = useState(false);
+
+    const handleSubmit = async (e: React.FormEvent) => {
+      e.preventDefault();
+      if (!stripe || !elements) return;
+
+      setSubmitting(true);
+      setError(null);
+
+      const { error: stripeError, setupIntent } = await stripe.confirmSetup({
+        elements,
+        confirmParams: {
+          return_url: window.location.href,
+        },
+        redirect: "if_required",
+      });
+
+      if (stripeError) {
+        setError(stripeError.message || "Failed to save payment method");
+        setSubmitting(false);
+        return;
+      }
+
+      if (setupIntent?.payment_method) {
+        try {
+          await paymentAPI.updatePaymentMethod(
+            setupIntent.payment_method as string,
+            idToken,
+          );
+          setSuccess(true);
+        } catch (err: any) {
+          setError(err?.message || "Failed to update payment method");
+        }
+      }
+
+      setSubmitting(false);
+    };
+
+    if (success) {
+      return (
+        <div className="text-center py-6">
+          <div className="w-12 h-12 mx-auto mb-4 rounded-full bg-green-100 dark:bg-green-950/30 flex items-center justify-center">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="text-green-600 dark:text-green-400"
+            >
+              <path d="M20 6 9 17l-5-5" />
+            </svg>
+          </div>
+          <h3 className="text-lg font-semibold text-primary-text">
+            Payment method updated
+          </h3>
+          <p className="mt-1 text-sm text-text-70 dark:text-text-30">
+            Your subscription will use the new payment method going forward.
+          </p>
+          <button
+            onClick={onClose}
+            className="mt-4 py-2.5 px-6 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200"
+          >
+            Done
+          </button>
+        </div>
+      );
+    }
+
+    return (
+      <form onSubmit={handleSubmit}>
+        <PaymentElement
+          options={{
+            layout: {
+              type: "accordion",
+              defaultCollapsed: false,
+              radios: "always",
+              spacedAccordionItems: false,
+            },
+          }}
+        />
+
+        {error && (
+          <div className="mt-4 p-3 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="mt-6 space-y-3">
+          <button
+            type="submit"
+            disabled={!stripe || submitting}
+            className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Saving..." : "Save Payment Method"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={submitting}
+            className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
+          >
+            Cancel
+          </button>
+        </div>
+      </form>
+    );
+  }
 }

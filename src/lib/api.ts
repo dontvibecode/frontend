@@ -929,7 +929,51 @@ export const paymentAPI = {
       if (isTokenWarning) return null;
     }
     return parseJsonWithWarningCheck(response);
-  }
+  },
+
+  /**
+   * Create a SetupIntent to save a new payment method
+   */
+  createSetupIntent: async (
+    idToken?: string
+  ): Promise<{ client_secret: string } | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/payments/setup-intent/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      }
+    );
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(response, "Failed to create setup intent");
+      if (isTokenWarning) return null;
+    }
+    return parseJsonWithWarningCheck(response);
+  },
+
+  /**
+   * Update the subscription's default payment method
+   */
+  updatePaymentMethod: async (
+    paymentMethodId: string,
+    idToken?: string
+  ): Promise<{ status: string; message: string } | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/payments/update-method/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify({ payment_method_id: paymentMethodId }),
+      }
+    );
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(response, "Failed to update payment method");
+      if (isTokenWarning) return null;
+    }
+    return parseJsonWithWarningCheck(response);
+  },
 };
 
 // ============================================================================

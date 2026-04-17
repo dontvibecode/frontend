@@ -16,6 +16,7 @@ import {
   Conversation,
   Exercise,
   MessageData,
+  TokenData,
   User,
   UserPreferences,
 } from "@/types/api";
@@ -442,10 +443,7 @@ export default function ChatPage() {
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [tokenData, setTokenData] = useState<{
-    token_used: number;
-    token_limit: number;
-  } | null>(null);
+  const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>(
     [],
   );

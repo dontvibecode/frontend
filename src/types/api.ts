@@ -77,3 +77,8 @@ export interface User {
   subscriptionActive?: boolean | null;
   membershipExpiresAt?: string | null;
 }
+
+export interface TokenData {
+  token_used: number;
+  token_limit: number;
+}
