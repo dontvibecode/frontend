@@ -356,10 +356,12 @@ export default function PaymentModal({
       } else {
         setSuccess(true);
         setSubmitting(false);
+        setTimeout(() => {
+          refetchUser();
+          refetchTokenData();
+          setSuccess(false);
+        }, 5000);
       }
-
-      refetchUser();
-      refetchTokenData();
     };
 
     if (success) {
@@ -468,15 +470,17 @@ export default function PaymentModal({
         if (result) {
           setSuccess(true);
           setPeriodEnd(result.active_until);
+          setTimeout(() => {
+            refetchUser();
+            refetchTokenData();
+            setSuccess(false);
+          }, 5000);
         }
       } catch (err: any) {
         setError(err?.message || "Failed to cancel subscription.");
       } finally {
         setSubmitting(false);
       }
-
-      refetchUser();
-      refetchTokenData();
     };
 
     if (success && periodEnd) {
@@ -573,15 +577,17 @@ export default function PaymentModal({
         const result = await paymentAPI.resumeSubscription(idToken);
         if (result) {
           setSuccess(true);
+          setTimeout(() => {
+            refetchUser();
+            refetchTokenData();
+            setSuccess(false);
+          }, 5000);
         }
       } catch (err: any) {
-        setError(err?.message || "Failed to cancel subscription.");
+        setError(err?.message || "Failed to resume subscription.");
       } finally {
         setSubmitting(false);
       }
-
-      refetchUser();
-      refetchTokenData();
     };
 
     if (success) {
@@ -690,12 +696,14 @@ export default function PaymentModal({
             idToken,
           );
           setSuccess(true);
+          setTimeout(() => onClose(), 5000);
         } catch (err: any) {
           setError(err?.message || "Failed to update payment method");
+        } finally {
+          setSubmitting(false);
         }
       }
 
-      setSubmitting(false);
     };
 
     if (success) {

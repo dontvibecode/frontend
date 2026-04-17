@@ -927,6 +927,7 @@ export default function ChatPage() {
         subscriptionActive={user?.subscriptionActive}
         userEmail={user?.email || ""}
         setUser={(user) => setUser(user)}
+        setTokenData={setTokenData}
       />
 
       {/* User Profile Popup */}
