@@ -24,10 +24,13 @@ import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
 import SearchModal from "../components/SearchModal";
+import UpgradeModal from "../components/UpgradeModal";
 import { StreamingThoughts } from "../components/StreamingThoughts";
 import { Icon } from "@iconify/react";
 import { Markdown } from "@/lib/markdownParser";
 import PaymentModal from "../components/PaymentModal";
+import { useTheme } from "../components/ThemeProvider";
+import FeedbackModal from "../components/FeedbackModal";
 
 const TypewriterHero = () => {
   const lines = [
@@ -416,6 +419,7 @@ const isTokenError = (error: any): boolean => {
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const { resolvedTheme, setTheme } = useTheme();
   const [message, setMessage] = useState("");
   const [streamStage, setStreamStage] = useState<
     | "routing"
@@ -440,7 +444,11 @@ export default function ChatPage() {
   const [showSkeletonMinTime, setShowSkeletonMinTime] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [paymentMode, setPaymentMode] = useState<"subscription" | "tokens">("subscription");
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
@@ -839,7 +847,7 @@ export default function ChatPage() {
       setShowLoginModal(true);
       return;
     } else {
-      setShowUserProfilePopup(true);
+      setShowUserMenu(!showUserMenu);
     }
   };
 
@@ -919,6 +927,22 @@ export default function ChatPage() {
         }}
       />
 
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onClose={() => setShowUpgradeModal(false)}
+        onSelectPro={() => {
+          setShowUpgradeModal(false);
+          setPaymentMode("subscription");
+          setShowPaymentModal(true);
+        }}
+        onSelectTokens={() => {
+          setShowUpgradeModal(false);
+          setPaymentMode("tokens");
+          setShowPaymentModal(true);
+        }}
+        currentPlan={user?.membership}
+      />
+
       <PaymentModal
         isOpen={showPaymentModal}
         onClose={() => setShowPaymentModal(false)}
@@ -928,6 +952,7 @@ export default function ChatPage() {
         userEmail={user?.email || ""}
         setUser={(user) => setUser(user)}
         setTokenData={setTokenData}
+        initialMode={paymentMode}
       />
 
       {/* User Profile Popup */}
@@ -937,6 +962,14 @@ export default function ChatPage() {
         user={user}
         onEditUser={onEditUser}
       />
+
+      {/* Feedback Modal */}
+      <FeedbackModal
+        isOpen={showFeedbackModal}
+        onClose={() => setShowFeedbackModal(false)}
+        userEmail={user?.email}
+      />
+
       <aside className="w-64 border-r border-theme-border flex flex-col">
         <div className="p-4 border-b border-theme-border">
           <div
@@ -1531,40 +1564,6 @@ export default function ChatPage() {
             </div>
           </div>
         </div>
-        <div className="p-2 border-t border-theme-border">
-          <button
-            className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
-            onClick={() => setShowPaymentModal(true)}
-          >
-            <div className="flex items-center place-content-around w-full">
-              <div className="flex gap-2 items-center">
-                <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
-                  <svg
-                    fill="#000000"
-                    width="800px"
-                    height="800px"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path d="M14,11H10a2,2,0,0,1,0-4h5a1,1,0,0,1,1,1,1,1,0,0,0,2,0,3,3,0,0,0-3-3H13V3a1,1,0,0,0-2,0V5H10a4,4,0,0,0,0,8h4a2,2,0,0,1,0,4H9a1,1,0,0,1-1-1,1,1,0,0,0-2,0,3,3,0,0,0,3,3h2v2a1,1,0,0,0,2,0V19h1a4,4,0,0,0,0-8Z" />
-                  </svg>
-                </div>
-                <span className="text-sm font-medium">Payments</span>
-              </div>
-              <div className="flex flex-col gap-2">
-                <span className="font-light text-center">
-                  {user?.membership ? user.membership + " member" : ""}
-                </span>
-                {user?.membership == "pro" && user?.membershipExpiresAt && (
-                  <span className="text-xs">
-                    {user?.subscriptionActive ? "Renews" : "Expires"} at{" "}
-                    {new Date(user.membershipExpiresAt).toLocaleString()}
-                  </span>
-                )}
-              </div>
-            </div>
-          </button>
-        </div>
         {/* User Profile */}
         <div className="p-2 border-t border-theme-border">
           {/* Tokens Display */}
@@ -1616,27 +1615,151 @@ export default function ChatPage() {
               </div>
             )}
           </div>
-          <button
-            className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
-            onClick={handleUserProfileClick}
-          >
-            <div className="flex items-center gap-2">
-              {user?.preferences?.profileImage ? (
-                <img
-                  src={user.preferences.profileImage}
-                  alt={session?.user?.name || "User"}
-                  className="w-8 h-8 rounded-full"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-full bg-loading flex items-center justify-center text-white text-sm font-semibold">
-                  {user?.username?.charAt(0)?.toUpperCase() ||
-                    session?.user?.name?.charAt(0)?.toUpperCase() ||
-                    "U"}
-                </div>
+          <div className="relative">
+            {/* User Menu Dropdown */}
+            <AnimatePresence>
+              {showUserMenu && (
+                <>
+                  {/* Backdrop to close menu */}
+                  <div 
+                    className="fixed inset-0 z-40" 
+                    onClick={() => setShowUserMenu(false)}
+                  />
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: 10 }}
+                    transition={{ duration: 0.15 }}
+                    className="absolute bottom-full left-0 right-0 mb-2 bg-container-primary border border-theme-border rounded-xl shadow-lg overflow-hidden z-50"
+                  >
+                    {/* Email */}
+                    <div className="px-4 py-3 border-b border-theme-border">
+                      <span className="text-sm text-text-60">{user?.email || session?.user?.email}</span>
+                    </div>
+                    
+                    {/* Menu Items */}
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowUserProfilePopup(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
+                      >
+                        <Icon icon="solar:settings-linear" className="w-5 h-5 text-text-60" />
+                        <span>Settings</span>
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowUpgradeModal(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
+                      >
+                        <Icon icon="solar:arrow-up-linear" className="w-5 h-5 text-text-60" />
+                        <span>Upgrade plan</span>
+                      </button>
+                      
+                      {/* Theme Toggle */}
+                      <button
+                        onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="relative w-5 h-5">
+                            <motion.div
+                              initial={false}
+                              animate={{
+                                scale: resolvedTheme === "dark" ? 1 : 0,
+                                rotate: resolvedTheme === "dark" ? 0 : 90,
+                                opacity: resolvedTheme === "dark" ? 1 : 0,
+                              }}
+                              transition={{ duration: 0.2, ease: "easeInOut" }}
+                              className="absolute inset-0"
+                            >
+                              <Icon icon="solar:moon-linear" className="w-5 h-5 text-text-60" />
+                            </motion.div>
+                            <motion.div
+                              initial={false}
+                              animate={{
+                                scale: resolvedTheme === "light" ? 1 : 0,
+                                rotate: resolvedTheme === "light" ? 0 : -90,
+                                opacity: resolvedTheme === "light" ? 1 : 0,
+                              }}
+                              transition={{ duration: 0.2, ease: "easeInOut" }}
+                              className="absolute inset-0"
+                            >
+                              <Icon icon="solar:sun-linear" className="w-5 h-5 text-text-60" />
+                            </motion.div>
+                          </div>
+                          <span>{resolvedTheme === "dark" ? "Dark mode" : "Light mode"}</span>
+                        </div>
+                        {/* Toggle Switch */}
+                        <div className={`w-9 h-5 rounded-full relative transition-colors ${resolvedTheme === "dark" ? "bg-emerald-500" : "bg-base-20"}`}>
+                          <motion.div
+                            initial={false}
+                            animate={{ x: resolvedTheme === "dark" ? 16 : 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
+                          />
+                        </div>
+                      </button>
+                      
+                      {/* Feedback */}
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          setShowFeedbackModal(true);
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
+                      >
+                        <Icon icon="solar:chat-round-dots-linear" className="w-5 h-5 text-text-60" />
+                        <span>Feedback</span>
+                      </button>
+                    </div>
+                    
+                    {/* Logout */}
+                    <div className="border-t border-theme-border py-1">
+                      <button
+                        onClick={() => {
+                          setShowUserMenu(false);
+                          signOut();
+                        }}
+                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
+                      >
+                        <Icon icon="solar:logout-2-linear" className="w-5 h-5 text-text-60" />
+                        <span>Log out</span>
+                      </button>
+                    </div>
+                  </motion.div>
+                </>
               )}
-              <span className="text-sm font-medium">{user?.username}</span>
-            </div>
-          </button>
+            </AnimatePresence>
+
+            {/* User Profile Button */}
+            <button
+              className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
+              onClick={handleUserProfileClick}
+            >
+              <div className="flex items-center gap-2">
+                {user?.preferences?.profileImage ? (
+                  <img
+                    src={user.preferences.profileImage}
+                    alt={session?.user?.name || "User"}
+                    className="w-8 h-8 rounded-full"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-loading flex items-center justify-center text-white text-sm font-semibold">
+                    {user?.username?.charAt(0)?.toUpperCase() ||
+                      session?.user?.name?.charAt(0)?.toUpperCase() ||
+                      "U"}
+                  </div>
+                )}
+                <span className="text-sm font-medium">{user?.username}</span>
+              </div>
+            </button>
+          </div>
         </div>
       </aside>
 

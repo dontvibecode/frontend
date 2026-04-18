@@ -25,6 +25,7 @@ interface PaymentModalProps {
   userEmail: string;
   setUser: (user: User) => void;
   setTokenData: (tokenData: TokenData | null) => void;
+  initialMode?: "subscription" | "tokens";
 }
 
 export default function PaymentModal({
@@ -36,11 +37,12 @@ export default function PaymentModal({
   userEmail,
   setUser,
   setTokenData,
+  initialMode = "subscription",
 }: PaymentModalProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"subscription" | "tokens">("subscription");
+  const [mode, setMode] = useState<"subscription" | "tokens">(initialMode);
   const [showUpdatePayment, setShowUpdatePayment] = useState(false);
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(
     null,
@@ -78,6 +80,9 @@ export default function PaymentModal({
       setSetupClientSecret(null);
       return;
     }
+    
+    // Set mode from initialMode when modal opens
+    setMode(initialMode);
 
     const fetchClientSecret = async () => {
       setLoading(true);
