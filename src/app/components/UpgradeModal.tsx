@@ -36,121 +36,124 @@ export default function UpgradeModal({
           </div>
 
           {/* Content */}
-          <div className="max-w-6xl mx-auto px-6 pb-12">
-            {/* Title */}
-            <h1 className="text-3xl md:text-4xl font-serif text-center text-primary-text mb-8">
-              Plans that grow with you
-            </h1>
+          <div className="relative">
+            <div className="h-[1px] bg-base-10 w-full absolute top-0 left-0 right-0"/>
+            <div className="max-w-7xl h-screen fixed top-0 left-0 right-0 mx-auto border-l border-r border-theme-border"/>
+            <div className="max-w-6xl mx-auto px-6 pt-6 pb-1">
+              {/* Title */}
+              <img src="https://i.ibb.co/kgxtgpK6/image.png" alt="Logo" className="h-12 mx-auto mb-8"/>
 
-            {/* Cards Container */}
-            <div className="grid md:grid-cols-3 gap-6 mb-12">
-              {/* Free Plan */}
-              <div className="bg-container-primary border border-theme-border rounded-2xl p-6 flex flex-col">
-                <div className="mb-6">
-                  <div className="w-12 h-12 mb-4 text-text-60">
-                    <Icon icon="solar:user-linear" className="w-full h-full" />
+              {/* Cards Container */}
+              <div className="grid md:grid-cols-3 gap-6 mb-12">
+                {/* Free Plan */}
+                <div className="bg-container-primary border border-theme-border rounded-2xl p-6 flex flex-col">
+                  <div className="mb-6">
+                    <div className="w-12 h-12 mb-4 text-text-60">
+                      <Icon icon="solar:user-linear" className="w-full h-full" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-primary-text">Free</h2>
+                    <p className="text-sm text-text-60">Get started learning</p>
                   </div>
-                  <h2 className="text-xl font-semibold text-primary-text">Free</h2>
-                  <p className="text-sm text-text-60">Get started learning</p>
-                </div>
 
-                <div className="mb-6">
-                  <span className="text-4xl font-semibold text-primary-text">$0</span>
-                  <span className="text-sm text-text-60 ml-2">forever</span>
-                </div>
-
-                <button
-                  disabled={currentPlan === "free"}
-                  className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full mb-6 disabled:opacity-50"
-                >
-                  {currentPlan === "free" ? "Current plan" : "Downgrade"}
-                </button>
-
-                <div className="space-y-3 text-sm">
-                  <FeatureItem text="5,000 tokens per month" />
-                  <FeatureItem text="Gemini 2.5 Pro model" />
-                  <FeatureItem text="Generate lessons (500 tokens)" />
-                  <FeatureItem text="7 days lesson history" />
-                  <FeatureItem text="Interactive exercises" />
-                  <FeatureItem text="Real-time AI feedback (150 tokens)" />
-                  <FeatureItem text="5 additional exercises per lesson" />
-                  <FeatureItem text="5 solution explanations per day" />
-                </div>
-              </div>
-
-              {/* Pro Plan */}
-              <div className="bg-container-primary border border-theme-border rounded-2xl p-6 flex flex-col relative">
-                {/* Popular badge */}
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="bg-emerald-500 text-white text-xs font-medium px-3 py-1 rounded-full">
-                    Popular
-                  </span>
-                </div>
-
-                <div className="mb-6">
-                  <div className="w-12 h-12 mb-4 text-text-60">
-                    <Icon icon="solar:star-linear" className="w-full h-full" />
+                  <div className="mb-6">
+                    <span className="text-4xl font-semibold text-primary-text">$0</span>
+                    <span className="text-sm text-text-60 ml-2">forever</span>
                   </div>
-                  <h2 className="text-xl font-semibold text-primary-text">Pro</h2>
-                  <p className="text-sm text-text-60">Learn without limits</p>
-                </div>
 
-                <div className="mb-6">
-                  <span className="text-4xl font-semibold text-primary-text">$5</span>
-                  <span className="text-sm text-text-60 ml-2">/ month</span>
-                </div>
+                  <button
+                    disabled={currentPlan === "free"}
+                    className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full mb-6 disabled:opacity-50"
+                  >
+                    {currentPlan === "free" ? "Current plan" : "Downgrade"}
+                  </button>
 
-                <button
-                  onClick={onSelectPro}
-                  disabled={currentPlan === "pro"}
-                  className="w-full py-3 px-4 bg-primary-text text-base-5 font-medium rounded-full mb-6 hover:opacity-90 transition-opacity disabled:opacity-50"
-                >
-                  {currentPlan === "pro" ? "Current plan" : "Get Pro plan"}
-                </button>
-
-                <p className="text-xs text-text-60 mb-4">Everything in Free, plus:</p>
-                <div className="space-y-3 text-sm">
-                  <FeatureItem text="50,000 tokens per month" highlight />
-                  <FeatureItem text="Gemini Pro & Sonnet models" highlight />
-                  <FeatureItem text="Fast lesson generation (750 tokens)" highlight />
-                  <FeatureItem text="Unlimited lesson history" highlight />
-                  <FeatureItem text="Unlimited additional exercises" highlight />
-                  <FeatureItem text="Unlimited solution explanations" highlight />
-                </div>
-              </div>
-
-              {/* Token Purchase */}
-              <div className="bg-container-primary border border-theme-border rounded-2xl p-6 flex flex-col">
-                <div className="mb-6">
-                  <div className="w-12 h-12 mb-4 text-text-60">
-                    <Icon icon="solar:bolt-linear" className="w-full h-full" />
+                  <div className="space-y-3 text-sm">
+                    <FeatureItem text="5,000 tokens per month" />
+                    <FeatureItem text="Gemini 2.5 Pro model" />
+                    <FeatureItem text="Generate lessons (500 tokens)" />
+                    <FeatureItem text="7 days lesson history" />
+                    <FeatureItem text="Interactive exercises" />
+                    <FeatureItem text="Real-time AI feedback (150 tokens)" />
+                    <FeatureItem text="5 additional exercises per lesson" />
+                    <FeatureItem text="5 solution explanations per day" />
                   </div>
-                  <h2 className="text-xl font-semibold text-primary-text">Token Pack</h2>
-                  <p className="text-sm text-text-60">One-time purchase</p>
                 </div>
 
-                <div className="mb-6">
-                  <span className="text-4xl font-semibold text-primary-text">$5</span>
-                  <span className="text-sm text-text-60 ml-2">one-time</span>
+                {/* Pro Plan */}
+                <div className="bg-container-primary border border-theme-border rounded-2xl p-6 flex flex-col relative">
+                  {/* Popular badge */}
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2">
+                    <span className="bg-emerald-500 text-white text-xs font-medium px-3 py-1 rounded-full">
+                      Popular
+                    </span>
+                  </div>
+
+                  <div className="mb-6">
+                    <div className="w-12 h-12 mb-4 text-text-60">
+                      <Icon icon="solar:star-linear" className="w-full h-full" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-primary-text">Pro</h2>
+                    <p className="text-sm text-text-60">Learn without limits</p>
+                  </div>
+
+                  <div className="mb-6">
+                    <span className="text-4xl font-semibold text-primary-text">$5</span>
+                    <span className="text-sm text-text-60 ml-2">/ month</span>
+                  </div>
+
+                  <button
+                    onClick={onSelectPro}
+                    disabled={currentPlan === "pro"}
+                    className="w-full py-3 px-4 bg-primary-text text-base-5 font-medium rounded-full mb-6 hover:opacity-90 transition-opacity disabled:opacity-50"
+                  >
+                    {currentPlan === "pro" ? "Current plan" : "Get Pro plan"}
+                  </button>
+
+                  <p className="text-xs text-text-60 mb-4">Everything in Free, plus:</p>
+                  <div className="space-y-3 text-sm">
+                    <FeatureItem text="50,000 tokens per month" highlight />
+                    <FeatureItem text="Gemini Pro & Sonnet models" highlight />
+                    <FeatureItem text="Fast lesson generation (750 tokens)" highlight />
+                    <FeatureItem text="Unlimited lesson history" highlight />
+                    <FeatureItem text="Unlimited additional exercises" highlight />
+                    <FeatureItem text="Unlimited solution explanations" highlight />
+                  </div>
                 </div>
 
-                <button
-                  onClick={onSelectTokens}
-                  className="w-full py-3 px-4 bg-base-10 border border-theme-border text-primary-text font-medium rounded-full mb-6 hover:bg-base-20 transition-colors"
-                >
-                  Buy 200k tokens
-                </button>
+                {/* Token Purchase */}
+                <div className="bg-container-primary border border-theme-border rounded-2xl p-6 flex flex-col">
+                  <div className="mb-6">
+                    <div className="w-12 h-12 mb-4 text-text-60">
+                      <Icon icon="solar:bolt-linear" className="w-full h-full" />
+                    </div>
+                    <h2 className="text-xl font-semibold text-primary-text">Token Pack</h2>
+                    <p className="text-sm text-text-60">One-time purchase</p>
+                  </div>
 
-                <p className="text-xs text-text-60 mb-4">Perfect for:</p>
-                <div className="space-y-3 text-sm">
-                  <FeatureItem text="200,000 tokens added instantly" />
-                  <FeatureItem text="Tokens never expire" />
-                  <FeatureItem text="Use with any plan" />
-                  <FeatureItem text="Stack multiple purchases" />
-                  <FeatureItem text="No commitment required" />
+                  <div className="mb-6">
+                    <span className="text-4xl font-semibold text-primary-text">$5</span>
+                    <span className="text-sm text-text-60 ml-2">one-time</span>
+                  </div>
+
+                  <button
+                    onClick={onSelectTokens}
+                    className="w-full py-3 px-4 bg-base-10 border border-theme-border text-primary-text font-medium rounded-full mb-6 hover:bg-base-20 transition-colors"
+                  >
+                    Buy 200k tokens
+                  </button>
+
+                  <p className="text-xs text-text-60 mb-4">Perfect for:</p>
+                  <div className="space-y-3 text-sm">
+                    <FeatureItem text="200,000 tokens added instantly" />
+                    <FeatureItem text="Tokens never expire" />
+                    <FeatureItem text="Use with any plan" />
+                    <FeatureItem text="Stack multiple purchases" />
+                    <FeatureItem text="No commitment required" />
+                  </div>
                 </div>
               </div>
             </div>
+            <div className="h-[1px] bg-base-10 w-full absolute bottom-0 left-0 right-0"/>
           </div>
         </motion.div>
       )}
