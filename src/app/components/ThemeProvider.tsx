@@ -39,15 +39,15 @@ function getSystemTheme(): "light" | "dark" {
 }
 
 export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => getInitialTheme(defaultTheme));
-  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(() => {
-    const initial = getInitialTheme(defaultTheme);
-    return initial === "system" ? getSystemTheme() : initial;
-  });
-  const [mounted, setMounted] = useState(false);
+  const [theme, setThemeState] = useState<Theme>(defaultTheme);
+  const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">(
+    defaultTheme === "system" ? "light" : defaultTheme
+  );
 
   // Apply theme to document
   const applyTheme = useCallback((newTheme: Theme) => {
+    if (typeof window === "undefined") return;
+    
     const root = document.documentElement;
     const effectiveTheme = newTheme === "system" ? getSystemTheme() : newTheme;
 
@@ -63,10 +63,11 @@ export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProvide
     applyTheme(newTheme);
   }, [applyTheme]);
 
-  // Initialize on mount
+  // Initialize on mount - load saved theme from localStorage
   useEffect(() => {
-    setMounted(true);
-    applyTheme(theme);
+    const savedTheme = getInitialTheme(defaultTheme);
+    setThemeState(savedTheme);
+    applyTheme(savedTheme);
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
@@ -79,13 +80,10 @@ export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProvide
 
     mediaQuery.addEventListener("change", handleChange);
     return () => mediaQuery.removeEventListener("change", handleChange);
-  }, [applyTheme, theme]);
+  }, [applyTheme, defaultTheme]);
 
-  // Prevent hydration mismatch by not rendering until mounted
-  if (!mounted) {
-    return <>{children}</>;
-  }
-
+  // Always provide the context, even before mounting
+  // This prevents "useTheme must be used within ThemeProvider" errors
   return (
     <ThemeContext.Provider value={{ theme, setTheme, resolvedTheme }}>
       {children}
