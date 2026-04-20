@@ -968,6 +968,7 @@ export default function ChatPage() {
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
         userEmail={user?.email}
+        idToken={(session?.user as any)?.idToken}
       />
 
       <aside className="w-64 border-r border-theme-border flex flex-col">

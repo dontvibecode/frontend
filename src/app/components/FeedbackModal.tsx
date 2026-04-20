@@ -3,33 +3,40 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { feedbackAPI } from "@/lib/api";
 
 interface FeedbackModalProps {
   isOpen: boolean;
   onClose: () => void;
   userEmail?: string;
+  idToken?: string;
 }
 
-type FeedbackType = "bug" | "feature" | "general" | null;
+// type FeedbackType = "bug" | "feature" | "general" | null;
 
-export default function FeedbackModal({ isOpen, onClose, userEmail }: FeedbackModalProps) {
-  const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
+export default function FeedbackModal({ isOpen, onClose, userEmail, idToken }: FeedbackModalProps) {
+  // const [feedbackType, setFeedbackType] = useState<FeedbackType>(null);
   const [message, setMessage] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
 
   const handleSubmit = async () => {
-    if (!message.trim() || !feedbackType) return;
+    // if (!message.trim() || !feedbackType || !userEmail) return;
+    if (!message.trim()|| !userEmail) return;
     
     setSubmitting(true);
     
     // Simulate sending feedback (replace with actual API call)
     try {
       // TODO: Replace with actual API endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await feedbackAPI.sendFeedback(
+        userEmail,
+        message.trim(),
+        idToken
+      )
       
       console.log("Feedback submitted:", {
-        type: feedbackType,
+        // type: feedbackType,
         message,
         email: userEmail,
         timestamp: new Date().toISOString(),
@@ -40,7 +47,7 @@ export default function FeedbackModal({ isOpen, onClose, userEmail }: FeedbackMo
         onClose();
         // Reset state after closing
         setTimeout(() => {
-          setFeedbackType(null);
+          // setFeedbackType(null);
           setMessage("");
           setSubmitted(false);
         }, 300);
@@ -56,7 +63,7 @@ export default function FeedbackModal({ isOpen, onClose, userEmail }: FeedbackMo
     onClose();
     // Reset state after closing
     setTimeout(() => {
-      setFeedbackType(null);
+      // setFeedbackType(null);
       setMessage("");
       setSubmitted(false);
     }, 300);
@@ -142,8 +149,9 @@ export default function FeedbackModal({ isOpen, onClose, userEmail }: FeedbackMo
                     {/* Submit Button */}
                     <button
                       onClick={handleSubmit}
-                      disabled={!message.trim() || !feedbackType || submitting}
-                      className="w-full py-3 px-4 bg-primary-text text-base-5 font-medium rounded-full hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                      // disabled={!message.trim() || !feedbackType || submitting}
+                      disabled={!message.trim() || submitting}
+                      className="w-full py-3 px-4 bg-primary-text text-base-5 font-medium rounded-full hover:opacity-90 hover:cursor-pointer hover:bg-stone-300 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                     >
                       {submitting ? (
                         <>
@@ -153,7 +161,7 @@ export default function FeedbackModal({ isOpen, onClose, userEmail }: FeedbackMo
                       ) : (
                         <>
                           <Icon icon="solar:plain-linear" className="w-4 h-4" />
-                          <span>Send Feedback</span>
+                          <span className="text-gray-700">Send Feedback</span>
                         </>
                       )}
                     </button>

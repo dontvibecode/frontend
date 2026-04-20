@@ -976,6 +976,29 @@ export const paymentAPI = {
   },
 };
 
+export const feedbackAPI = {
+  /**
+   * Send user feedback to the backend
+   **/
+  sendFeedback: async (
+    email: string,
+    message: string,
+    idToken?: string,
+  ): Promise<{ message: string } | null> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/feedback/`, {
+      method: "POST",
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify({ email, message }),
+    })
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(response, "Failed to cancel subscription");
+      if (isTokenWarning) return null;
+    }
+
+    return parseJsonWithWarningCheck(response);
+  }
+}
 // ============================================================================
 // COMBINED API OBJECT (for convenience)
 // ============================================================================
@@ -987,7 +1010,7 @@ const api = {
   exercise: exerciseAPI,
   upload: uploadAPI,
   payment: paymentAPI,
+  feedback: feedbackAPI,
 };
 
 export default api;
-
