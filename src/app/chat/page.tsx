@@ -1653,7 +1653,7 @@ export default function ChatPage() {
                 </div>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-xs text-base-40 hover:text-base-60 underline cursor-pointer">Get more</span>
+                <button onClick={() => setShowUpgradeModal(true)} className="text-xs text-base-40 hover:text-base-60 underline cursor-pointer">Get more</button>
               </div>
             </div>
             {/* {tokenData && (

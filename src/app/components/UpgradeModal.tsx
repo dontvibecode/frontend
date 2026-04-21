@@ -25,7 +25,7 @@ export default function UpgradeModal({
     <AnimatePresence>
       {isOpen && (
         <motion.div
-          className="fixed inset-0 z-50 bg-background overflow-y-auto"
+          className="fixed inset-0 z-50 bg-background scrollbar-hide overflow-y-auto"
         >
           {/* Header with back button */}
           <div className="sticky top-0 z-10 p-4">
