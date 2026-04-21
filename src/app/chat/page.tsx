@@ -9,6 +9,7 @@ import React, {
 } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
+import { getGlassGradientBorderClass, getGlassGradientBorderClassInner } from "../components/glassGradientBorder";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -31,6 +32,7 @@ import { Markdown } from "@/lib/markdownParser";
 import PaymentModal from "../components/PaymentModal";
 import { useTheme } from "../components/ThemeProvider";
 import FeedbackModal from "../components/FeedbackModal";
+import ModalTemplate from "../components/ModalTemplate";
 
 const TypewriterHero = () => {
   const lines = [
@@ -245,6 +247,7 @@ export const AIResponse = ({
     response: MessageData;
   }) => void;
 }) => {
+  const { resolvedTheme } = useTheme();
   const jsonData = message?.json;
 
   if (!jsonData || Object.keys(jsonData).length === 0 || !message) {
@@ -257,6 +260,11 @@ export const AIResponse = ({
     );
   }
 
+  const lessonGlassBorder = getGlassGradientBorderClassInner(
+    resolvedTheme,
+    "rounded-xl",
+  );
+
   return (
     <div
       onClick={() =>
@@ -265,141 +273,152 @@ export const AIResponse = ({
           response: message,
         })
       }
-      className="cursor-pointer bg-container-primary  border border-theme-border rounded-2xl p-3"
+      className={`
+        cursor-pointer bg-container-primary border border-base-10 rounded-2xl
+      `}
     >
-      {/* Breakdown */}
-      <h1 className="text-xl text-primary-text mb-3 font-semibold">
-        {jsonData.lessonTitle ??
-          (jsonData as any).lesson_title ??
-          "No Title Available"}
-      </h1>
+      <div className={`p-3 bg-backdrop rounded-2xl`}>
+        {/* Breakdown */}
+        <h1 className="text-xl text-primary-text mb-3 font-semibold">
+          {jsonData.lessonTitle ??
+            (jsonData as any).lesson_title ??
+            "No Title Available"}
+        </h1>
 
-      {message.thought && <ThoughtDropdown thought={message.thought} />}
+        {message.thought && <ThoughtDropdown thought={message.thought} />}
 
-      {jsonData.breakdown && (
-        <p className="text-sm text-primary-text mb-3 font-regular">
-          {jsonData.breakdown}
-        </p>
-      )}
+        {jsonData.breakdown && (
+          <p className="text-sm text-primary-text mb-3 font-regular">
+            {jsonData.breakdown}
+          </p>
+        )}
 
-      {/* Lesson Content Card */}
-      {(jsonData.exercises || jsonData.recommendedReadings) && (
-        <div className="bg-base-5 rounded-xl p-4 border border-theme-border">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-semibold text-primary-text uppercase">
-              Lesson
-            </span>
-            <button className="text-primary-text hover:text-primary-text">
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
-            </button>
-          </div>
-
-          {/* Exercises/Activities */}
-          {jsonData.exercises && jsonData.exercises.length > 0 && (
-            <div className="mb-4">
-              <h4 className="text-xs font-semibold text-primary-text mb-2 flex items-center gap-1">
-                <span>🎯</span> Activities
-              </h4>
-              <div className="space-y-2">
-                {jsonData.exercises.map((exercise, index) => (
-                  <div
-                    key={index}
-                    className="p-3 bg-base-5 rounded-lg border border-base-10"
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="font-medium text-sm mb-1">
-                          {exercise.filename}
-                        </div>
-                        <p className="text-xs text-primary-text">
-                          {exercise.text}
-                        </p>
-                      </div>
-                      <div className="w-5 h-5 rounded-full border-2 border-theme-border flex-shrink-0"></div>
-                    </div>
-                  </div>
-                ))}
-              </div>
+        {/* Lesson Content Card */}
+        {(jsonData.exercises || jsonData.recommendedReadings) && (
+          <div
+            className={`p-px ${lessonGlassBorder.outerBorderRadiusClass} ${lessonGlassBorder.gradientClass}`}
+          >
+            <div
+              className="bg-gradient-to-b from-container-primary to-background  p-4"
+              style={lessonGlassBorder.innerBorderRadiusStyle}
+            >
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-xs font-semibold text-primary-text uppercase">
+                Lesson
+              </span>
+              <button className="text-primary-text hover:text-primary-text">
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5l7 7-7 7"
+                  />
+                </svg>
+              </button>
             </div>
-          )}
 
-          {/* Recommended Readings */}
-          {jsonData.recommendedReadings &&
-            jsonData.recommendedReadings.length > 0 && (
-              <div>
+            {/* Exercises/Activities */}
+            {jsonData.exercises && jsonData.exercises.length > 0 && (
+              <div className="mb-4">
                 <h4 className="text-xs font-semibold text-primary-text mb-2 flex items-center gap-1">
-                  <span>📖</span> Reading
+                  <span>🎯</span> Activities
                 </h4>
-                <div className="grid grid-cols-2 gap-2">
-                  {jsonData.recommendedReadings.map((reading, index) => (
-                    <a
+                <div className="space-y-2">
+                  {jsonData.exercises.map((exercise, index) => (
+                    <div
                       key={index}
-                      href={reading.Url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-base-5 rounded-lg border border-base-10 p-3 hover:border-theme-border hover:shadow-sm transition-all group"
+                      className="p-3 bg-base-5 rounded-lg border border-base-10"
                     >
-                      <h5 className="text-xs font-semibold text-primary-text mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
-                        {reading.title}
-                      </h5>
-                      <p className="text-xs text-primary-text mb-2 line-clamp-2">
-                        {reading.sourceDescription}
-                      </p>
-                      <div className="flex items-center gap-1 text-xs text-primary-text">
-                        <svg
-                          className="w-3 h-3"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                          />
-                        </svg>
-                        <span>{reading.readingTime} min</span>
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="font-medium text-sm mb-1">
+                            {exercise.filename}
+                          </div>
+                          <p className="text-xs text-primary-text">
+                            {exercise.text}
+                          </p>
+                        </div>
+                        <div className="w-5 h-5 rounded-full border-2 border-theme-border flex-shrink-0"></div>
                       </div>
-                    </a>
+                    </div>
                   ))}
                 </div>
               </div>
             )}
-          <div>
-            <h4 className="text-xs font-semibold text-primary-text my-2 flex items-center gap-1">
-              <span>🏷️</span> Tags
-            </h4>
-            {jsonData.tags && jsonData.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {jsonData.tags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="text-xs px-2 py-0.5 bg-base-10 text-primary-text rounded"
-                  >
-                    {tag}
-                  </span>
-                ))}
-              </div>
-            )}
-            <p className="text-xs font-regular text-text-90 uppercase mt-3">
-              {new Date(message.created_at).toLocaleString().split(",")[0]}
-            </p>
+
+            {/* Recommended Readings */}
+            {jsonData.recommendedReadings &&
+              jsonData.recommendedReadings.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-semibold text-primary-text mb-2 flex items-center gap-1">
+                    <span>📖</span> Reading
+                  </h4>
+                  <div className="grid grid-cols-2 gap-2">
+                    {jsonData.recommendedReadings.map((reading, index) => (
+                      <a
+                        key={index}
+                        href={reading.Url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-base-5 rounded-lg border border-base-10 p-3 hover:border-theme-border hover:shadow-sm transition-all group"
+                      >
+                        <h5 className="text-xs font-semibold text-primary-text mb-1 group-hover:text-blue-600 transition-colors line-clamp-2">
+                          {reading.title}
+                        </h5>
+                        <p className="text-xs text-primary-text mb-2 line-clamp-2">
+                          {reading.sourceDescription}
+                        </p>
+                        <div className="flex items-center gap-1 text-xs text-primary-text">
+                          <svg
+                            className="w-3 h-3"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+                            />
+                          </svg>
+                          <span>{reading.readingTime} min</span>
+                        </div>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            <div>
+              <h4 className="text-xs font-semibold text-primary-text my-2 flex items-center gap-1">
+                <span>🏷️</span> Tags
+              </h4>
+              {jsonData.tags && jsonData.tags.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {jsonData.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="text-xs px-2 py-0.5 bg-base-10 text-primary-text rounded"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+              <p className="text-xs font-regular text-text-90 uppercase mt-3">
+                {new Date(message.created_at).toLocaleString().split(",")[0]}
+              </p>
+            </div>
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };
@@ -461,6 +480,9 @@ export default function ChatPage() {
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const showSubscriptionSuccessModal = false;
+  const showTokenPurchaseSuccessModal = false;
+  const showPlusBadge = false;
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
   const isDebouncing = useRef(false);
 
@@ -971,13 +993,55 @@ export default function ChatPage() {
         idToken={(session?.user as any)?.idToken}
       />
 
+      {/* Subscription Success Modal */}
+      <ModalTemplate
+        isOpen={showSubscriptionSuccessModal}
+        onClose={() => {}}
+        title="Subscription Active"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center py-8"
+        >
+          <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+            <Icon icon="solar:check-circle-bold" className="w-8 h-8 text-emerald-500" />
+          </div>
+          <h3 className="text-lg font-medium text-primary-text mb-1">Purchase successful</h3>
+          <p className="text-sm text-text-60 text-center">
+            Your subscription is now active and Plus features are unlocked.
+          </p>
+        </motion.div>
+      </ModalTemplate>
+
+      {/* TODO: Implement token purchase success modal */}
+      <ModalTemplate
+        isOpen={showTokenPurchaseSuccessModal}
+        onClose={() => {}}
+        title="Tokens Added"
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="flex flex-col items-center justify-center py-8"
+        >
+          <div className="w-16 h-16 bg-emerald-500/10 rounded-full flex items-center justify-center mb-4">
+            <Icon icon="solar:check-circle-bold" className="w-8 h-8 text-emerald-500" />
+          </div>
+          <h3 className="text-lg font-medium text-primary-text mb-1">Purchase successful</h3>
+          <p className="text-sm text-text-60 text-center">
+            Your additional tokens are now available to use.
+          </p>
+        </motion.div>
+      </ModalTemplate>
+
       <aside className="w-64 border-r border-theme-border flex flex-col">
-        <div className="p-4 border-b border-theme-border">
+        <div className="p-2 flex flex-row border-b border-theme-border">
           <div
             onClick={() => router.push("/")}
             className="flex items-center gap-2 cursor-pointer"
           >
-            <img src="/text.png" alt="Logo" className="w-2/3 py-1" />
+            <img src="/logo.png" alt="Logo" className={`w-8 h-8`} />
           </div>
         </div>
         <div className="relative flex-1 overflow-y-auto">
@@ -1567,41 +1631,32 @@ export default function ChatPage() {
         </div>
         {/* User Profile */}
         <div className="p-2 border-t border-theme-border">
-          {/* Tokens Display */}
-          <div className="mb-2 p-2 bg-base-10 rounded-lg border border-theme-border">
+          {(() => {
+            const tokenCardBorder = getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl");
+            return (
+              <div className={`w-full p-px mb-2 ${tokenCardBorder.outerBorderRadiusClass} ${tokenCardBorder.gradientClass}`}>
+                <div
+                  className="p-3 bg-container-primary"
+                  style={tokenCardBorder.innerBorderRadiusStyle}
+                >
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-loading flex items-center justify-center text-white">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width="14"
-                    height="14"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fill="currentColor"
-                      fillRule="evenodd"
-                      d="M11.3 1.046A1 1 0 0 1 12 2v5h4a1 1 0 0 1 .82 1.573l-7 10A1 1 0 0 1 8 18v-5H4a1 1 0 0 1-.82-1.573l7-10a1 1 0 0 1 1.12-.38"
-                      clipRule="evenodd"
-                      strokeWidth="0.4"
-                      stroke="currentColor"
-                    />
-                  </svg>
+              <div className="flex items-center gap-1">
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-bold text-currentColor">
+                    {tokenData
+                      ? (
+                          tokenData.token_limit - tokenData.token_used
+                        ).toLocaleString()
+                      : 0}
+                  </span>
+                  <span className="text-xs text-base-40">tokens remaining</span>
                 </div>
-                <span className="text-xs font-medium text-base-40">Tokens</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-sm font-bold text-currentColor">
-                  {tokenData
-                    ? (
-                        tokenData.token_limit - tokenData.token_used
-                      ).toLocaleString()
-                    : 0}
-                </span>
-                <span className="text-xs text-base-40">remaining</span>
+                <span className="text-xs text-base-40 hover:text-base-60 underline cursor-pointer">Get more</span>
               </div>
             </div>
-            {tokenData && (
+            {/* {tokenData && (
               <div className="mt-2">
                 <div className="h-1.5 bg-violet-200 rounded-full overflow-hidden">
                   <motion.div
@@ -1614,8 +1669,11 @@ export default function ChatPage() {
                   />
                 </div>
               </div>
-            )}
-          </div>
+            )} */}
+                </div>
+              </div>
+            );
+          })()}
           <div className="relative">
             {/* User Menu Dropdown */}
             <AnimatePresence>
@@ -1631,15 +1689,19 @@ export default function ChatPage() {
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: 10 }}
                     transition={{ duration: 0.15 }}
-                    className="absolute bottom-full left-0 right-0 mb-2 bg-container-primary border border-theme-border rounded-xl shadow-lg overflow-hidden z-50"
+                    className={`absolute bottom-full left-0 right-0 mb-2 z-50 p-px shadow-lg ${getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl").outerBorderRadiusClass} ${getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl").gradientClass}`}
                   >
-                    {/* Email */}
-                    <div className="px-4 py-3 border-b border-theme-border">
-                      <span className="text-sm text-text-60">{user?.email || session?.user?.email}</span>
-                    </div>
+                    <div
+                      className="bg-container-primary overflow-hidden"
+                      style={getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl").innerBorderRadiusStyle}
+                    >
+                      {/* Email */}
+                      <div className="px-4 py-3 border-b border-theme-border">
+                        <span className="text-sm text-text-60">{user?.email || session?.user?.email}</span>
+                      </div>
                     
-                    {/* Menu Items */}
-                    <div className="py-1">
+                      {/* Menu Items */}
+                      <div className="py-1">
                       <button
                         onClick={() => {
                           setShowUserMenu(false);
@@ -1718,20 +1780,21 @@ export default function ChatPage() {
                         <Icon icon="solar:chat-round-dots-linear" className="w-5 h-5 text-text-60" />
                         <span>Feedback</span>
                       </button>
-                    </div>
+                      </div>
                     
-                    {/* Logout */}
-                    <div className="border-t border-theme-border py-1">
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          signOut();
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
-                      >
-                        <Icon icon="solar:logout-2-linear" className="w-5 h-5 text-text-60" />
-                        <span>Log out</span>
-                      </button>
+                      {/* Logout */}
+                      <div className="border-t border-theme-border py-1">
+                        <button
+                          onClick={() => {
+                            setShowUserMenu(false);
+                            signOut();
+                          }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
+                        >
+                          <Icon icon="solar:logout-2-linear" className="w-5 h-5 text-text-60" />
+                          <span>Log out</span>
+                        </button>
+                      </div>
                     </div>
                   </motion.div>
                 </>
@@ -1757,7 +1820,15 @@ export default function ChatPage() {
                       "U"}
                   </div>
                 )}
-                <span className="text-sm font-medium">{user?.username}</span>
+                <div className="flex flex-col justify-start items-start">
+                  <span className="text-sm font-medium">{user?.username}</span>
+                  {/* TODO: Implement show plus badge logic */}
+                  {(true || showPlusBadge) && (
+                    <span className="mr-1 text-xs text-base-30 uppercase tracking-wide">
+                      Pro
+                    </span>
+                  )}
+                </div>
               </div>
             </button>
           </div>
@@ -1765,7 +1836,7 @@ export default function ChatPage() {
       </aside>
 
       {/* Middle - Lesson Window */}
-      <main className="relative flex-1 p-4 bg-base-10 overflow-y-auto overflow-x-hidden scrollbar-hide">
+      <main className="relative flex-1 bg-backdrop overflow-y-auto overflow-x-hidden scrollbar-hide">
         {selectedLesson ? (
           <Lesson
             setLessonExpanded={setLessonExpanded}
@@ -1869,7 +1940,11 @@ export default function ChatPage() {
           </div>
 
           <div className="p-4 border-t border-theme-border">
-            <textarea
+            {(() => {
+              const inputBorder = getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl");
+              return (
+                <div className={`w-full h-20 mb-3 p-px ${inputBorder.outerBorderRadiusClass} ${inputBorder.gradientClass}`}>
+                  <textarea
               rows={4}
               onChange={(e) => setMessage(e.target.value)}
               onKeyDown={(e) => {
@@ -1879,10 +1954,14 @@ export default function ChatPage() {
                 }
               }}
               disabled={loading}
-              className="w-full h-20 p-2 outline-none border border-theme-border rounded-lg text-sm resize-none text-primary-text placeholder-text-70 text-70 disabled:bg-gray-50"
+              className="w-full h-full p-3 bg-container-primary text-sm text-primary-text placeholder:text-text-40 resize-none outline-none"
+              style={inputBorder.innerBorderRadiusStyle}
               placeholder="What's not working? Let's think it through."
-              value={message}
-            />
+                value={message}
+              />
+                </div>
+              );
+            })()}
             <div className="flex items-center gap-2">
               <button
                 onClick={cycleDifficulty}

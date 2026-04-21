@@ -1,11 +1,11 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import { motion, AnimatePresence } from "framer-motion";
-import { useSession, signOut } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { User, UserPreferences } from "@/types/api";
 import { useTheme } from "./ThemeProvider";
 import { uploadAPI } from "@/lib/api";
+import ModalTemplate from "./ModalTemplate";
 
 interface UserProfilePopupProps {
   isOpen: boolean;
@@ -82,16 +82,6 @@ export default function UserProfilePopup({
       console.error("Error saving user preferences:", error);
       setIsSaving(false);
     }
-  };
-
-  const handleLogout = async () => {
-    try {
-      console.log("User logging out");
-    } catch (error) {
-      console.error("Error during logout cleanup:", error);
-    }
-
-    signOut({ callbackUrl: "/" });
   };
 
   const handleImageClick = () => {
@@ -192,330 +182,144 @@ export default function UserProfilePopup({
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 z-50"
-            onClick={onClose}
-          />
-
-          {/* Popup */}
-          <motion.div
-            initial={{ opacity: 0, scale: 1, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 1, y: 20 }}
-            transition={{ duration: 0.1, ease: "easeOut" }}
-            className="fixed top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-background rounded-2xl shadow-2xl z-51 w-full max-w-3xl max-h-[80vh] overflow-hidden"
-          >
-            {/* Header */}
-            <div className="bg-container-primary p-6 border-b border-base-10">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-semibold text-primary-text">
-                  Profile Settings
-                </h2>
-                <button
-                  onClick={onClose}
-                  className="p-2 hover:bg-base-5 cursor-pointer rounded-full transition-colors duration-200"
-                >
-                  <svg
-                    className="w-5 h-5 text-text-70"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="relative p-6 overflow-y-auto max-h-[60vh] pb-22">
-              <div className="space-y-6">
-                {/* Profile Picture */}
-                <div className="text-center">
-                  <div className="relative inline-block">
-                    <div
-                      className={`w-20 h-20 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3 cursor-pointer relative ${isUploading ? "opacity-70" : "hover:opacity-90"
-                        } transition-opacity`}
-                      onClick={handleImageClick}
-                    >
-                      {/* Loading overlay */}
-                      {isUploading && (
-                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                          <svg
-                            className="animate-spin w-6 h-6 text-white"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                          >
-                            <circle
-                              className="opacity-25"
-                              cx="12"
-                              cy="12"
-                              r="10"
-                              stroke="currentColor"
-                              strokeWidth="4"
-                            />
-                            <path
-                              className="opacity-75"
-                              fill="currentColor"
-                              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-                            />
-                          </svg>
-                        </div>
-                      )}
-                      {user?.preferences?.profileImage ? (
-                        <img
-                          src={
-                            user?.preferences?.profileImage
-                          }
-                          alt="Profile"
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-loading flex items-center justify-center">
-                          <span className="text-white font-semibold text-lg">
-                            {user?.username?.charAt(0)?.toUpperCase() ||
-                              session?.user?.name?.charAt(0)?.toUpperCase() ||
-                              "U"}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-                    {/* Hidden file input */}
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/jpeg,image/png,image/gif,image/webp"
-                      onChange={handleImageUpload}
-                      className="hidden"
-                      disabled={isUploading}
-                    />
-                  </div>
-                  <p className="text-sm text-text-70">
-                    {isUploading ? "Uploading..." : "Click to change profile picture"}
-                  </p>
-                  {uploadError && (
-                    <p className="text-sm text-text-90 mt-1">{uploadError}</p>
-                  )}
-                </div>
-
-                {/* Name */}
-                <div>
-                  <label className="block text-sm font-medium text-text-70 mb-2">
-                    Name
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
-                    placeholder="Enter your name"
-                  />
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="block text-sm font-medium text-text-70 mb-2">
-                    Email
-                  </label>
-                  <input
-                    type="email"
-                    value={email}
-                    readOnly={true}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-base-10 bg-base-10 font-light text-text-70 rounded-lg outline-none"
-                    placeholder="Enter your email"
-                  />
-                </div>
-
-                {/* Theme */}
-                <div>
-                  <label className="block text-sm font-medium text-text-70 mb-2">
-                    Theme
-                  </label>
-                  <select
-                    value={theme}
-                    onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
-                    className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
-                  >
-                    <option value="light">Light</option>
-                    <option value="dark">Dark</option>
-                    <option value="system">System</option>
-                  </select>
-                </div>
-
-                {/* Accent Color */}
-                {/* <div>
-                  <label className="block text-sm font-medium text-text-70 mb-2">
-                    Accent Color
-                  </label>
-                  <div className="flex items-center space-x-3">
-                    <div
-                      className="w-10 h-10 rounded-full cursor-pointer border border-base-10"
-                      style={{
-                        backgroundColor: `#${accentColor}`,
-                      }}
-                    />
-                    <div className="flex-1 flex items-center">
-                      <span className="text-text-70 mr-1">#</span>
+    <ModalTemplate
+      isOpen={isOpen}
+      onClose={onClose}
+      title="User Settings"
+      maxWidthClassName="max-w-2xl"
+      contentClassName="p-4 bg-background m-3 rounded-2xl max-h-[70vh] overflow-y-auto scrollbar-hide"
+    >
+      <div className="space-y-6">
+                  <div className="text-center">
+                    <div className="relative inline-block">
+                      <div
+                        className={`w-20 h-20 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3 cursor-pointer relative ${isUploading ? "opacity-70" : "hover:opacity-90"} transition-opacity`}
+                        onClick={handleImageClick}
+                      >
+                        {isUploading && (
+                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                            <svg className="animate-spin w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                            </svg>
+                          </div>
+                        )}
+                        {user?.preferences?.profileImage ? (
+                          <img src={user?.preferences?.profileImage} alt="Profile" className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full bg-loading flex items-center justify-center">
+                            <span className="text-white font-semibold text-lg">
+                              {user?.username?.charAt(0)?.toUpperCase() ||
+                                session?.user?.name?.charAt(0)?.toUpperCase() ||
+                                "U"}
+                            </span>
+                          </div>
+                        )}
+                      </div>
                       <input
-                        type="text"
-                        value={accentColor}
-                        maxLength={6}
-                        onChange={(e) => handleColorChange(e.target.value)}
-                        className="flex-1 px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
-                        placeholder="000000"
-                        style={{ textTransform: "uppercase" }}
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/png,image/gif,image/webp"
+                        onChange={handleImageUpload}
+                        className="hidden"
+                        disabled={isUploading}
                       />
                     </div>
-                  </div>
-                </div> */}
-
-                {/* Language */}
-                {/* <div>
-                  <label className="block text-sm font-medium text-text-70 mb-2">
-                    Language
-                  </label>
-                  <select
-                    value={user?.preferences?.language || "en"}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
-                  >
-                    <option value="en">English</option>
-                    <option value="es">Spanish</option>
-                    <option value="fr">French</option>
-                    <option value="de">German</option>
-                    <option value="it">Italian</option>
-                    <option value="pt">Portuguese</option>
-                    <option value="ru">Russian</option>
-                    <option value="ja">Japanese</option>
-                    <option value="ko">Korean</option>
-                    <option value="zh">Chinese</option>
-                  </select>
-                </div> */}
-
-                {/* Editor Settings Section */}
-                <div className=" ">
-                  <h3 className="text-sm font-semibold text-primary-text mb-4">Editor Settings</h3>
-
-                  {/* Tab Size */}
-                  <div>
-                    <label className="block text-sm font-medium text-text-70 mb-2">
-                      Tab Size
-                    </label>
-                    <div className="flex items-center gap-4">
-                      <input
-                        type="range"
-                        min="1"
-                        max="8"
-                        value={tabSize}
-                        onChange={(e) => setTabSize(Number(e.target.value))}
-                        className="flex-1 h-2 bg-base-10 rounded-lg appearance-none cursor-pointer accent-primary-text"
-                      />
-                      <span className="w-8 text-center text-sm font-medium text-primary-text bg-base-10 px-2 py-1 rounded">
-                        {tabSize}
-                      </span>
-                    </div>
-                    <p className="mt-1 text-xs text-text-70">
-                      Number of spaces for each tab in the code editor
+                    <p className="text-sm text-text-60">
+                      {isUploading ? "Uploading..." : "Click to change profile picture"}
                     </p>
+                    {uploadError && <p className="text-sm text-text-90 mt-1">{uploadError}</p>}
                   </div>
-                </div>
-              </div>
 
-              <div className="h-px w-full bg-gray-200 my-6"></div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-70 mb-2">Name</label>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
+                      placeholder="Enter your name"
+                    />
+                  </div>
 
-              <button
-                onClick={handleLogout}
-                className="w-full -mt-2 px-4 py-2.5 rounded-xl cursor-pointer font-medium flex items-center justify-center space-x-2 hover:bg-base-5 transition-colors duration-200"
-              >
-                <svg
-                  className="w-4 h-4"
-                  fill="none"
-                  stroke="#ff0000"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
-                  />
-                </svg>
-                <span className="text-red-600">Logout</span>
-              </button>
-            </div>
+                  <div>
+                    <label className="block text-sm font-medium text-text-70 mb-2">Email</label>
+                    <input
+                      type="email"
+                      value={email}
+                      readOnly={true}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full px-3 py-2 border border-base-10 bg-base-10 font-light text-text-70 rounded-lg outline-none"
+                      placeholder="Enter your email"
+                    />
+                  </div>
 
-            <div className="absolute bottom-6 left-6 right-10">
-              <button
-                onClick={handleSave}
-                disabled={isSaving || isSaved}
-                className={`w-full py-3 px-4 rounded-xl transition-all duration-300 font-medium flex items-center justify-center space-x-2 ${isSaved
-                    ? "bg-primary-text text-secondary-text"
-                    : isSaving
-                      ? "bg-primary-text text-secondary-text cursor-not-allowed"
-                      : "bg-primary-text text-secondary-text cursor-pointer"
-                  }`}
-              >
-                {isSaving ? (
-                  <>
-                    <svg
-                      className="animate-spin w-4 h-4"
-                      fill="none"
-                      viewBox="0 0 24 24"
+                  <div>
+                    <label className="block text-sm font-medium text-text-70 mb-2">Theme</label>
+                    <select
+                      value={theme}
+                      onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
+                      className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
                     >
-                      <circle
-                        className="opacity-25"
-                        cx="12"
-                        cy="12"
-                        r="10"
-                        stroke="currentColor"
-                        strokeWidth="4"
-                      ></circle>
-                      <path
-                        className="opacity-75"
-                        fill="currentColor"
-                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                      ></path>
-                    </svg>
-                    <span>Saving...</span>
-                  </>
-                ) : isSaved ? (
-                  <>
-                    <svg
-                      className="w-4 h-4"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M5 13l4 4L19 7"
-                      />
-                    </svg>
-                    <span>Saved</span>
-                  </>
-                ) : (
-                  <span>Save Changes</span>
-                )}
-              </button>
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+                      <option value="light">Light</option>
+                      <option value="dark">Dark</option>
+                      <option value="system">System</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-text mb-4">Editor Settings</h3>
+                    <div>
+                      <label className="block text-sm font-medium text-text-70 mb-2">Tab Size</label>
+                      <div className="flex items-center gap-4">
+                        <input
+                          type="range"
+                          min="1"
+                          max="8"
+                          value={tabSize}
+                          onChange={(e) => setTabSize(Number(e.target.value))}
+                          className="flex-1 h-2 bg-base-10 rounded-lg appearance-none cursor-pointer accent-primary-text"
+                        />
+                        <span className="w-8 text-center text-sm font-medium text-primary-text bg-base-10 px-2 py-1 rounded">
+                          {tabSize}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-xs text-text-70">
+                        Number of spaces for each tab in the code editor
+                      </p>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={handleSave}
+                    disabled={isSaving || isSaved}
+                    className={`hover:opacity-90 w-full py-3 px-4 rounded-full transition-all duration-300 font-medium flex items-center justify-center space-x-2 ${isSaved
+                      ? "bg-primary-text text-secondary-text"
+                      : isSaving
+                        ? "bg-primary-text text-secondary-text cursor-not-allowed"
+                        : "bg-primary-text text-secondary-text cursor-pointer"
+                      }`}
+                  >
+                    {isSaving ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <span>Saving...</span>
+                      </>
+                    ) : isSaved ? (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span>Saved</span>
+                      </>
+                    ) : (
+                      <span>Save Changes</span>
+                    )}
+                  </button>
+      </div>
+    </ModalTemplate>
   );
 }

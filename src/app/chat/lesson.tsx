@@ -15,6 +15,9 @@ import { useSession } from "next-auth/react";
 import { Markdown } from "@/lib/markdownParser";
 import ExpandedSkeletonLoader from "../components/ExpandedSkeletonLoader";
 
+import { useTheme } from "../components/ThemeProvider";
+import { getGlassGradientBorderClass, getGlassGradientBorderClassInner } from "../components/glassGradientBorder";
+
 const getLanguageExtension = (filename: string) => {
   if (filename.endsWith('.py')) return python();
   if (filename.endsWith('.java')) return java();
@@ -509,7 +512,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
                         </div>
                       </div>
 
-                      <p className="text-sm text-amber-700/70 leading-relaxed">{diff.comment}</p>
+                      <p className="text-sm text-amber-700/70 leading-relaxed"><Markdown compact>{diff.comment}</Markdown></p>
                     </div>
                   ))}
                 </div>
@@ -519,7 +522,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
               {feedbackData.corrections?.statements?.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-amber-200/50">
                   {feedbackData.corrections.statements.map((statement: string, idx: number) => (
-                    <p key={idx} className="text-sm text-amber-700/70 leading-relaxed mb-2">{statement}</p>
+                    <p key={idx} className="text-sm text-amber-700/70 leading-relaxed mb-2"><Markdown compact>{statement}</Markdown></p>
                   ))}
                 </div>
               )}
@@ -609,7 +612,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
                         </div>
                       </div>
 
-                      <p className="text-sm text-rose-700/70 leading-relaxed">{diff.comment}</p>
+                      <p className="text-sm text-rose-700/70 leading-relaxed"><Markdown compact>{diff.comment}</Markdown></p>
                     </div>
                   ))}
                 </div>
@@ -619,7 +622,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
               {feedbackData.corrections?.statements?.length > 0 && (
                 <div className="mt-4 pt-4 border-t border-rose-200/50">
                   {feedbackData.corrections.statements.map((statement: string, idx: number) => (
-                    <p key={idx} className="text-sm text-rose-700/70 leading-relaxed mb-2">{statement}</p>
+                    <p key={idx} className="text-sm text-rose-700/70 leading-relaxed mb-2"><Markdown compact>{statement}</Markdown></p>
                   ))}
                 </div>
               )}
@@ -648,7 +651,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
   const { data: session } = useSession();
   const [generatingExercises, setGeneratingExercises] = useState(false);
   const [loading, setLoading] = useState(false);
-
+  const { resolvedTheme } = useTheme();
   useEffect(() => {
     if (initialExpandedLesson) {
       expandExercises();
@@ -796,6 +799,16 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
     }
   };
 
+  const lessonGlassBorder = getGlassGradientBorderClassInner(
+    resolvedTheme,
+    "rounded-xl",
+  );
+
+  const twoXGlassBorder = getGlassGradientBorderClass(
+    resolvedTheme,
+    "rounded-2xl",
+  );
+
   return (
     <AnimatePresence mode="popLayout">
       {lessonExpanded ? (
@@ -866,10 +879,14 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
                 return (
                   <div
-                    className="bg-container-primary rounded-2xl p-5 mb-4 border border-base-5"
+                    className={`bg-container-primary rounded-2xl p-px mb-4 ${twoXGlassBorder.outerBorderRadiusClass} ${twoXGlassBorder.gradientClass}`}
                   >
-                    {/* Main Progress Section */}
-                    <div className="flex items-center justify-between mb-4">
+                    <div
+                      className="p-5 bg-container-primary"
+                      style={twoXGlassBorder.innerBorderRadiusStyle}
+                    >
+                      {/* Main Progress Section */}
+                      <div className="flex items-center justify-between mb-4">
                       <div className="flex items-center gap-3">
                         <div className="relative">
                           <svg className="w-16 h-16 transform -rotate-90">
@@ -961,7 +978,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                           <span className="text-xs text-text-70">Not Started</span>
                         </div>
                       </div>
-                    </div>
+                      </div>
 
                     {/* Full Width Progress Bar */}
                     {/* <div className="mb-4">
@@ -987,43 +1004,44 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                       </div>
                     </div> */}
 
-                    {/* Language Stats */}
-                    {topLanguages.length > 0 && (
-                      <div className="flex items-center gap-3 pt-3 border-t-1 border-base-10">
-                        <span className="text-xs font-medium text-text-70 uppercase tracking-wide">Languages:</span>
-                        <div className="flex gap-2 flex-wrap">
-                          {topLanguages.map(([lang, count]) => {
-                            const percent = Math.round((count / totalFiles) * 100);
-                            const colors: Record<string, string> = {
-                              'JavaScript': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                              'TypeScript': 'bg-blue-100 text-blue-800 border-blue-200',
-                              'Python': 'bg-green-100 text-green-800 border-green-200',
-                              'Java': 'bg-orange-100 text-orange-800 border-orange-200',
-                              'JSON': 'bg-gray-100 text-gray-700 border-gray-200',
-                              'HTML': 'bg-red-100 text-red-800 border-red-200',
-                              'CSS': 'bg-purple-100 text-purple-800 border-purple-200',
-                            };
-                            const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200';
-                            return (
-                              <span
-                                key={lang}
-                                className={`text-xs px-2 py-1 rounded-lg border ${colorClass} font-medium`}
-                              >
-                                {lang} <span className="opacity-60">({percent}%)</span>
-                              </span>
-                            );
-                          })}
+                      {/* Language Stats */}
+                      {topLanguages.length > 0 && (
+                        <div className="flex items-center gap-3 pt-3 border-t-1 border-base-10">
+                          <span className="text-xs font-medium text-text-70 uppercase tracking-wide">Languages:</span>
+                          <div className="flex gap-2 flex-wrap">
+                            {topLanguages.map(([lang, count]) => {
+                              const percent = Math.round((count / totalFiles) * 100);
+                              const colors: Record<string, string> = {
+                                'JavaScript': 'bg-yellow-100 text-yellow-800 border-yellow-200',
+                                'TypeScript': 'bg-blue-100 text-blue-800 border-blue-200',
+                                'Python': 'bg-green-100 text-green-800 border-green-200',
+                                'Java': 'bg-orange-100 text-orange-800 border-orange-200',
+                                'JSON': 'bg-gray-100 text-gray-700 border-gray-200',
+                                'HTML': 'bg-red-100 text-red-800 border-red-200',
+                                'CSS': 'bg-purple-100 text-purple-800 border-purple-200',
+                              };
+                              const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200';
+                              return (
+                                <span
+                                  key={lang}
+                                  className={`text-xs px-2 py-1 rounded-lg border ${colorClass} font-medium`}
+                                >
+                                  {lang} <span className="opacity-60">({percent}%)</span>
+                                </span>
+                              );
+                            })}
+                          </div>
+                          {exercises.some((ex: any) => ex.bookmarked) && (
+                            <span className="ml-auto flex items-center gap-1 text-sm text-blue-600">
+                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                              </svg>
+                              {exercises.filter((ex: any) => ex.bookmarked).length} bookmarked
+                            </span>
+                          )}
                         </div>
-                        {exercises.some((ex: any) => ex.bookmarked) && (
-                          <span className="ml-auto flex items-center gap-1 text-sm text-blue-600">
-                            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                              <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                            </svg>
-                            {exercises.filter((ex: any) => ex.bookmarked).length} bookmarked
-                          </span>
-                        )}
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 );
               })()}
@@ -1067,24 +1085,30 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
               <div className="relative rounded-t-xl overflow-hidden">
                 <div className="absolute inset-0 z-10 backdrop-blur-xs bg-white/0 flex items-end justify-center">
-                  <div className="rounded-t-xl bg-container-primary py-4 w-[80%] flex items-center justify-center">
-                    <button
-                      className="cursor-pointer w-fit flex flex-row items-center gap-2 bg-black/5 hover:bg-black/10 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-base-10 rounded-2xl py-3 px-5"
-                      onClick={generateExercises}
-                      disabled={generatingExercises}
+                  <div className="rounded-t-xl bg-gradient-to-b from-gradient-transparent-from to-gradient-transparent-to py-4 h-full w-full flex items-center justify-center">
+                    <div
+                      className={`w-fit p-px ${twoXGlassBorder.outerBorderRadiusClass} ${twoXGlassBorder.gradientClass}`}
                     >
-                      {generatingExercises ? (
-                        <>
-                          <svg className="animate-spin w-4 h-4 text-primary-text" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                          </svg>
-                          <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Generating...</span>
-                        </>
-                      ) : (
-                        <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Unlock more exercises</span>
-                      )}
-                    </button>
+                      <button
+                        type="button"
+                        className="cursor-pointer bg-background w-full flex flex-row items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden py-3 px-5"
+                        style={twoXGlassBorder.innerBorderRadiusStyle}
+                        onClick={generateExercises}
+                        disabled={generatingExercises}
+                      >
+                        {generatingExercises ? (
+                          <>
+                            <svg className="animate-spin w-4 h-4 text-primary-text" fill="none" viewBox="0 0 24 24">
+                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            </svg>
+                            <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Generating...</span>
+                          </>
+                        ) : (
+                          <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Unlock more exercises</span>
+                        )}
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div className="bg-[#2D2D2D]">
@@ -1116,7 +1140,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -100 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
-          className="max-w-4xl mx-auto p-6 bg-background mt-6 rounded-3xl shadow-[0_0_60px_rgba(0,0,0,0.04)]"
+          className="max-w-4xl mx-auto p-6 bg-background mt-0 shadow-[0_0_60px_rgba(0,0,0,0.04)]"
         >
           <div className="flex items-center justify-between mb-6 pb-4 border-b border-base-10">
             <h1 className="text-3xl font-bold text-primary-text">
@@ -1141,9 +1165,16 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
           {/* User Prompt */}
           {userPrompt && (
-            <div className="mb-6 bg-base-5 rounded-lg p-4 border border-base-10">
-              <div className="text-sm font-bold text-text-70 mb-1">Prompt:</div>
-              <p className="text-text-90 text-base leading-relaxed">{userPrompt}</p>
+            <div
+              className={`mb-6 p-px ${lessonGlassBorder.outerBorderRadiusClass} ${lessonGlassBorder.gradientClass}`}
+            >
+              <div
+                className="bg-container-primary p-4"
+                style={lessonGlassBorder.innerBorderRadiusStyle}
+              >
+                <div className="text-sm font-bold text-text-70 mb-1">Prompt:</div>
+                <p className="text-text-90 text-base leading-relaxed">{userPrompt}</p>
+              </div>
             </div>
           )}
 
@@ -1214,10 +1245,10 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
               {/* Code Editor */}
               <div className="bg-[#1E1E1E] rounded-lg mb-4">
                 <div className="bg-[#2D2D2D] px-4 py-2 flex items-center justify-between border-b border-gray-700">
-                  <span className="text-text-70 text-sm">
+                  <span className="text-gray-200 text-sm">
                     {currentExercise.filename}
                   </span>
-                  <button className="text-text-70 hover:text-text-90 transition-colors">
+                  <button className="text-gray-200 transition-colors">
                     <svg
                       className="w-4 h-4"
                       fill="none"

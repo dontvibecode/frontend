@@ -1,9 +1,11 @@
 "use client";
 
 import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import ModalTemplate from "./ModalTemplate";
+import { useTheme } from "./ThemeProvider";
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -12,8 +14,12 @@ interface LoginModalProps {
 }
 
 function GoogleButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  const { resolvedTheme } = useTheme();
   const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+
+  const defaultLabelColor =
+    resolvedTheme === "dark" ? "rgb(237, 237, 237)" : "rgb(55, 65, 81)";
 
   const handleMouseEnter = (e: React.MouseEvent<HTMLButtonElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -29,11 +35,12 @@ function GoogleButton({ children, onClick }: { children: React.ReactNode; onClic
 
   return (
     <motion.button
+      type="button"
       whileHover={{ scale: 1.01 }}
       onClick={onClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="cursor-pointer w-full inline-flex justify-center items-center py-3 px-4 border border-gray-300 rounded-full drop-shadow-customShadow bg-white text-sm font-medium text-gray-700 relative overflow-hidden"
+      className="cursor-pointer w-full inline-flex justify-center items-center py-3 px-4 border border-theme-border rounded-full drop-shadow-customShadow bg-background text-sm font-medium text-primary-text relative overflow-hidden"
     >
       {/* Animated circular fill overlay */}
       <motion.div
@@ -88,7 +95,7 @@ function GoogleButton({ children, onClick }: { children: React.ReactNode; onClic
         </motion.svg>
         <motion.span
           animate={{
-            color: isHovered ? "white" : "rgb(55, 65, 81)",
+            color: isHovered ? "white" : defaultLabelColor,
           }}
           transition={{ duration: 0.3 }}
         >
@@ -101,6 +108,7 @@ function GoogleButton({ children, onClick }: { children: React.ReactNode; onClic
 
 export default function LoginModal({ isOpen, onClose, canClose }: LoginModalProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const { resolvedTheme } = useTheme();
 
   const handleGoogleLogin = async () => {
     setIsLoading(true);
@@ -116,94 +124,81 @@ export default function LoginModal({ isOpen, onClose, canClose }: LoginModalProp
   };
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50"
-            onClick={canClose ? onClose : undefined}
-          />
-
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
-          >
-            <div className="bg-white py-8 px-6 drop-shadow-2xl border border-gray-200 rounded-2xl mx-4">
-              {/* Close Button */}
-              {canClose && (
-                <button
-                  onClick={onClose}
-                  className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 transition-colors"
-                >
-                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              )}
-
-              {/* Logo */}
-              <div className="text-center mb-6">
-                <div className="flex items-center justify-center gap-2 mb-4">
-                  <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-full" />
-                  <span className="font-semibold text-xl text-gray-900">dontvibe</span>
-                </div>
-                <p className="text-sm text-gray-600">
-                  Sign in to save your progress and access your lessons
-                </p>
-              </div>
-
-              {/* Divider with text */}
-              <div className="relative mb-6">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-gray-200" />
-                </div>
-                <div className="relative flex justify-center text-base">
-                  <span className="px-3 bg-white text-gray-900 font-semibold">
-                    Log in or sign up
-                  </span>
-                </div>
-              </div>
-
-              {/* Login Button */}
-              <div className="space-y-3">
-                <GoogleButton onClick={handleGoogleLogin}>
-                  {isLoading ? (
-                    <span className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-gray-400 border-t-transparent rounded-full animate-spin" />
-                      Signing in...
-                    </span>
-                  ) : (
-                    "Continue with Google"
-                  )}
-                </GoogleButton>
-              </div>
-
-              {/* Footer Links */}
-              <div className="mt-8 text-center">
-                <div className="text-xs text-gray-500 space-x-3">
-                  <Link href="/terms" className="underline hover:text-gray-700 transition-colors">
-                    Terms of Use
-                  </Link>
-                  <span>|</span>
-                  <Link href="/privacy" className="underline hover:text-gray-700 transition-colors">
-                    Privacy Policy
-                  </Link>
-                </div>
-              </div>
-            </div>
-          </motion.div>
-        </>
+    <ModalTemplate
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Sign in"
+      showHeader={false}
+      closeOnBackdrop={canClose}
+      maxWidthClassName="max-w-md"
+      containerClassName="px-4"
+      contentClassName="relative py-8 px-6 bg-background m-3 rounded-2xl"
+    >
+      {canClose && (
+        <button
+          type="button"
+          onClick={onClose}
+          className="absolute top-4 right-4 p-1 rounded-lg text-text-60 hover:text-primary-text hover:bg-base-10 transition-colors z-10"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       )}
-    </AnimatePresence>
+
+      {/* Logo */}
+      <div className="text-center mb-6">
+        <div className="flex items-center justify-center gap-2 mb-4">
+          <img
+            src="/logo.png"
+            alt="Logo"
+            className={`w-10 h-10 rounded-full ${resolvedTheme === "dark" ? "invert" : ""}`}
+          />
+          <span className="font-semibold text-xl text-primary-text">dontvibe</span>
+        </div>
+        <p className="text-sm text-text-70">
+          Sign in to save your progress and access your lessons
+        </p>
+      </div>
+
+      {/* Divider with text */}
+      <div className="relative mb-6">
+        <div className="absolute inset-0 flex items-center">
+          <div className="w-full border-t border-theme-border" />
+        </div>
+        <div className="relative flex justify-center text-base">
+          <span className="px-3 bg-background text-primary-text font-semibold">
+            Log in or sign up
+          </span>
+        </div>
+      </div>
+
+      {/* Login Button */}
+      <div className="space-y-3">
+        <GoogleButton onClick={handleGoogleLogin}>
+          {isLoading ? (
+            <span className="flex items-center gap-2">
+              <div className="w-4 h-4 border-2 border-text-40 border-t-transparent rounded-full animate-spin" />
+              Signing in...
+            </span>
+          ) : (
+            "Continue with Google"
+          )}
+        </GoogleButton>
+      </div>
+
+      {/* Footer Links */}
+      <div className="mt-8 text-center">
+        <div className="text-xs text-text-60 space-x-3">
+          <Link href="/terms" className="underline hover:text-primary-text transition-colors">
+            Terms of Use
+          </Link>
+          <span>|</span>
+          <Link href="/privacy" className="underline hover:text-primary-text transition-colors">
+            Privacy Policy
+          </Link>
+        </div>
+      </div>
+    </ModalTemplate>
   );
 }
-

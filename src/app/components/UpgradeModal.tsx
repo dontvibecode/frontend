@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Icon } from "@iconify/react";
+import { useTheme } from "./ThemeProvider";
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -19,6 +20,7 @@ export default function UpgradeModal({
   onSelectTokens,
   currentPlan = "free",
 }: UpgradeModalProps) {
+  const { resolvedTheme } = useTheme();
   return (
     <AnimatePresence>
       {isOpen && (
@@ -38,10 +40,10 @@ export default function UpgradeModal({
           {/* Content */}
           <div className="relative">
             <div className="h-[1px] bg-base-10 w-full absolute top-0 left-0 right-0"/>
-            <div className="max-w-7xl h-screen fixed top-0 left-0 right-0 mx-auto border-l border-r border-theme-border"/>
-            <div className="max-w-6xl mx-auto px-6 pt-6 pb-1">
+            <div className="pointer-events-none max-w-7xl h-screen fixed top-0 left-0 right-0 mx-auto border-l border-r border-theme-border" aria-hidden />
+            <div className="relative z-10 max-w-6xl mx-auto px-6 pt-6 pb-1">
               {/* Title */}
-              <img src="https://i.ibb.co/kgxtgpK6/image.png" alt="Logo" className="h-12 mx-auto mb-8"/>
+              <img src="https://i.ibb.co/kgxtgpK6/image.png" alt="Logo" className={`h-12 mx-auto mb-8 ${resolvedTheme === 'dark' ? 'invert' : ''}`}/>
 
               {/* Cards Container */}
               <div className="grid md:grid-cols-3 gap-6 mb-12">
@@ -62,7 +64,7 @@ export default function UpgradeModal({
 
                   <button
                     disabled={currentPlan === "free"}
-                    className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full mb-6 disabled:opacity-50"
+                    className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full mb-6 disabled:opacity-50 cursor-pointer"
                   >
                     {currentPlan === "free" ? "Current plan" : "Downgrade"}
                   </button>
@@ -104,7 +106,7 @@ export default function UpgradeModal({
                   <button
                     onClick={onSelectPro}
                     disabled={currentPlan === "pro"}
-                    className="w-full py-3 px-4 bg-primary-text text-base-5 font-medium rounded-full mb-6 hover:opacity-90 transition-opacity disabled:opacity-50"
+                    className="w-full py-3 px-4 bg-primary-text text-background font-medium rounded-full mb-6 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
                   >
                     {currentPlan === "pro" ? "Current plan" : "Get Pro plan"}
                   </button>
@@ -136,8 +138,9 @@ export default function UpgradeModal({
                   </div>
 
                   <button
+                    type="button"
                     onClick={onSelectTokens}
-                    className="w-full py-3 px-4 bg-base-10 border border-theme-border text-primary-text font-medium rounded-full mb-6 hover:bg-base-20 transition-colors"
+                    className="relative z-10 w-full cursor-pointer py-3 px-4 bg-primary-text text-background font-medium rounded-full mb-6 transition-all duration-200 hover:opacity-90 active:scale-[0.99]"
                   >
                     Buy 200k tokens
                   </button>
