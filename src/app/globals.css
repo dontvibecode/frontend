@@ -28,6 +28,9 @@
   --text-30: rgba(0, 0, 0, 0.3);
   --text-35: rgba(0, 0, 0, 0.35);
   --text-40: rgba(0, 0, 0, 0.4);
+  --invert-10: rgba(255, 255, 255, 0.1);
+  --invert-20: rgba(255, 255, 255, 0.2);
+  --invert-30: rgba(255, 255, 255, 0.3);
   --opaque-button: rgba(0, 0, 0, 0.1);
   --opaque-button-hover: rgba(0, 0, 0, 0.15);
   --theme-border: #e1e1e1;
@@ -67,6 +70,9 @@
   --text-30: rgba(255, 255, 255, 0.3);
   --text-35: rgba(255, 255, 255, 0.35);
   --text-40: rgba(255, 255, 255, 0.4);
+  --invert-10: rgba(255, 255, 255, 0.1);
+  --invert-20: rgba(255, 255, 255, 0.2);
+  --invert-30: rgba(255, 255, 255, 0.3);
   --opaque-button: rgba(255, 255, 255, 0.1);
   --opaque-button-hover: rgba(255, 255, 255, 0.15);
   --theme-border: rgba(255, 255, 255, 0.2);
@@ -105,6 +111,9 @@
   --color-text-30: var(--text-30);
   --color-text-35: var(--text-35);
   --color-text-40: var(--text-40);
+  --color-invert-10: var(--invert-10);
+  --color-invert-20: var(--invert-20);
+  --color-invert-30: var(--invert-30);
   --color-opaque-button: var(--opaque-button);
   --color-opaque-button-hover: var(--opaque-button-hover);
   --color-theme-border: var(--theme-border);

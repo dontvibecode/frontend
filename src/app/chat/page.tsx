@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { getGlassGradientBorderClass, getGlassGradientBorderClassInner } from "../components/glassGradientBorder";
+import { getGlassGradientBorderClass, getGlassGradientBorderClassInner, getGlassGradientBorderClassRainbow } from "../components/glassGradientBorder";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -1632,12 +1632,13 @@ export default function ChatPage() {
         {/* User Profile */}
         <div className="p-2 border-t border-theme-border">
           {(() => {
+            const tokenCardBorderRainbow = getGlassGradientBorderClassRainbow(resolvedTheme, "rounded-xl");
             const tokenCardBorder = getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl");
             return (
-              <div className={`w-full p-px mb-2 ${tokenCardBorder.outerBorderRadiusClass} ${tokenCardBorder.gradientClass}`}>
+              <div className={`w-full p-px mb-2 ${tokenCardBorderRainbow.outerBorderRadiusClass} ${tokenCardBorderRainbow.gradientClass}`}>
                 <div
                   className="p-3 bg-container-primary"
-                  style={tokenCardBorder.innerBorderRadiusStyle}
+                  style={tokenCardBorderRainbow.innerBorderRadiusStyle}
                 >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">

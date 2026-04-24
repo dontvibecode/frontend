@@ -73,3 +73,16 @@ export function getGlassGradientBorderClassInner(
     ...getGlassGradientBorderRadiusProps(borderRadius),
   };
 }
+
+export function getGlassGradientBorderClassRainbow(
+  resolvedTheme?: string,
+  borderRadius: string = "rounded-xl",
+): GlassGradientBorderProps {
+  return {
+    gradientClass:
+      resolvedTheme === "dark"
+      ? "bg-[linear-gradient(135deg,rgb(255,107,107)_0%,rgb(255,179,71)_18%,rgb(255,230,109)_34%,rgb(74,222,128)_50%,rgb(84,160,255)_68%,rgb(124,58,237)_84%,rgb(255,107,203)_100%)]"
+      : "bg-[linear-gradient(135deg,rgb(255,107,107)_0%,rgb(255,179,71)_18%,rgb(255,230,109)_34%,rgb(74,222,128)_50%,rgb(84,160,255)_68%,rgb(124,58,237)_84%,rgb(255,107,203)_100%)]",
+    ...getGlassGradientBorderRadiusProps(borderRadius),
+  };
+}

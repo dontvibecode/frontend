@@ -1,11 +1,16 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useInView, useScroll, useTransform } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
+import { Icon } from "@iconify/react";
 import FluidImage from "./components/FluidImage";
 import FontFeature from "./components/FontFeature";
+import { useTheme } from "./components/ThemeProvider";
+import { getGlassGradientBorderClass, getGlassGradientBorderClassInner, getGlassGradientBorderClassRainbow } from "./components/glassGradientBorder";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 function ScrollingFeatures() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -81,71 +86,79 @@ function PricingSection() {
     offset: ["start end", "end start"],
   });
   const isInView = useInView(sectionRef, { once: false });
+
+  const { resolvedTheme } = useTheme();
+  const glassBorder = getGlassGradientBorderClass(
+    resolvedTheme,
+    "rounded-3xl",
+  );
   
   return (
     <div ref={sectionRef} className="flex flex-row w-[155%] sm:w-full items-stretch justify-center gap-3">
-      <motion.div animate={{ x: isInView ? 0 : 20, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 90 }} className="w-[2%] bg-gray-50 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : 40, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 80 }} className="w-[4%] bg-gray-300 opacity-10 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : 30, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 60 }} className="w-[6%] bg-gray-300 opacity-20 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : 20, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 40 }} className="w-[8%] bg-gray-300 opacity-30 rounded-2xl"></motion.div>
-      <div className="relative bg-white border border-gray-200 rounded-3xl overflow-hidden shadow-[0_0_70px_0_rgba(0,0,0,0.08)] w-full max-w-2xl">
-        {/* Header */}
-        <div className="grid grid-cols-3 border-b border-gray-100">
-          <div className="p-6 flex items-end">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider"></span>
+      <motion.div animate={{ x: isInView ? 0 : 20, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 90 }} className="w-[2%] bg-base-5 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : 40, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 80 }} className="w-[4%] bg-base-20 opacity-10 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : 30, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 60 }} className="w-[6%] bg-base-20 opacity-20 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : 20, display: isInView ? "block" : "none" }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} initial={{ x: 40 }} className="w-[8%] bg-base-20 opacity-30 rounded-2xl"></motion.div>
+      <div className={`relative p-px overflow-hidden shadow-[0_0_70px_0_rgba(0,0,0,0.08)] w-full max-w-2xl ${glassBorder.gradientClass} ${glassBorder.outerBorderRadiusClass}`}>
+        <div className="bg-container-primary" style={glassBorder.innerBorderRadiusStyle}>
+          {/* Header */}
+          <div className="grid grid-cols-3 border-b border-theme-border">
+            <div className="p-6 flex items-end">
+              <span className="text-xs font-medium text-text-40 uppercase tracking-wider"></span>
+            </div>
+            <div className="p-6 text-center border-x border-theme-border">
+              <span className="text-xs font-medium text-text-40 uppercase tracking-wider">Free</span>
+              <p className="text-2xl font-semibold text-primary-text mt-1">$0</p>
+              <p className="text-xs text-text-40">forever</p>
+            </div>
+            <div className="p-6 text-center bg-base-5">
+              <span className="text-xs font-medium text-emerald-600 uppercase tracking-wider">Pro</span>
+              <p className="text-2xl font-semibold text-primary-text mt-1">$5</p>
+              <p className="text-xs text-text-40">per month</p>
+            </div>
           </div>
-          <div className="p-6 text-center border-x border-gray-100">
-            <span className="text-xs font-medium text-gray-400 uppercase tracking-wider">Free</span>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">$0</p>
-            <p className="text-xs text-gray-400">forever</p>
-          </div>
-          <div className="p-6 text-center bg-gray-50">
-            <span className="text-xs font-medium text-emerald-600 uppercase tracking-wider">Pro</span>
-            <p className="text-2xl font-semibold text-gray-900 mt-1">$5</p>
-            <p className="text-xs text-gray-400">per month</p>
-          </div>
-        </div>
 
-        {/* Features */}
-        {[
-          { feature: "Monthly tokens", free: "200,000", paid: "1,000,000", tooltip: "Tokens refresh monthly" },
-          { feature: "Conversation context", free: "6 messages", paid: "25 messages", tooltip: "Messages per conversation" },
-          { feature: "Submissions with explanation", free: "1 per day", paid: "Unlimited", tooltip: "Get detailed explanations for your code submissions" },
-          { feature: "Exercises per lesson", free: "2", paid: "10", tooltip: "Number of exercises available per lesson" },
-          { feature: "Additional tokens", free: "Standard price", paid: "Cheaper rates", tooltip: "Purchase extra tokens when needed" },
-        ].map((row, index) => (
-          <div key={`feature-${index}`} className="grid grid-cols-3 border-b border-gray-50 last:border-b-0 hover:bg-gray-50/50 transition-colors">
-            <div className="p-4 flex items-center">
-              <span className="text-sm text-gray-700 border-b border-dashed border-gray-300 cursor-help" title={row.tooltip}>{row.feature}</span>
+          {/* Features */}
+          {[
+            { feature: "Monthly tokens", free: "200,000", paid: "1,000,000", tooltip: "Tokens refresh monthly" },
+            { feature: "Conversation context", free: "6 messages", paid: "25 messages", tooltip: "Messages per conversation" },
+            { feature: "Submissions with explanation", free: "1 per day", paid: "Unlimited", tooltip: "Get detailed explanations for your code submissions" },
+            { feature: "Exercises per lesson", free: "2", paid: "10", tooltip: "Number of exercises available per lesson" },
+            { feature: "Additional tokens", free: "Standard price", paid: "Cheaper rates", tooltip: "Purchase extra tokens when needed" },
+          ].map((row, index) => (
+            <div key={`feature-${index}`} className="grid grid-cols-3 border-b border-theme-border last:border-b-0 hover:bg-base-5 transition-colors">
+              <div className="p-4 flex items-center">
+                <span className="text-sm text-text-80 border-b border-dashed border-base-30 cursor-help" title={row.tooltip}>{row.feature}</span>
+              </div>
+              <div className="p-4 flex items-center justify-center border-x border-theme-border">
+                <span className="text-sm text-text-60">{row.free}</span>
+              </div>
+              <div className="p-4 flex items-center justify-center bg-base-5">
+                <span className="text-sm font-medium text-text-80">{row.paid}</span>
+              </div>
             </div>
-            <div className="p-4 flex items-center justify-center border-x border-gray-100">
-              <span className="text-sm text-gray-500">{row.free}</span>
-            </div>
-            <div className="p-4 flex items-center justify-center bg-gray-50/50">
-              <span className="text-sm font-medium text-gray-700">{row.paid}</span>
-            </div>
-          </div>
-        ))}
+          ))}
 
-        {/* CTA Row */}
-        <div className="grid grid-cols-3 border-t border-gray-100">
-          <div className="p-4"></div>
-          <div className="p-4 flex items-center justify-center border-x border-gray-100">
-            <Link href="/chat" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors underline">
-              Get Started
-            </Link>
-          </div>
-          <div className="p-4 flex items-center justify-center bg-gray-50">
-            <button className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-full hover:bg-gray-800 transition-colors">
-              Upgrade
-            </button>
+          {/* CTA Row */}
+          <div className="grid grid-cols-3 border-t border-theme-border">
+            <div className="p-4"></div>
+            <div className="p-4 flex items-center justify-center border-x border-theme-border">
+              <Link href="/chat" className="px-4 py-2 text-sm font-medium text-text-70 hover:text-primary-text transition-colors underline">
+                Get Started
+              </Link>
+            </div>
+            <div className="p-4 flex items-center justify-center bg-base-5">
+              <button className="px-4 py-2 text-sm font-medium text-secondary-text bg-primary-text rounded-full hover:opacity-90 transition-colors">
+                Upgrade
+              </button>
+            </div>
           </div>
         </div>
       </div>
-      <motion.div animate={{ x: isInView ? 0 : -20, display: isInView ? "block" : "none" }} initial={{ x: -40 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[8%] bg-gray-300 opacity-30 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : -30, display: isInView ? "block" : "none" }} initial={{ x: -60 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[6%] bg-gray-300 opacity-20 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : -40, display: isInView ? "block" : "none" }} initial={{ x: -80 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0}} className="w-[4%] bg-gray-300 opacity-10 rounded-2xl"></motion.div>
-      <motion.div animate={{ x: isInView ? 0 : -50, display: isInView ? "block" : "none" }} initial={{ x: -90 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[2%] bg-gray-50 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -20, display: isInView ? "block" : "none" }} initial={{ x: -40 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[8%] bg-base-20 opacity-30 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -30, display: isInView ? "block" : "none" }} initial={{ x: -60 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[6%] bg-base-20 opacity-20 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -40, display: isInView ? "block" : "none" }} initial={{ x: -80 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0}} className="w-[4%] bg-base-20 opacity-10 rounded-2xl"></motion.div>
+      <motion.div animate={{ x: isInView ? 0 : -50, display: isInView ? "block" : "none" }} initial={{ x: -90 }} transition={{ duration: 0.5, ease: "easeOut", delay: 0 }} className="w-[2%] bg-base-5 rounded-2xl"></motion.div>
     </div>
   );
 }
@@ -203,8 +216,8 @@ function InfoSection() {
       </div>
       <div className="w-full pl-4 flex flex-col gap-6 py-6">
         <div className="flex flex-col ml-4 gap-4">
-          <p className="text-4xl sm:text-6xl max-w-2xl text-gray-300">A fun and interactive way to learn code</p>
-          <p className="text-base max-w-xl text-gray-400">Structured, AI-guided lessons paired with interactive exercises that explain your code, catch mistakes, and help concepts actually click.</p>
+          <p className="text-4xl sm:text-6xl max-w-2xl text-text-30">A fun and interactive way to learn code</p>
+          <p className="text-base max-w-xl text-text-50">Structured, AI-guided lessons paired with interactive exercises that explain your code, catch mistakes, and help concepts actually click.</p>
         </div>
         {isInView && (
           <div className="hidden sm:flex flex-row gap-4">
@@ -212,7 +225,7 @@ function InfoSection() {
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: isInView ? 0 : 50, opacity: isInView ? 1 : 0 }}
               transition={{ duration: 0.4, ease: "easeOut" }}
-              className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
+              className="w-full aspect-[1] bg-base-10 rounded-[3rem] overflow-hidden"
             >
               <FluidImage
                 isStatic={true}
@@ -227,7 +240,7 @@ function InfoSection() {
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: isInView ? 0 : 50, opacity: isInView ? 1 : 0 }}
               transition={{ duration: 0.4, delay: 0.2, ease: "easeOut" }}
-              className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
+              className="w-full aspect-[1] bg-base-10 rounded-[3rem] overflow-hidden"
             >
               <FluidImage
                 isStatic={true}
@@ -242,7 +255,7 @@ function InfoSection() {
               initial={{ x: 50, opacity: 0 }}
               animate={{ x: isInView ? 0 : 50, opacity: isInView ? 1 : 0 }}
               transition={{ duration: 0.4, delay: 0.4, ease: "easeOut" }}
-              className="w-full aspect-[1] bg-gray-100 rounded-[3rem] overflow-hidden"
+              className="w-full aspect-[1] bg-base-10 rounded-[3rem] overflow-hidden"
             >
               <FluidImage
                 isStatic={true}
@@ -306,10 +319,113 @@ function BoxInView({ className, children }: { className?: string, children?: Rea
 export default function LandingPage() {
   const containerRef = useRef<HTMLDivElement>(null);
   const [cursorPosition, setCursorPosition] = useState({ x: 0, y: 0 });
+  const [showOppositeThemeIcon, setShowOppositeThemeIcon] = useState(false);
+  const isThemeIconDebouncing = useRef(false);
+  const { resolvedTheme, setTheme } = useTheme();
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ["start start", "end end"],
   });
+  const lessonCardBorder = getGlassGradientBorderClassInner(
+    resolvedTheme,
+    "rounded-3xl",
+  );
+  const lessonCardBorderRainbow = getGlassGradientBorderClassRainbow(
+    resolvedTheme,
+    "rounded-3xl",
+  );
+  const isDarkMode = resolvedTheme === "dark";
+  const currentModeIcon = isDarkMode ? "solar:moon-linear" : "solar:sun-linear";
+  const hoverModeIcon = isDarkMode ? "solar:sun-linear" : "solar:moon-linear";
+
+  const cycleThemeHoverIcon = useCallback((showOpposite: boolean) => {
+    if (isThemeIconDebouncing.current) return;
+    isThemeIconDebouncing.current = true;
+    setShowOppositeThemeIcon(showOpposite);
+    setTimeout(() => {
+      isThemeIconDebouncing.current = false;
+    }, 500);
+  }, []);
+
+  const sampleLessons = [
+    {
+      language: "Python",
+      level: "Beginner",
+      color: "bg-[#557355]/50",
+      colorLight: "bg-[#afebae]/30",
+      title: "Build a Task Prioritizer",
+      description:
+        "Practice list processing and conditionals by sorting tasks based on urgency and due date.",
+      challenge:
+        "Write a function that accepts tasks and returns only the top 3 tasks sorted by priority score.",
+      likes: "1.2k",
+      forks: "340",
+      codeLanguage: "python",
+      snippet: `def score(task):
+    urgency = task.get("urgency", 0)
+    days_left = task.get("days_left", 7)
+    penalty = max(0, 7 - days_left)
+    return urgency * 10 + penalty
+
+def top_tasks(tasks):
+    ranked = sorted(tasks, key=score, reverse=True)
+    top_three = ranked[:3]
+    return top_three`,
+    },
+    {
+      language: "Java",
+      level: "Beginner",
+      color: "bg-[#566275]/50",
+      colorLight: "bg-[#bdbbfc]/30",
+      title: "Filter Invalid Transactions",
+      description:
+        "Use loops and validation checks to clean a list of transactions before further processing.",
+      challenge:
+        "Implement a method that returns transactions where amount > 0 and status is APPROVED.",
+      likes: "980",
+      forks: "210",
+      codeLanguage: "java",
+      snippet: `public static List<Transaction> filterValid(List<Transaction> txs) {
+    List<Transaction> result = new ArrayList<>();
+    for (Transaction tx : txs) {
+        boolean positiveAmount = tx.amount() > 0;
+        boolean approved = "APPROVED".equals(tx.status());
+        if (positiveAmount && approved) {
+            result.add(tx);
+        }
+    }
+    return result;
+}`,
+    },
+    {
+      language: "C++",
+      level: "Beginner",
+      color: "bg-[#785956]/50",
+      colorLight: "bg-[#fcc1bb]/30",
+      title: "Track Longest Streak",
+      description:
+        "Strengthen array traversal skills by finding the longest consecutive streak in user activity data.",
+      challenge:
+        "Given a vector of daily activity values, return the length of the longest non-decreasing streak.",
+      likes: "760",
+      forks: "180",
+      codeLanguage: "cpp",
+      snippet: `int longestStreak(const vector<int>& a) {
+    if (a.empty()) return 0;
+    int best = 1;
+    int cur = 1;
+    for (size_t i = 1; i < a.size(); i++) {
+        if (a[i] >= a[i - 1]) {
+            cur++;
+            best = max(best, cur);
+        } else {
+            cur = 1;
+        }
+    }
+    return best;
+}`,
+    },
+  ];
 
   const features = [
     { text: "Learn to code", id: "learn", color: "text-pink-400" },
@@ -364,8 +480,8 @@ export default function LandingPage() {
   }, []);
 
   return (
-    <div ref={containerRef} className="relative min-h-[300vh] overflow-x-hidden bg-white pt-14">
-      <div className="relative inset-0 z-0 w-[calc(100%-2rem)] h-auto aspect-square sm:h-[calc(100vh-2rem-3.5rem)] rounded-3xl overflow-hidden border border-gray-200 m-[1rem]">
+    <div ref={containerRef} className="relative min-h-[300vh] overflow-x-hidden bg-backdrop text-primary-text pt-14">
+      <div className="relative inset-0 z-0 w-[calc(100%-2rem)] h-auto aspect-square sm:h-[calc(100vh-2rem-3.5rem)] rounded-3xl overflow-hidden border border-theme-border m-[1rem]">
         <div className="absolute inset-0 z-10 flex items-center justify-center pointer-events-none">
           <section className="relative w-full h-full z-10 min-h-0 sm:min-h-screen flex flex-col items-center justify-center px-2 sm:px-4 py-2 sm:py-4">
           <motion.div
@@ -416,43 +532,57 @@ export default function LandingPage() {
         />
       </div>
 
-      {/* <motion.div
-        className="fixed z-50 pointer-events-none"
-        animate={{
-          x: cursorPosition.x,
-          y: cursorPosition.y,
-        }}
-        transition={{
-          type: "spring",
-          damping: 20,
-          stiffness: 100,
-        }}
-        style={{
-          width: "40px",
-          height: "40px",
-        }}
-      >
-        <Image
-          src="/cursor.png"
-          alt="Cursor"
-          width={40}
-          height={40}
-          className="drop-shadow-lg"
-        />
-      </motion.div> */}
-
-      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4">
-        <div className="flex items-center">
-          <img src="/logo.png" alt="Logo" className="w-10 h-10 rounded-full" />
+      <header className="fixed top-0 left-0 right-0 z-40 flex items-center justify-between p-4 mx-1">
+        <div className="flex items-center gap-4">
+          <img src="/logo.png" alt="Logo" className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] w-10 h-10 rounded-3xl" />
+          <button
+            type="button"
+            onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
+            onMouseEnter={() => cycleThemeHoverIcon(true)}
+            onMouseLeave={() => cycleThemeHoverIcon(false)}
+            aria-label={`Switch to ${isDarkMode ? "light" : "dark"} mode`}
+            className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] group cursor-pointer px-2.5 py-2.5 rounded-full bg-invert-20 border border-base-10 text-primary-text backdrop-blur-lg hover:bg-primary-text hover:text-container-primary transition-colors"
+          >
+            <div className="relative w-5 h-5">
+              <motion.div
+                className="absolute inset-0"
+                animate={{
+                  opacity: showOppositeThemeIcon ? 0 : 1,
+                  y: showOppositeThemeIcon ? -4 : 0,
+                  scale: showOppositeThemeIcon ? 0.92 : 1,
+                }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <Icon
+                  icon={currentModeIcon}
+                  className="w-5 h-5 text-text-60 group-hover:text-container-primary transition-colors"
+                />
+              </motion.div>
+              <motion.div
+                className="absolute inset-0"
+                animate={{
+                  opacity: showOppositeThemeIcon ? 1 : 0,
+                  y: showOppositeThemeIcon ? 0 : 4,
+                  scale: showOppositeThemeIcon ? 1 : 0.92,
+                }}
+                transition={{ duration: 0.2, ease: "easeOut" }}
+              >
+                <Icon
+                  icon={hoverModeIcon}
+                  className="w-5 h-5 text-text-60 group-hover:text-container-primary transition-colors"
+                />
+              </motion.div>
+            </div>
+          </button>
         </div>
         <div className="flex items-center gap-4">
-          <button className="bg-white/0 shadow-[inset_0_0_50px_0_rgba(244,244,244,0.2)] backdrop-blur-lg border border-white/30 rounded-3xl px-6 py-2 max-w-2xl mx-auto text-black">
+          <button className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] bg-invert-20 backdrop-blur-lg border border-base-10 rounded-3xl px-6 py-2.5 max-w-2xl mx-auto text-text-primary">
             Features
           </button>
-          <button className="bg-white/0 shadow-[inset_0_0_50px_0_rgba(244,244,244,0.2)] backdrop-blur-lg border border-white/30 rounded-3xl px-6 py-2 max-w-2xl mx-auto text-black">
+          <button className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] bg-invert-20 backdrop-blur-lg border border-base-10 rounded-3xl px-6 py-2.5 max-w-2xl mx-auto text-text-primary">
             Pricing
           </button>
-          <Link href="/chat" className="cursor-pointer px-5 pr-4 py-2 rounded-full bg-black text-white hover:bg-gray-800 transition-all flex items-center gap-2">
+          <Link href="/chat" className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] cursor-pointer px-5 pr-4 py-2.5 rounded-full bg-primary-text text-background hover:bg-base-10 transition-all flex items-center gap-2">
           Chat
           <svg
                   xmlns="http://www.w3.org/2000/svg"
@@ -471,6 +601,91 @@ export default function LandingPage() {
         </div>
       </header>
 
+      <section className="relative z-10 flex flex-col items-center justify-center py-10 px-4">
+      <p>Not sure where to start? Try one of our beginner lessons:</p>
+        <div className="w-full max-w-7xl grid grid-cols-1 md:grid-cols-3 gap-5">
+          {sampleLessons.map((lesson) => (
+            <div
+              key={lesson.language}
+              className={`p-px ${lessonCardBorderRainbow.outerBorderRadiusClass} ${lessonCardBorderRainbow.gradientClass}`}
+            >
+              <article
+                className={`relative p-5 h-full flex flex-col bg-backdrop`}
+                style={lessonCardBorderRainbow.innerBorderRadiusStyle}
+              >
+                <div className="mb-4 flex items-center gap-2">
+                  <span className="text-xs px-2 py-1 rounded-full bg-base-10 text-text-70">
+                    {lesson.language}
+                  </span>
+                  <span className="text-xs px-2 py-1 rounded-full bg-base-10 text-text-70">
+                    {lesson.level}
+                  </span>
+                </div>
+
+                <h3 className="text-xl font-semibold text-primary-text mb-2">
+                  {lesson.title}
+                </h3>
+                <p className="text-sm text-text-70 mb-4">{lesson.description}</p>
+
+                <div className="mb-4 p-3 rounded-xl bg-base-5 border border-base-10">
+                  <p className="text-sm text-primary-text">
+                    <span className="font-semibold">Challenge: </span>
+                    {lesson.challenge}
+                  </p>
+                </div>
+
+                <div className="rounded-xl w-full overflow-hidden mb-16">
+                  <SyntaxHighlighter
+                    language={lesson.codeLanguage}
+                    style={vscDarkPlus}
+                    wrapLongLines={true}
+                    codeTagProps={{
+                      style: {
+                        fontFamily:
+                          "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
+                      },
+                    }}
+                    customStyle={{
+                      width: "100%",
+                      margin: 0,
+                      padding: "0.75rem 1rem",
+                      background: "#1E1E1E",
+                      fontSize: "13px",
+                      overflowX: "hidden",
+                    }}
+                  >
+                    {lesson.snippet}
+                  </SyntaxHighlighter>
+                </div>
+
+                <button
+                  type="button"
+                  className="absolute left-5 right-5 bottom-5 cursor-pointer px-4 py-3 rounded-full bg-primary-text text-secondary-text text-sm font-medium hover:opacity-90 transition-opacity"
+                >
+                  Try this lesson
+                </button>
+                
+                {/* Comment out heart and fork count for now, implement later? */}  
+                {/* <div className="absolute right-5 bottom-5 flex items-center gap-3 px-3 py-2 rounded-full bg-base-10 border border-base-15 text-xs text-text-70">
+                  <span className="flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
+                      <path fill="currentColor" d="m12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5C2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3C19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54z" />
+                    </svg>
+                    {lesson.likes}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24">
+                      <path fill="currentColor" d="M7 3v7h10V3h2v7h2v4h-2v7h-2v-7H7v7H5v-7H3v-4h2V3zm0 9v2h10v-2z" />
+                    </svg>
+                    {lesson.forks}
+                  </span>
+                </div> */}
+              </article>
+            </div>
+          ))}
+        </div>
+      </section>
+
       <section className="relative z-10 flex items-start justify-center py-10 px-4">
         <div className="max-w-4xl w-full">
           {features.map((feature, index) => (
@@ -482,7 +697,7 @@ export default function LandingPage() {
                 className={`font-bold transition-all duration-500 ${
                   activeLineIndex === index
                     ? feature.color
-                    : "text-gray-300"
+                    : "text-text-30"
                 }`}
               >
                 {feature.text}
@@ -493,8 +708,8 @@ export default function LandingPage() {
       </section>
 
       <section className="relative  z-10 flex items-start justify-center mx-auto">
-        <div className="h-[1px] bg-gray-300 w-full absolute bottom-0 left-0 right-0"/>
-        <div className="h-[1px] bg-gray-300 w-full absolute top-0 left-0 right-0"/>
+        <div className="h-[1px] bg-base-20 w-full absolute bottom-0 left-0 right-0"/>
+        <div className="h-[1px] bg-base-20 w-full absolute top-0 left-0 right-0"/>
         <div className="max-w-7xl ">
           <ScrollingFeatures />
         </div>
@@ -512,7 +727,7 @@ export default function LandingPage() {
             width="100%"
             height="100"
             fill="none"
-            className="opacity-10 text-black"
+            className="opacity-10 text-primary-text"
             viewBox="0 0 1657 316"
           >
             <path fill="url(#pattern0_1120_2)" d="M0 0h1657v316H0z"></path>
@@ -532,65 +747,72 @@ export default function LandingPage() {
         
         <div className="flex flex-col gap-4 mx-4 max-w-7xl">
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <BoxInView className="relative order-2 sm:order-0 border border-gray-100 bg-white flex flex-col justify-center items-center gap-4">
-              <div className="absolute top-0 left-0 right-0 mx-auto w-full h-full max-w-md border-x-[1px] border-gray-300">
+            <BoxInView className="relative order-2 sm:order-0 border border-theme-border bg-container-primary flex flex-col justify-center items-center gap-4">
+              <div className="absolute top-0 left-0 right-0 mx-auto w-full h-full max-w-md border-x-[1px] border-base-20">
               </div>
-              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
-              <div className="relatieve z-20 max-w-md text-center text-lg px-4 font-regular text-gray-400">
+              <span className="h-[1px] bg-base-20 w-full rounded-full"/>
+              <div className="relatieve z-20 max-w-md text-center text-lg px-4 font-regular text-text-60">
                 <p>Our AI understands how you think and builds a personalized learning path with interactive exercises that help you actually master coding concepts.</p>
               </div>
-              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
+              <span className="h-[1px] bg-base-20 w-full rounded-full"/>
             </BoxInView>
             <BoxInView>
-              <FluidImage
+              <img
                 src="https://i.ibb.co/XrTR0jxF/image.png"
                 alt="Image"
                 className="w-full h-full object-cover rounded-3xl"
-                fluidIntensity={0.0006}
-                cursorRadius={0.001}
+                width={500}
+                height={500}
               />
             </BoxInView>
           </div>
 
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
             <BoxInView>
-              <FluidImage
+              {/* <FluidImage
                 src="https://i.ibb.co/TMKQxGmG/image.png"
                 alt="Image"
                 className="w-full h-full object-cover rounded-3xl"
                 fluidIntensity={0.0006}
                 cursorRadius={0.001}
+              /> */}
+              <img
+                src="https://i.ibb.co/TMKQxGmG/image.png"
+                alt="Image"
+                className="w-full h-full object-cover rounded-3xl"
+                width={500}
+                height={500}
               />
             </BoxInView>
             <BoxInView>
-              <FluidImage
+              <img
                 src="https://i.ibb.co/d0vgBLdM/image.png"
                 alt="Image"
                 className="w-full h-full object-cover rounded-3xl"
-                fluidIntensity={0.0006}
-                cursorRadius={0.001}
+                width={500}
+                height={500}
               />
             </BoxInView>
           </div>
 
           <div className="w-full grid grid-cols-1 sm:grid-cols-2 gap-4">
             <BoxInView>
-              <FluidImage
+              <img
                 src="https://i.ibb.co/JWjw1qbq/image.png"
                 alt="Image"
                 className="w-full h-full object-cover rounded-3xl"
-                fluidIntensity={0.0006}
-                cursorRadius={0.001}
+                width={500}
+                height={500}
               />
             </BoxInView>
-            <BoxInView className="relative border order-first sm:order-none border-gray-100 bg-white flex flex-col justify-center items-center gap-4">
-              <div className="absolute top-0 left-0 right-0 mx-auto w-full h-full max-w-md border-x-[1px] border-gray-300">
+            <BoxInView className="relative border order-first sm:order-none border-theme-border bg-container-primary flex flex-col justify-center items-center gap-4">
+              <div className="absolute top-0 left-0 right-0 mx-auto w-full h-full max-w-md border-x-[1px] border-base-20">
               </div>
-              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
-              <div className="relatieve z-20 max-w-md text-center text-lg px-4 font-regular text-gray-400">
+              <span className="h-[1px] bg-base-20 w-full rounded-full"/>
+              <div className="relatieve z-20 max-w-md text-center text-lg px-4 font-regular text-text-60">
                 <p>Code, submit, and learn faster. Our AI analyzes your solutions in real time, tells you what’s right or wrong, and guides you toward cleaner, more efficient code.</p>
               </div>
-              <span className="h-[1px] bg-gray-300 w-full rounded-full"/>
+              <span className="h-[1px] bg-base-20 w-full rounded-full"/>
             </BoxInView>
           </div>
         </div>
@@ -605,6 +827,7 @@ export default function LandingPage() {
           height="100"
           fill="none"
           viewBox="0 0 795 195"
+          className={`${resolvedTheme === "dark" ? "invert" : ""}`}
         >
           <path fill="url(#pattern0_1104_6)" d="M0 0h795v195H0z"></path>
           <defs>
@@ -659,33 +882,33 @@ function Footer() {
 
   return (
     <footer ref={footerRef} className="relative z-10">
-      <div className="mx-4 relative bg-white border border-gray-200 rounded-3xl overflow-hidden mb-14 shadow-[0_0_70px_0_rgba(0,0,0,0.08)]">
+      <div className="mx-4 relative bg-container-primary border border-theme-border rounded-3xl overflow-hidden mb-14 shadow-[0_0_70px_0_rgba(0,0,0,0.08)]">
         <div className="relative z-10 px-8 md:px-12 pt-12 pb-8">
           <div className="flex flex-col lg:flex-row justify-between gap-12">
             <div className="max-w-md">
               <div className="flex items-center gap-2 mb-4">
                 <img src="/logo.png" alt="Logo" className="w-8 h-8 rounded-full" />
-                <span className="font-semibold text-xl text-gray-900">dontvibecode</span>
+                <span className="font-semibold text-xl text-primary-text">dontvibecode</span>
               </div>
-              <p className="text-gray-600 text-sm leading-relaxed mb-6">
+              <p className="text-text-70 text-sm leading-relaxed mb-6">
                 dontvibecode makes learning code simple, fun, and intuitive. Learn better, build faster, and level up skills that stay with you.              </p>
               <div className="flex items-center gap-4">
-                <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <a href="#" className="text-text-70 hover:text-primary-text transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
                   </svg>
                 </a>
-                <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <a href="#" className="text-text-70 hover:text-primary-text transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
                   </svg>
                 </a>
-                <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <a href="#" className="text-text-70 hover:text-primary-text transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
                   </svg>
                 </a>
-                <a href="#" className="text-gray-700 hover:text-gray-900 transition-colors">
+                <a href="#" className="text-text-70 hover:text-primary-text transition-colors">
                   <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
                   </svg>
@@ -694,11 +917,11 @@ function Footer() {
             </div>
             <div className="grid grid-cols-3 gap-8 lg:gap-16">
               <div>
-                <h3 className="font-semibold text-gray-900 mb-4">Product</h3>
+                <h3 className="font-semibold text-primary-text mb-4">Product</h3>
                 <ul className="space-y-3">
                   {productLinks.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-gray-600 hover:text-gray-900 text-sm transition-colors">
+                      <a href={link.href} className="text-text-70 hover:text-primary-text text-sm transition-colors">
                         {link.label}
                       </a>
                     </li>
@@ -706,11 +929,11 @@ function Footer() {
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-4">Resources</h3>
+                <h3 className="font-semibold text-primary-text mb-4">Resources</h3>
                 <ul className="space-y-3">
                   {resourceLinks.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-gray-600 hover:text-gray-900 text-sm transition-colors">
+                      <a href={link.href} className="text-text-70 hover:text-primary-text text-sm transition-colors">
                         {link.label}
                       </a>
                     </li>
@@ -718,11 +941,11 @@ function Footer() {
                 </ul>
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900 mb-4">Company</h3>
+                <h3 className="font-semibold text-primary-text mb-4">Company</h3>
                 <ul className="space-y-3">
                   {companyLinks.map((link) => (
                     <li key={link.label}>
-                      <a href={link.href} className="text-gray-600 hover:text-gray-900 text-sm transition-colors">
+                      <a href={link.href} className="text-text-70 hover:text-primary-text text-sm transition-colors">
                         {link.label}
                       </a>
                     </li>
@@ -732,12 +955,12 @@ function Footer() {
             </div>
           </div>
 
-          <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t border-gray-200">
-            <p className="text-gray-500 text-sm">© 2025 dontvibe. All rights reserved.</p>
+          <div className="flex flex-col md:flex-row justify-between items-center mt-12 pt-8 border-t border-theme-border">
+            <p className="text-text-60 text-sm">© 2025 dontvibe. All rights reserved.</p>
             <div className="flex items-center gap-6 mt-4 md:mt-0">
-              <a href="#" className="text-gray-500 hover:text-gray-700 text-sm underline transition-colors">Privacy Policy</a>
-              <a href="#" className="text-gray-500 hover:text-gray-700 text-sm underline transition-colors">Terms of Service</a>
-              <a href="#" className="text-gray-500 hover:text-gray-700 text-sm underline transition-colors">Cookies Settings</a>
+              <a href="#" className="text-text-60 hover:text-primary-text text-sm underline transition-colors">Privacy Policy</a>
+              <a href="#" className="text-text-60 hover:text-primary-text text-sm underline transition-colors">Terms of Service</a>
+              <a href="#" className="text-text-60 hover:text-primary-text text-sm underline transition-colors">Cookies Settings</a>
             </div>
           </div>
         </div>
@@ -756,7 +979,7 @@ function Footer() {
         >
           <path d="M38.2 17.2C17.6 19.8 11.1 27.3 9 51.3c-1.2 13.7-1.2 64.5-.1 85.8 1 17.8 2.2 21.2 9.3 27.3 7.5 6.4 11.4 7 44.8 7.1 32 0 35.4-.4 46.8-5.6 14.2-6.5 28.3-19 36-31.9 3.7-6.2 9.3-21.1 10.4-27.5.2-1.1 1.3 2.7 2.5 8.4 4.9 23.1 17.4 39.8 37.5 49.9 22.3 11.3 45.8 11.2 68.8-.1 12.1-5.9 23.9-17.7 30.1-29.9 2.4-4.9 4.7-8.8 5-8.8s.9 5 1.3 11c1.3 22.3 4.5 29 16.1 34.1 12.6 5.6 27 0 30.5-11.9.6-2 1.4-9.8 1.7-17.4.3-7.5 1-14.2 1.5-15 1.5-2.3 5.1 3.1 8.2 12.7 6 18.3 7.9 22.5 12.1 26.9 5.2 5.3 11.4 7.6 20.9 7.6 7.9 0 15.3-2.8 19.3-7.1 8.3-9.2 11.8-25.7 13.5-62.9.6-14.6 1.2-26.6 1.3-26.7.1-.2 1.9.6 4.1 1.8 3.1 1.6 5 1.9 9.4 1.4 4.7-.5 6-.3 8 1.3 2.3 1.8 2.5 2.7 2.4 9.4-.1 4-1.6 14.2-3.4 22.8-2.6 12.6-3.1 16.8-2.6 22.5 1.7 20.4 11.7 33.6 27.1 36 8.8 1.4 19.6-5.5 24-15.4.9-2 2-4.5 2.5-5.6 1.5-3.4 2.8-9.6 4.1-19.8 1-7.8 1-12.5 0-23-2.3-24.8-2.2-25 6.9-24 5.5.5 5.8.4 9.8-3.1 2.5-2.3 4.7-5.5 5.8-8.7l1.8-5 1.7 10.3c3.9 24.3 11.9 46.4 23.3 64.8 8.3 13.5 16.6 22.1 26.6 27.7 5.9 3.2 7.2 3.6 14 3.6 6.3 0 8.4-.4 13-2.8 7.5-3.8 12.1-7.7 18.8-15.9 8.4-10.4 9.9-12.8 16.2-25 9.2-17.8 14.5-34.2 18.1-55.6 2.5-15.1 2.3-32.9-.5-39.5-2.8-6.7-6.7-11.5-11.5-14.3-3.9-2.3-5.7-2.7-12.1-2.6-19.7.1-28.1 12-37.8 53.4-2 8.5-3.3 12.5-4.3 12.5s-2.2-4.9-4.5-18c-6.7-39-12.9-47.9-32.9-47.7-7.3 0-13.7 2.6-18.2 7.4-4.3 4.4-8.2 14.4-9 22.5l-.6 6.6-2.5-4.9c-4.9-9.7-7.9-12.2-18.7-15.6-6.3-2.1-9-2.3-27.5-2.2-17.7 0-21.7.3-29.3 2.2-13.4 3.4-17.4 5.8-22.2 13.8l-2.1 3.5-2.3-4.3c-3.6-6.6-8-10.6-13.8-12.8-6.7-2.5-13.9-2.6-19.5-.1-5.2 2.2-7.1 4.2-9.9 10.6-2 4.4-2.3 7.3-2.8 23.2-.3 10-.9 18.4-1.2 18.7-2.5 2.5-6.8-5-12.4-21.9-6.1-18.2-9.9-23.7-18.6-27.4-7.1-3.1-18.1-3.1-24.4-.1-9 4.4-14.7 15-16.9 31.6-.7 5.8-1.5 10.7-1.8 11s-1.8-2.1-3.2-5.2c-5.5-12-17.6-26.5-25.2-30.4-1.6-.8-3.6-1.9-4.4-2.5-.8-.7-4-2.2-7-3.5-26.3-11.1-56.2-7-77.6 10.5-11.9 9.8-19.2 21.2-24.1 38l-1.7 6-.9-8.5c-.9-8.7-5-24.3-7.1-27-.6-.8-1.8-2.8-2.6-4.5-2.2-4.4-14.9-16.5-21.2-20.3C111 24.4 91.7 19 67.5 17c-13.8-1.1-19.1-1.1-29.3.2m44.2 51.2c4.4 1.8 6.6 5.2 6.6 9.9 0 3.1-.7 4.6-3.4 7.3-3 3-4 3.4-8.8 3.4-6.3 0-8.2-1.4-9.2-7.2-.8-4.6.8-11.9 3-13.5 2.3-1.7 7.6-1.6 11.8.1M237.3 82c3.7 4.1 3.5 7.4-.7 11.6-4.1 4.1-8.4 4.5-13.3 1.1-5.8-3.8-5.9-10.7-.3-14.5 4.8-3.2 10.4-2.5 14.3 1.8M1001.3 18.4c-21.9 4.2-35.8 12.5-51.5 30.9-6.8 7.9-14.2 27.7-15.5 41.3l-.6 6.3-2-3.9c-3.6-7.3-8.4-9.3-23.2-9.4-7.8-.1-9-.3-9.3-1.9-.8-3.9 1.7-5 9.5-4.3 8.6.7 14.2-1 19-5.6 9.5-9.2 7.7-24.9-3.7-32.4-12.1-8.1-43.2-8.5-60-.8-11.6 5.3-18.2 15.7-20 31.3-.5 4.7-1 17-1 27.3 0 10.4-.4 18.8-.8 18.8-.5 0-1.5-1.9-2.2-4.3-1.6-5.6-5.2-11.6-9.6-16.1-3.6-3.7-3.6-3.7-1.7-5.9 1-1.2 3-4.6 4.4-7.6 2-4.6 2.4-7 2.4-15s-.4-10.3-2.2-13.7c-5-9.3-12-15-23.6-19.1-16.3-5.7-59.6-3.4-75.5 4-10 4.6-10.4 7.8-9.9 70.3.4 53 .5 54.7 5.8 58.5 1.6 1.1 6.8 2.9 11.6 4.1 12.4 2.9 56.6 3.8 66.4 1.4 19.8-5 29.4-15.8 33.5-37.6l1.8-9.5 1.2 7.3c4.8 28 14.7 36.7 44.6 39.8 15.4 1.5 32.9-4.3 39-13.2 3.3-4.7 5.4-13.5 4.4-18.7-1.7-9.3-11.4-14.7-23.8-13.3-7 .8-11.1-1-10.6-4.7.3-2.1.8-2.2 10.8-2.2 5.8 0 11.4-.1 12.5-.3 3.4-.4 9.4-7 10.9-12.1.8-2.6 1.6-4 1.9-3.1 1.6 5.1 3.7 12.4 3.7 13.2 0 .6 1.2 3.8 2.7 7.2 7.7 17.4 23 32.5 41.6 40.9 16.1 7.3 44.3 7.6 60.9.6 11.5-4.9 21-13 26.4-22.5 1.9-3.3 3.4-6.8 3.4-7.7 0-2.4 2.7-2.1 3.5.4.7 2.2 8.4 12 12.4 15.8 17.8 16.9 45.4 24.1 69.6 18.1 13.4-3.3 23.7-9.1 33.6-19 4.7-4.7 9.3-9.9 10.2-11.5 3.9-7.1 6.8-14 8.4-19.6.9-3.2 2-5.9 2.5-5.9.4 0 .8 5.3.8 11.7 0 18.1 1.4 28.7 4.4 33.8 3.1 5.2 9.9 9.9 16.9 11.6 7.1 1.7 49.6.5 58.7-1.6 20.7-4.9 38-19 48.3-39.5 1.5-3 2.7-6.4 2.8-7.5.1-3.7 1.7 1.8 3.4 11.8 3.6 21.2 12.5 31.5 30.2 35.2 17 3.6 33.3 2.4 43.7-3.3s15.3-16.2 12.7-27.6c-2.1-9.4-9.1-13.2-22.3-12.2-8.5.7-10.8-.4-10.8-5V120l11.8.2c11.1.3 11.9.2 15-2.2 5-3.7 7.6-9.3 7.6-16.5 0-7-1.9-11.3-6.6-14.7-2.9-2-4.7-2.3-15-2.7-12.5-.3-14-1-11.7-5.3 1-1.9 1.8-2 8.5-1.5 12.9 1 20.4-3.3 24.3-13.8 2.1-5.4 2.1-5.5.1-11.9-2.1-6.7-7.2-12.6-12.8-14.7-15.7-6-43.7-4.8-58.1 2.5-8.8 4.5-14.9 13.8-17.1 26.1-2.3 13-2.2 12.9-6.5 4.6-11.6-22-35-34.8-70.3-38.2-22.5-2.2-40.4.1-48.1 6.3-6.3 5-9.1 17.6-9.1 41.8 0 12.7-.8 14.3-2.9 5.8-2.8-11.5-13-28.5-20.8-34.6-1.9-1.5-4.6-3.7-6.1-4.9-4.4-3.7-16.2-9-25.2-11.3-44.6-11.4-91 21.9-91 65.2 0 4.3-.4 7.8-.9 7.8-.4 0-1.9-.8-3.2-1.8-7.7-5.9-18.8-7.3-34.9-4.3-15.9 2.9-19.4 2.8-23-.8-5.2-5.2-5.2-11.3.2-16.3 4.2-3.9 9.5-3.8 15.4.1 15.9 10.8 37.3 3.8 43.3-14.1 2.9-8.5 2.8-20.2-.2-28.1-4.3-11.2-13.6-19.2-26.6-22.9-8.7-2.5-27.2-3.2-36.8-1.4M783.2 64.7c4.1 4.6 1.7 10.3-4.2 10.3s-8.1-6.2-3.4-9.9c3.3-2.6 5.6-2.7 7.6-.4m496.5 13.8c5.7 2.4 7.3 4.3 7.3 8.8 0 9.5-14.8 14.6-18 6.1-1.8-4.6-1.2-12.2 1-14.4 2.4-2.4 4.8-2.5 9.7-.5m-135.7 1c3.6 1.8 5 4.3 5 8.5s-4.9 9-9.2 9c-10.1 0-14.6-12.1-6.5-17.1 3.8-2.3 6.8-2.4 10.7-.4M784.1 125c1.3.7 1.9 2.1 1.9 4.5 0 3.7-2 5.5-6.2 5.5-3.5 0-6-2.3-6-5.4 0-4.6 5.6-7.1 10.3-4.6M686 32.9c-8.5 2.7-13.1 6.6-16.9 14.1-5.5 10.8-6.6 20.5-6.6 59.5 0 30.8.2 35.8 1.8 41.4 4.7 16.4 18.6 26.8 32.5 24.1 12.8-2.4 19.7-9.6 22.7-23.9 3.7-17.6 4.1-58.6.8-85.1-2-16.8-5.3-22.9-14.6-27.6-5.5-2.8-15.1-4-19.7-2.5"></path>
         </svg>
-        <div className="absolute bottom-0 top-0 left-0 right-0 bg-gradient-to-b from-transparent to-white"></div>
+        <div className="absolute bottom-0 top-0 left-0 right-0 bg-gradient-to-b from-transparent to-background"></div>
       </motion.div>
     </footer>
   );
