@@ -76,14 +76,14 @@ const transformPreferencesToCamelCase = (prefs: any): UserPreferences | undefine
     accentColor: prefs.accent_color,
     language: prefs.language,
     profileImage: prefs.profile_image,
-    emailNotifications: prefs.email_notifications,
-    pushNotifications: prefs.push_notifications,
-    inAppNotifications: prefs.in_app_notifications,
+    email_notifications: prefs.email_notifications,
+    push_notifications: prefs.push_notifications,
+    in_app_notifications: prefs.in_app_notifications,
     profileVisible: prefs.profile_visible,
     shareData: prefs.share_data,
     fontSize: prefs.font_size,
     compactMode: prefs.compact_mode,
-    tabSize: prefs.tab_size,
+    tab_size: prefs.tab_size,
   };
 };
 
@@ -97,14 +97,14 @@ const transformPreferencesToSnakeCase = (prefs: UserPreferences | undefined): an
     accent_color: prefs.accentColor,
     language: prefs.language,
     profile_image: prefs.profileImage,
-    email_notifications: prefs.emailNotifications,
-    push_notifications: prefs.pushNotifications,
-    in_app_notifications: prefs.inAppNotifications,
+    email_notifications: prefs.email_notifications,
+    push_notifications: prefs.push_notifications,
+    in_app_notifications: prefs.in_app_notifications,
     profile_visible: prefs.profileVisible,
     share_data: prefs.shareData,
     font_size: prefs.fontSize,
     compact_mode: prefs.compactMode,
-    tab_size: prefs.tabSize,
+    tab_size: prefs.tab_size,
   };
 };
 

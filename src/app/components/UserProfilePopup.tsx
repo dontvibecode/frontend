@@ -117,10 +117,14 @@ export default function UserProfilePopup({
       }
 
       // Step 1: Get signed URL from backend
-      const { upload_url, public_url } = await uploadAPI.getProfileImageUploadUrl(
+      const uploadUrlResponse = await uploadAPI.getProfileImageUploadUrl(
         file.type,
         idToken
       );
+      if (!uploadUrlResponse) {
+        throw new Error("Failed to get upload URL");
+      }
+      const { upload_url, public_url } = uploadUrlResponse;
 
       // Step 2: Upload directly to GCS
       await uploadAPI.uploadToGCS(upload_url, file);
