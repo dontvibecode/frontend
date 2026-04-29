@@ -1650,7 +1650,7 @@ export default function ChatPage() {
                   <span className="text-xs font-bold text-currentColor">
                     {tokenData
                       ? (
-                          tokenData.token_limit - tokenData.token_used
+                          (tokenData?.token_limit ?? 0) - (tokenData?.token_used ?? 0)
                         ).toLocaleString()
                       : 0}
                   </span>
@@ -1814,7 +1814,7 @@ export default function ChatPage() {
               <div className="flex items-center gap-2">
                 {user?.preferences?.profileImage ? (
                   <img
-                    src={user.preferences.profileImage}
+                    src={user?.preferences?.profileImage ?? ""}
                     alt={session?.user?.name || "User"}
                     className="w-8 h-8 rounded-full"
                   />
