@@ -801,9 +801,9 @@ export default function ChatPage() {
       );
 
       if (
-        response.json &&
-        response.json.exercises &&
-        response.json.exercises.length > 0
+        response?.json &&
+        response?.json?.exercises &&
+        response?.json?.exercises?.length > 0
       ) {
         setSelectedLesson({
           originalMessage: currentMessage,
@@ -813,13 +813,13 @@ export default function ChatPage() {
 
       console.log({ response });
 
-      if (conversationId === null && response.conversation) {
-        setConversationId(Number(response.conversation));
-        console.log("Covnersation ID set to:", response.conversation);
+      if (conversationId === null && response?.conversation) {
+        setConversationId(Number(response?.conversation));
+        console.log("Covnersation ID set to:", response?.conversation);
       }
 
       const messagesData = await api.conversation.getConversationMessages(
-        response.conversation,
+        response?.conversation ?? 0,
         (session?.user as any)?.idToken,
       );
 
@@ -1845,7 +1845,7 @@ export default function ChatPage() {
             userPrompt={selectedLesson.originalMessage}
             lessonExpanded={lessonExpanded}
             abilityLevel={difficultyLevels[difficultyIndex]}
-            tabSize={user?.preferences?.tabSize ?? 2}
+            tabSize={user?.preferences?.tab_size ?? 2}
             initialExpandedLesson={lessonExpanded}
             onBookmarkChange={handleBookmarkChange}
           />
