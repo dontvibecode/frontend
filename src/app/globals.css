@@ -39,6 +39,8 @@
   --gradient-transparent-from: rgba(255, 255, 255, 0);
   --gradient-transparent-to: rgba(255, 255, 255, 1);
   --secondary-text: #ffffff;
+  --neutral-10: var(--base-10);
+  --_gradient-diagonal-line: transparent 0 4px, var(--base-20) 7px 4px;
 }
 
 /* Class-based dark mode (controlled by ThemeProvider) */
@@ -81,6 +83,8 @@
   --secondary-text: #171717;
   --gradient-transparent-from: rgba(0, 0, 0, 0);
   --gradient-transparent-to: rgba(0, 0, 0, 1);
+  --neutral-10: var(--base-10);
+  --_gradient-diagonal-line: transparent 0 4px, var(--base-20) 7px 7px;
 }
 
 @theme inline {

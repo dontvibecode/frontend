@@ -248,7 +248,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
       </div>
       <p className="text-primary-text font-medium text-lg mb-4">{currentExercise.text || 'Exercise ' + (index + 1)}</p>
       <div className="bg-[#2D2D2D] px-4 py-2 rounded-t-lg">
-        <span className="text-text-70 text-sm">{currentExercise.filename}</span>
+        <span className="text-white/80 text-sm">{currentExercise.filename}</span>
       </div>
       {data.exercises && data.exercises.length > 1 && (
         <div className="bg-[#252526] flex items-center overflow-x-auto border-b border-[#1E1E1E]">

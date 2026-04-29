@@ -188,7 +188,7 @@ export default function LoginModal({ isOpen, onClose, canClose }: LoginModalProp
       </div>
 
       {/* Footer Links */}
-      <div className="mt-8 text-center">
+      {/* <div className="mt-8 text-center">
         <div className="text-xs text-text-60 space-x-3">
           <Link href="/terms" className="underline hover:text-primary-text transition-colors">
             Terms of Use
@@ -198,7 +198,7 @@ export default function LoginModal({ isOpen, onClose, canClose }: LoginModalProp
             Privacy Policy
           </Link>
         </div>
-      </div>
+      </div> */}
     </ModalTemplate>
   );
 }

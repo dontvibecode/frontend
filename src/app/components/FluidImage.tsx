@@ -4,11 +4,13 @@ import React, { useEffect, useRef, useCallback } from "react";
 
 interface FluidImageProps {
   src: string;
+  videoSrc?: string;
   alt?: string;
   className?: string;
   fluidIntensity?: number;
   cursorRadius?: number;
-  isStatic?: boolean; 
+  isStatic?: boolean;
+  videoPlaybackRate?: number;
 }
 
 // Shader sources
@@ -230,16 +232,18 @@ const displayVertex = `
 
 export default function FluidImage({
   src,
+  videoSrc,
   alt = "",
   className = "",
   fluidIntensity = 0.0003,
   cursorRadius = 0.0003,
   isStatic = false,
+  videoPlaybackRate = 1,
 }: FluidImageProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const glRef = useRef<WebGLRenderingContext | null>(null);
   const animationRef = useRef<number>(0);
-  const imageLoadedRef = useRef(false);
+  const sourceLoadedRef = useRef(false);
   const lastMouseRef = useRef({ x: 0, y: 0, isInit: false });
   const splatsRef = useRef<Array<{ x: number; y: number; dx: number; dy: number }>>([]);
 
@@ -407,20 +411,46 @@ export default function FluidImage({
     const divergenceFBO = createFBO(gl, simRes, simRes, gl.RGBA, gl.RGBA, texType, gl.NEAREST);
     const curlFBO = createFBO(gl, simRes, simRes, gl.RGBA, gl.RGBA, texType, gl.NEAREST);
 
-    // Load image texture
-    const imageTexture = gl.createTexture();
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-    image.onload = () => {
-      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-      gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-      gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
-      imageLoadedRef.current = true;
-    };
-    image.src = src;
+    // Load media texture (image or video)
+    const mediaTexture = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, mediaTexture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    const isVideo = Boolean(videoSrc);
+    let video: HTMLVideoElement | null = null;
+    let image: HTMLImageElement | null = null;
+
+    if (isVideo) {
+      video = document.createElement("video");
+      video.src = videoSrc as string;
+      video.crossOrigin = "anonymous";
+      video.muted = true;
+      video.loop = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.preload = "auto";
+      video.onloadeddata = () => {
+        if (!video || !video.videoWidth || !video.videoHeight) return;
+        video.playbackRate = videoPlaybackRate;
+        gl.bindTexture(gl.TEXTURE_2D, mediaTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+        sourceLoadedRef.current = true;
+      };
+      video.play().catch(() => {
+        // Browser autoplay policies may block until user interaction.
+      });
+    } else {
+      image = new Image();
+      image.crossOrigin = "anonymous";
+      image.onload = () => {
+        gl.bindTexture(gl.TEXTURE_2D, mediaTexture);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image as HTMLImageElement);
+        sourceLoadedRef.current = true;
+      };
+      image.src = src;
+    }
 
     // Helper function to bind attributes
     const bindAttributes = (program: WebGLProgram) => {
@@ -461,7 +491,7 @@ export default function FluidImage({
 
     // Animation loop
     const update = () => {
-      if (!imageLoadedRef.current) {
+      if (!sourceLoadedRef.current) {
         animationRef.current = requestAnimationFrame(update);
         return;
       }
@@ -593,7 +623,11 @@ export default function FluidImage({
       gl.uniform1i(gl.getUniformLocation(displayProgram, "uFluid"), 1);
       gl.uniform1f(gl.getUniformLocation(displayProgram, "uFluidIntensity"), fluidIntensity);
       gl.activeTexture(gl.TEXTURE0);
-      gl.bindTexture(gl.TEXTURE_2D, imageTexture);
+      gl.bindTexture(gl.TEXTURE_2D, mediaTexture);
+      if (isVideo && video && video.readyState >= 2) {
+        video.playbackRate = videoPlaybackRate;
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, video);
+      }
       gl.activeTexture(gl.TEXTURE1);
       gl.bindTexture(gl.TEXTURE_2D, density.read.texture);
       gl.bindFramebuffer(gl.FRAMEBUFFER, null);
@@ -659,10 +693,36 @@ export default function FluidImage({
       canvas.removeEventListener("mouseleave", handleLeave);
       canvas.removeEventListener("touchend", handleLeave);
       cancelAnimationFrame(animationRef.current);
+      if (video) {
+        video.pause();
+        video.src = "";
+      }
     };
-  }, [src, fluidIntensity, cursorRadius, createProgram, createFBO, createDoubleFBO]);
+  }, [
+    src,
+    videoSrc,
+    videoPlaybackRate,
+    fluidIntensity,
+    cursorRadius,
+    createProgram,
+    createFBO,
+    createDoubleFBO,
+  ]);
 
   if (isStatic === true) {
+    if (videoSrc) {
+      return (
+        <video
+          src={videoSrc}
+          className={className}
+          aria-label={alt}
+          autoPlay
+          loop
+          muted
+          playsInline
+        />
+      );
+    }
     return (
       <img src={src} alt={alt} className={className} />
     );
