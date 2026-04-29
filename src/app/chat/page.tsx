@@ -922,6 +922,10 @@ export default function ChatPage() {
     setSearchQuery("");
   };
 
+  return(
+    <div className="flex h-screen bg-background">Coming soon</div>
+  )
+
   return (
     <div className="flex h-screen bg-background">
       {/* Login Modal */}
