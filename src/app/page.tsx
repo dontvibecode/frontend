@@ -1594,7 +1594,7 @@ function nextTopic(topics: Topic[]): Topic | null {
                 transition={{ duration: 0.35, ease: "easeOut" }}
                 className="inline-block text-sm"
               >
-                - <span className="font-semibold">Rome Rogers</span>, co-founder @ <span className="underline">foundersventures</span>
+                - <span className="font-semibold">Someone cool</span>, founder @ <span className="underline">coolcompany.com</span>
               </motion.span>
             </p>
           </div>
