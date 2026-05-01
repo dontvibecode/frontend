@@ -808,7 +808,7 @@ function AboutFullscreenModal({
               <h2 className="text-center text-3xl sm:text-4xl font-light text-primary-text mb-4">
                 Team
               </h2>
-              <div className="flex flex-row max-w-xl mx-auto">
+              {/* <div className="flex flex-row max-w-xl mx-auto">
                 <div className="text-center font-light flex-1 flex flex-col items-center justify-center gap-2">
                   <div className="h-16 w-16 rounded-full bg-container-secondary">
                   </div>
@@ -823,7 +823,7 @@ function AboutFullscreenModal({
                   <p className="text-base-30">Co-founder</p>
                   <p>A<br/>guy</p>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
         </motion.div>
@@ -1610,7 +1610,7 @@ function nextTopic(topics: Topic[]): Topic | null {
           //   backgroundSize: "cover",
           //   backgroundPosition: "center",
           // }}
-        >Not sure where to start? Try one of our beginner lessons:</p>
+        >Not sure where to start? Try one of our beginner lessons completely free of compute cost:</p>
         <div className="md:hidden w-full max-w-5xl">
           <div
             className="flex w-full gap-1 sm:gap-2 mb-4 p-0.5 sm:p-1 rounded-2xl bg-base-5 border border-base-10"
