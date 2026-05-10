@@ -32,7 +32,7 @@ export default function UpgradeModal({
           className="fixed inset-0 z-50 bg-background scrollbar-hide overflow-y-auto"
         >
           {/* Header with back button */}
-          <div className="sticky top-0 z-10 p-4">
+          <div className="sticky top-0 z-20 p-4 border-b border-base-10">
             <button
               onClick={onClose}
               className="p-2 hover:bg-base-10 rounded-lg transition-colors"
@@ -43,8 +43,7 @@ export default function UpgradeModal({
 
           {/* Content */}
           <div className="relative">
-            <div className="h-[1px] bg-base-10 w-full absolute top-0 left-0 right-0"/>
-            <div className="pointer-events-none max-w-7xl h-screen fixed top-0 left-0 right-0 mx-auto border-l border-r border-theme-border" aria-hidden />
+            <div className="pointer-events-none max-w-6xl h-screen fixed top-0 left-0 right-0 mx-auto border-l border-r border-theme-border" aria-hidden />
             <div className="relative z-10 max-w-6xl mx-auto px-6 pt-6 pb-1">
               {/* Title */}
               <img src="https://i.ibb.co/kgxtgpK6/image.png" alt="Logo" className={`h-12 mx-auto mb-8 ${resolvedTheme === 'dark' ? 'invert' : ''}`}/>

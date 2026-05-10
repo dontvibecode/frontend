@@ -9,7 +9,7 @@ import React, {
 } from "react";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { getGlassGradientBorderClass, getGlassGradientBorderClassInner } from "../components/glassGradientBorder";
+import { getGlassGradientBorderClass, getGlassGradientBorderClassInner, getGlassGradientBorderClassRainbow } from "../components/glassGradientBorder";
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
@@ -801,9 +801,9 @@ export default function ChatPage() {
       );
 
       if (
-        response.json &&
-        response.json.exercises &&
-        response.json.exercises.length > 0
+        response?.json &&
+        response?.json?.exercises &&
+        response?.json?.exercises?.length > 0
       ) {
         setSelectedLesson({
           originalMessage: currentMessage,
@@ -813,13 +813,13 @@ export default function ChatPage() {
 
       console.log({ response });
 
-      if (conversationId === null && response.conversation) {
-        setConversationId(Number(response.conversation));
-        console.log("Covnersation ID set to:", response.conversation);
+      if (conversationId === null && response?.conversation) {
+        setConversationId(Number(response?.conversation));
+        console.log("Covnersation ID set to:", response?.conversation);
       }
 
       const messagesData = await api.conversation.getConversationMessages(
-        response.conversation,
+        response?.conversation ?? 0,
         (session?.user as any)?.idToken,
       );
 
@@ -921,6 +921,10 @@ export default function ChatPage() {
     setSearchOpen(false);
     setSearchQuery("");
   };
+
+  return(
+    <div className="flex h-screen bg-background">Coming soon</div>
+  )
 
   return (
     <div className="flex h-screen bg-background">
@@ -1635,12 +1639,13 @@ export default function ChatPage() {
         {/* User Profile */}
         <div className="p-2 border-t border-theme-border">
           {(() => {
+            const tokenCardBorderRainbow = getGlassGradientBorderClassRainbow(resolvedTheme, "rounded-xl");
             const tokenCardBorder = getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl");
             return (
-              <div className={`w-full p-px mb-2 ${tokenCardBorder.outerBorderRadiusClass} ${tokenCardBorder.gradientClass}`}>
+              <div className={`w-full p-px mb-2 ${tokenCardBorderRainbow.outerBorderRadiusClass} ${tokenCardBorderRainbow.gradientClass}`}>
                 <div
                   className="p-3 bg-container-primary"
-                  style={tokenCardBorder.innerBorderRadiusStyle}
+                  style={tokenCardBorderRainbow.innerBorderRadiusStyle}
                 >
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
@@ -1648,7 +1653,7 @@ export default function ChatPage() {
                   <span className="text-xs font-bold text-currentColor">
                     {tokenData
                       ? (
-                          tokenData.token_limit - tokenData.token_used
+                          (tokenData?.token_limit ?? 0) - (tokenData?.token_used ?? 0)
                         ).toLocaleString()
                       : 0}
                   </span>
@@ -1812,7 +1817,7 @@ export default function ChatPage() {
               <div className="flex items-center gap-2">
                 {user?.preferences?.profileImage ? (
                   <img
-                    src={user.preferences.profileImage}
+                    src={user?.preferences?.profileImage ?? ""}
                     alt={session?.user?.name || "User"}
                     className="w-8 h-8 rounded-full"
                   />
@@ -1847,7 +1852,7 @@ export default function ChatPage() {
             userPrompt={selectedLesson.originalMessage}
             lessonExpanded={lessonExpanded}
             abilityLevel={difficultyLevels[difficultyIndex]}
-            tabSize={user?.preferences?.tabSize ?? 2}
+            tabSize={user?.preferences?.tab_size ?? 2}
             initialExpandedLesson={lessonExpanded}
             onBookmarkChange={handleBookmarkChange}
           />
