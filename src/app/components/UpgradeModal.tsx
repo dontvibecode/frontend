@@ -8,17 +8,21 @@ import { useTheme } from "./ThemeProvider";
 interface UpgradeModalProps {
   isOpen: boolean;
   onClose: () => void;
+  onDowngrade: () => void;
   onSelectPro: () => void;
   onSelectTokens: () => void;
-  currentPlan?: "free" | "pro";
+  subscriptionActive?: boolean | null;
+  membershipExpiresAt?: string | null;
 }
 
 export default function UpgradeModal({
   isOpen,
   onClose,
+  onDowngrade,
   onSelectPro,
   onSelectTokens,
-  currentPlan = "free",
+  subscriptionActive,
+  membershipExpiresAt,
 }: UpgradeModalProps) {
   const { resolvedTheme } = useTheme();
   return (
@@ -63,10 +67,11 @@ export default function UpgradeModal({
                   </div>
 
                   <button
-                    disabled={currentPlan === "free"}
+                    onClick={onDowngrade}
+                    disabled={!subscriptionActive}
                     className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full mb-6 disabled:opacity-50 cursor-pointer"
                   >
-                    {currentPlan === "free" ? "Current plan" : "Downgrade"}
+                    {membershipExpiresAt ? subscriptionActive ? "Downgrade" : `Pro membership valid until ${new Date(membershipExpiresAt).toLocaleDateString()}` : "Current plan"}
                   </button>
 
                   <div className="space-y-3 text-sm">
@@ -105,10 +110,9 @@ export default function UpgradeModal({
 
                   <button
                     onClick={onSelectPro}
-                    disabled={currentPlan === "pro"}
                     className="w-full py-3 px-4 bg-primary-text text-background font-medium rounded-full mb-6 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
                   >
-                    {currentPlan === "pro" ? "Current plan" : "Get Pro plan"}
+                    {membershipExpiresAt ? subscriptionActive ? "Current plan | Click to manage" : "Resume subscription" : "Get Pro plan"}
                   </button>
 
                   <p className="text-xs text-text-60 mb-4">Everything in Free, plus:</p>
@@ -154,6 +158,9 @@ export default function UpgradeModal({
                     <FeatureItem text="No commitment required" />
                   </div>
                 </div>
+                {/* <button>
+                  <h1>Change Payment Method</h1>
+                </button> */}
               </div>
             </div>
             <div className="h-[1px] bg-base-10 w-full absolute bottom-0 left-0 right-0"/>

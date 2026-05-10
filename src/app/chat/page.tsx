@@ -464,7 +464,7 @@ export default function ChatPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [paymentMode, setPaymentMode] = useState<"subscription" | "tokens">("subscription");
+  const [paymentMode, setPaymentMode] = useState<"subscription" | "tokens" | "cancellation" | "updateMethod">("subscription");
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
@@ -480,8 +480,8 @@ export default function ChatPage() {
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const showSubscriptionSuccessModal = false;
-  const showTokenPurchaseSuccessModal = false;
+  const [showSubscriptionSuccessModal, setShowSubscriptionSuccessModal] = useState(false);
+  const [showTokenPurchaseSuccessModal, setShowTokenPurchaseSuccessModal] = useState(false);
   const showPlusBadge = false;
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
   const isDebouncing = useRef(false);
@@ -952,17 +952,20 @@ export default function ChatPage() {
       <UpgradeModal
         isOpen={showUpgradeModal}
         onClose={() => setShowUpgradeModal(false)}
+        subscriptionActive={user?.subscriptionActive}
+        membershipExpiresAt={user?.membershipExpiresAt}
+        onDowngrade={() => {
+          setPaymentMode("cancellation");
+          setShowPaymentModal(true);
+        }}
         onSelectPro={() => {
-          setShowUpgradeModal(false);
           setPaymentMode("subscription");
           setShowPaymentModal(true);
         }}
         onSelectTokens={() => {
-          setShowUpgradeModal(false);
           setPaymentMode("tokens");
           setShowPaymentModal(true);
         }}
-        currentPlan={user?.membership}
       />
 
       <PaymentModal
@@ -970,11 +973,11 @@ export default function ChatPage() {
         onClose={() => setShowPaymentModal(false)}
         idToken={(session?.user as any)?.idToken}
         membership={user?.membership}
-        subscriptionActive={user?.subscriptionActive}
         userEmail={user?.email || ""}
         setUser={(user) => setUser(user)}
         setTokenData={setTokenData}
         initialMode={paymentMode}
+        subscriptionActive={user?.subscriptionActive}
       />
 
       {/* User Profile Popup */}

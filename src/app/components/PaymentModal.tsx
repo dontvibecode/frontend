@@ -21,11 +21,11 @@ interface PaymentModalProps {
   onClose: () => void;
   idToken: string;
   membership?: "free" | "pro";
-  subscriptionActive?: boolean | null;
   userEmail: string;
   setUser: (user: User) => void;
   setTokenData: (tokenData: TokenData | null) => void;
-  initialMode?: "subscription" | "tokens";
+  initialMode?: "subscription" | "tokens" | "cancellation" | "updateMethod";
+  subscriptionActive?: boolean | null;
 }
 
 export default function PaymentModal({
@@ -33,16 +33,18 @@ export default function PaymentModal({
   onClose,
   idToken,
   membership,
-  subscriptionActive,
   userEmail,
   setUser,
   setTokenData,
   initialMode = "subscription",
+  subscriptionActive,
 }: PaymentModalProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"subscription" | "tokens">(initialMode);
+  const [mode, setMode] = useState<"subscription" | "tokens" | "cancellation" | "updateMethod">(
+    initialMode,
+  );
   const [showUpdatePayment, setShowUpdatePayment] = useState(false);
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(
     null,
@@ -80,16 +82,19 @@ export default function PaymentModal({
       setSetupClientSecret(null);
       return;
     }
-    
+
     // Set mode from initialMode when modal opens
     setMode(initialMode);
+    console.log({mode})
+    console.log({loading})
+    console.log({error})
 
     const fetchClientSecret = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        if (mode === "subscription") {
+        if (mode === "subscription" || mode === "cancellation") {
           console.log("Creating subscription with idToken:", idToken);
           const result = await paymentAPI.createSubscription(idToken);
           if (result) {
@@ -167,43 +172,6 @@ export default function PaymentModal({
             className="fixed top-[10%] left-1/2 -translate-x-1/2 w-full max-w-2xl max-h-[90vh] z-50 overflow-y-auto"
           >
             <div className="bg-background rounded-2xl shadow-2xl border border-base-10 overflow-hidden">
-              {/* Header */}
-              <div className="p-6 pb-4 border-b border-base-10 flex">
-                <button
-                  className={`p-4 mr-8 rounded-xl cursor-pointer transition-colors
-                            ${
-                              mode === "subscription"
-                                ? "bg-gray-800 hover:bg-gray-700"
-                                : "hover:bg-gray-800/50"
-                            }`}
-                  onClick={() => setMode("subscription")}
-                >
-                  <h2 className="text-xl font-semibold text-primary-text">
-                    Subscribe to Pro
-                  </h2>
-                  <p className="mt-1 text-sm text-text-70 dark:text-text-30">
-                    Unlock 5M tokens/month and unlimited exercises
-                  </p>
-                </button>
-                <button
-                  className={`p-4 mr-8 rounded-xl cursor-pointer transition-colors
-                            ${
-                              mode === "tokens"
-                                ? "bg-gray-800 hover:bg-gray-700"
-                                : "hover:bg-gray-800/50"
-                            }`}
-                  onClick={() => setMode("tokens")}
-                >
-                  <h2 className="text-xl font-semibold text-primary-text">
-                    Buy Tokens
-                  </h2>
-                  <p className="mt-1 text-sm text-text-70 dark:text-text-30">
-                    Add 200,000 tokens to your balance
-                  </p>
-                </button>
-              </div>
-
-              {/* Body */}
               <div className="p-6">
                 {loading && (
                   <div className="flex flex-col gap-6 items-center justify-center py-12">
@@ -250,7 +218,7 @@ export default function PaymentModal({
                         disabled={setupLoading}
                         className="bg-zinc-700 p-4 w-full py-3 px-4 bg-transparent border border-base-10 text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                       >
-                        {setupLoading ? "Loading..." : "Payment Method"}
+                        {setupLoading ? "Loading..." : "Change Payment Method"}
                       </button>
                     )}
                     {showUpdatePayment && setupClientSecret && (
@@ -300,21 +268,38 @@ export default function PaymentModal({
                         },
                       }}
                     >
-                      {subscriptionActive ? (
-                        <CancellationForm
-                          onClose={onClose}
-                          idToken={idToken}
-                          refetchUser={refetchUser}
-                          refetchTokenData={refetchTokenData}
-                        />
-                      ) : (
-                        <ResumptionForm
-                          onClose={onClose}
-                          idToken={idToken}
-                          refetchUser={refetchUser}
-                          refetchTokenData={refetchTokenData}
-                        />
-                      )}
+                      <ResumptionForm
+                        onClose={onClose}
+                        idToken={idToken}
+                        refetchUser={refetchUser}
+                        refetchTokenData={refetchTokenData}
+                      />
+                    </Elements>
+                  )}
+                {mode === "cancellation" &&
+                  clientSecret &&
+                  !loading &&
+                  !error && (
+                    <Elements
+                      key={clientSecret}
+                      stripe={stripePromise}
+                      options={{
+                        clientSecret,
+                        appearance: {
+                          theme: "stripe",
+                          variables: {
+                            borderRadius: "10px",
+                            fontFamily: "inherit",
+                          },
+                        },
+                      }}
+                      >
+                      <CancellationForm
+                        onClose={onClose}
+                        idToken={idToken}
+                        refetchUser={refetchUser}
+                        refetchTokenData={refetchTokenData}
+                      />
                     </Elements>
                   )}
               </div>
@@ -424,23 +409,25 @@ export default function PaymentModal({
         )}
 
         {/* Actions */}
-        <div className="mt-6 space-y-3">
-          <button
-            type="submit"
-            disabled={!stripe || submitting}
-            className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            {submitting ? "Processing..." : "Pay now"}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            disabled={submitting}
-            className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
-          >
-            Cancel
-          </button>
-        </div>
+        {!loading && (
+          <div className="mt-6 space-y-3">
+            <button
+              type="submit"
+              disabled={!stripe || submitting}
+              className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {submitting ? "Processing..." : "Pay now"}
+            </button>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={submitting}
+              className="w-full py-3 px-4 bg-transparent text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </form>
     );
   }
@@ -642,7 +629,7 @@ export default function PaymentModal({
         <div className="mt-6 space-y-3">
           <button
             type="submit"
-            disabled={!stripe || submitting}
+            disabled={!stripe || submitting || subscriptionActive}
             className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? "Processing..." : "Resume Pro Subscription"}
@@ -708,7 +695,6 @@ export default function PaymentModal({
           setSubmitting(false);
         }
       }
-
     };
 
     if (success) {
