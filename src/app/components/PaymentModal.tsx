@@ -629,7 +629,7 @@ export default function PaymentModal({
         <div className="mt-6 space-y-3">
           <button
             type="submit"
-            disabled={!stripe || submitting || subscriptionActive}
+            disabled={!stripe || submitting || !!subscriptionActive}
             className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {submitting ? "Processing..." : "Resume Pro Subscription"}
