@@ -14,7 +14,7 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dontvibecode.uc
 const getAuthHeaders = (idToken?: string) => {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
-    "Access-Control-Request-Headers": "*",
+    // "Access-Control-Request-Headers": "*",
   };
 
   if (idToken) {
@@ -665,7 +665,7 @@ export const uploadAPI = {
       method: "PUT",
       headers: {
         "Content-Type": file.type,
-        "Access-Control-Allow-Origin": "*",
+        // "Access-Control-Allow-Origin": "*",
       },
       body: file,
     });
