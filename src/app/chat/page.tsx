@@ -515,7 +515,7 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSubscriptionSuccessModal, setShowSubscriptionSuccessModal] = useState(false);
   const [showTokenPurchaseSuccessModal, setShowTokenPurchaseSuccessModal] = useState(false);
-  const showPlusBadge = false;
+  const [showPlusBadge, setShowPlusBadge] = useState(false);
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
   const isDebouncing = useRef(false);
 
@@ -583,6 +583,11 @@ export default function ChatPage() {
       if (session?.user?.email && idToken) {
         try {
           const response = await api.user.getUser(session.user.email, idToken);
+          if (response.membership == "free") {
+            setShowPlusBadge(false);
+          } else {
+            setShowPlusBadge(true);
+          }
           console.log("user response: ", { response });
           setUser(response);
           // Fetch token usage
@@ -1866,7 +1871,7 @@ export default function ChatPage() {
                 <div className="flex flex-col justify-start items-start">
                   <span className="text-sm font-medium">{user?.username}</span>
                   {/* TODO: Implement show plus badge logic */}
-                  {(true || showPlusBadge) && (
+                  {(showPlusBadge) && (
                     <span className="mr-1 text-xs text-base-30 uppercase tracking-wide">
                       Pro
                     </span>
