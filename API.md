@@ -9,7 +9,6 @@ This document provides a comprehensive reference for all available API endpoints
 ## Table of Contents
 
 - [Messages](#messages)
-  - [Send Message](#send-message)
   - [Send Message (Streaming)](#send-message-streaming)
   - [Get Conversation Messages](#get-conversation-messages)
 - [Conversations](#conversations)
@@ -19,8 +18,6 @@ This document provides a comprehensive reference for all available API endpoints
 - [Users](#users)
   - [Get User](#get-user)
   - [Update User](#update-user)
-  - [Create User](#create-user)
-  - [Get User Preferences](#get-user-preferences)
 - [Exercises](#exercises)
   - [Get Exercises](#get-exercises)
   - [Submit Exercise](#submit-exercise)
@@ -46,41 +43,6 @@ This document provides a comprehensive reference for all available API endpoints
 
 ## Messages
 
-### Send Message
-
-Sends a user message to the AI to generate a response. Creates both the user and the response message data in the database.
-
-| Property | Value |
-|----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/message/` |
-| **Method** | `POST` |
-
-**Request Body**
-
-```typescript
-{
-  text: string;                                              // Content of user prompt
-  conversation: string;                                      // Conversation ID in string format
-  model_used: string;                                        // NOT IMPLEMENTED YET, current default value: "gemini-2.5-pro"
-  experienceLevel: "Beginner" | "Novice" | "Junior" | "Senior";
-}
-```
-
-**Response**
-
-```typescript
-{
-  id: number;
-  text: string;
-  conversation: number;
-  from_user: boolean;
-  model_used: string;
-  json: InstructorResponse | null;
-}
-```
-
----
-
 ### Send Message (Streaming)
 
 Sends a user message to the AI and streams back real-time progress updates including the AI's thought process. Unlike the non-streaming endpoint, this returns **multiple events over time** instead of a single response.
@@ -95,9 +57,8 @@ Sends a user message to the AI and streams back real-time progress updates inclu
 ```typescript
 {
   text: string;                                              // Content of user prompt
-  conversation: string;                                      // Conversation ID in string format
-  model_used: string;                                        // NOT IMPLEMENTED YET, current default value: "gemini-2.5-pro"
-  experienceLevel: "Beginner" | "Novice" | "Junior" | "Senior";
+  conversation: number | null;                               // Existing conversation, or null to create one
+  experience_level: "Beginner" | "Novice" | "Junior" | "Senior";
 }
 ```
 
@@ -212,11 +173,11 @@ Fetch a list of all messages in a given conversation.
 
 ### Get User Conversations
 
-Get a list of all conversations for a user with a given email.
+Get all conversations owned by the authenticated user.
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/conversations/<email>/` |
+| **Endpoint** | `BASE_URL/api/chat/conversations/` |
 | **Method** | `GET` |
 
 **Response**
@@ -289,11 +250,11 @@ Delete a conversation.
 
 ### Get User
 
-Fetch a user object along with its preferences.
+Fetch the authenticated user along with their preferences.
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/user/<email>/` |
+| **Endpoint** | `BASE_URL/api/chat/user/` |
 | **Method** | `GET` |
 
 **Response**
@@ -308,11 +269,11 @@ See [User](#user) type definition.
 
 ### Update User
 
-Edit any fields for the user or its preferences.
+Edit the authenticated user's username or preferences.
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/user/<email>/` |
+| **Endpoint** | `BASE_URL/api/chat/user/` |
 | **Method** | `PUT` |
 
 **Request Body**
@@ -320,9 +281,7 @@ Edit any fields for the user or its preferences.
 ```typescript
 {
   username?: string;                                         // New username for the user
-  email?: string;                                            // New email for the user
-  method?: string;                                           // Method for signing in. Currently only 'google' is available. Default = 'google'
-  preferences: {
+  preferences?: {
     theme?: 'light' | 'dark' | 'system';                     // Default = 'light'
     accentColor?: string;                                    // Default = 'blue'
     language?: string;                                       // Default = 'en'
@@ -345,54 +304,6 @@ User
 ```
 
 See [User](#user) type definition.
-
----
-
-### Create User
-
-Create a new user. The user's preferences data will also be initialised with default values.
-
-| Property | Value |
-|----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/user/` |
-| **Method** | `POST` |
-
-**Request Body**
-
-```typescript
-{
-  username: string;                                          // Username for the new user
-  email: string;                                             // Preferred email address for the new user. Use Gmail for Google users
-  method: 'google';                                          // Method used to sign in. Google is the only available option currently
-}
-```
-
-**Response**
-
-```typescript
-User
-```
-
-See [User](#user) type definition.
-
----
-
-### Get User Preferences
-
-Return the preferences data for a user.
-
-| Property | Value |
-|----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/user/preferences/<user_id>` |
-| **Method** | `GET` |
-
-**Response**
-
-```typescript
-UserPreferences
-```
-
-See [UserPreferences](#userpreferences) type definition.
 
 ---
 
@@ -558,11 +469,11 @@ Saves the current state of all the code files for an exercise.
 
 ### Get Bookmarked Exercises
 
-Fetches all bookmarked exercises for the given user.
+Fetches all bookmarked exercises for the authenticated user.
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/exercise/bookmark/<user_email>` |
+| **Endpoint** | `BASE_URL/api/chat/exercise/bookmarks/` |
 | **Method** | `GET` |
 
 **Response**
@@ -586,7 +497,7 @@ Toggles the `bookmarked` field of an exercise.
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/exercise/bookmark/<exercise_id>` |
+| **Endpoint** | `BASE_URL/api/chat/exercise/bookmark/<exercise_id>/` |
 | **Method** | `POST` |
 
 **Response**
@@ -610,7 +521,7 @@ Return the total number of exercises for a conversation, and also how many of th
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/exercise/aggregate/<conversation_id>` |
+| **Endpoint** | `BASE_URL/api/chat/exercise/aggregate/<conversation_id>/` |
 | **Method** | `GET` |
 
 **Response**
@@ -629,11 +540,11 @@ Return the total number of exercises for a conversation, and also how many of th
 
 ### Get Token Balance
 
-Return the token limit and tokens used for a user.
+Return the authenticated user's token limit and tokens used.
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/token/<email>` |
+| **Endpoint** | `BASE_URL/api/chat/token/` |
 | **Method** | `GET` |
 
 **Response**
@@ -649,11 +560,11 @@ Return the token limit and tokens used for a user.
 
 ### Get Token Usage History
 
-Return a list of TokenUsage objects for the user with the given email.
+Return the authenticated user's TokenUsage history.
 
 | Property | Value |
 |----------|-------|
-| **Endpoint** | `BASE_URL/api/chat/token/usage/<email>` |
+| **Endpoint** | `BASE_URL/api/chat/token/usage/` |
 | **Method** | `GET` |
 
 **Response**
@@ -674,7 +585,7 @@ Return a list of TokenUsage objects for the user with the given email.
 
 ### Get Profile Image Upload URL
 
-Generates a signed URL which can then be used to upload a file to Google Cloud Storage.
+Generates a signed URL which can then be used to upload a profile image to object storage.
 
 | Property | Value |
 |----------|-------|
@@ -704,7 +615,7 @@ Generates a signed URL which can then be used to upload a file to Google Cloud S
 
 ### Confirm Profile Image Upload
 
-Saves the `public_url` into the database, overwriting the old one if there is one. Similarly, the old `public_url` on GCS would also be deleted.
+Saves the `public_url` into the database, overwriting the old one if there is one. The previous object-storage image is deleted when it belongs to this app's bucket.
 
 | Property | Value |
 |----------|-------|

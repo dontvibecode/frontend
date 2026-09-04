@@ -13,6 +13,7 @@ import { getGlassGradientBorderClass, getGlassGradientBorderClassInner, getGlass
 import { useSession, signOut } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
+import { subscribeToTokenBalanceChange } from "@/lib/tokenBalanceEvents";
 import {
   Conversation,
   Exercise,
@@ -547,14 +548,8 @@ export default function ChatPage() {
           // Fetch both in parallel, with minimum 1 second delay
           const [conversationsData, bookmarkedExercisesData] =
             await Promise.all([
-              api.conversation.getConversations(
-                session?.user?.email as string,
-                idToken,
-              ),
-              api.conversation.getBookmarkedExercises(
-                session?.user?.email as string,
-                idToken,
-              ),
+              api.conversation.getConversations(idToken),
+              api.conversation.getBookmarkedExercises(idToken),
               new Promise((resolve) => setTimeout(resolve, 1000)), // minimum 1 second
             ]);
 
@@ -577,12 +572,24 @@ export default function ChatPage() {
     }
   }, [status, router, session]);
 
+  const sessionIdToken = (session?.user as any)?.idToken as string | undefined;
+
+  const refreshTokenBalance = useCallback(async () => {
+    if (!sessionIdToken) return;
+    try {
+      const tokenBalance = await api.user.getTokenBalance(sessionIdToken);
+      if (tokenBalance) setTokenData(tokenBalance);
+    } catch (error) {
+      console.error("Failed to refresh token balance:", error);
+    }
+  }, [sessionIdToken]);
+
   useEffect(() => {
     const loadUser = async () => {
       const idToken = (session?.user as any)?.idToken;
       if (session?.user?.email && idToken) {
         try {
-          const response = await api.user.getUser(session.user.email, idToken);
+          const response = await api.user.getUser(idToken);
           if (response.membership == "free") {
             setShowPlusBadge(false);
           } else {
@@ -590,37 +597,29 @@ export default function ChatPage() {
           }
           console.log("user response: ", { response });
           setUser(response);
-          // Fetch token usage
-          const tokenUsage = await api.user.getTokenUsage(
-            session.user.email,
-            idToken,
-          );
-          setTokenData(tokenUsage);
+          const tokenBalance = await api.user.getTokenBalance(idToken);
+          setTokenData(tokenBalance);
         } catch (error) {
-          const response = await api.user.createUser(
-            {
-              username: session.user.name || session.user.email?.split("@")[0],
-              email: session.user.email as string,
-              method: "google",
-            },
-            idToken,
-          );
-          setUser(response);
-          // Fetch token usage for new user
-          try {
-            const tokenUsage = await api.user.getTokenUsage(
-              session.user.email,
-              idToken,
-            );
-            setTokenData(tokenUsage);
-          } catch (e) {
-            console.error("Failed to fetch token usage:", e);
-          }
+          console.error("Failed to load authenticated user:", error);
         }
       }
     };
     loadUser();
   }, [session?.user?.email]);
+
+  // Refetch the balance whenever an action spends tokens, and when the tab is
+  // refocused (payments and membership changes land via Stripe webhooks).
+  useEffect(() => {
+    const unsubscribe = subscribeToTokenBalanceChange(() => {
+      refreshTokenBalance();
+    });
+    const handleFocus = () => refreshTokenBalance();
+    window.addEventListener("focus", handleFocus);
+    return () => {
+      unsubscribe();
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, [refreshTokenBalance]);
 
   // Global Ctrl+K listener for search
   useEffect(() => {
@@ -810,12 +809,8 @@ export default function ChatPage() {
       // Use streaming API
       const response = await api.message.sendMessageStreaming(
         {
-          created_at: new Date().toISOString(),
           text: currentMessage,
           conversation: conversationId,
-          from_user: true,
-          model_used: "placeholder",
-          json: {},
           experience_level: difficultyLevels[difficultyIndex],
         },
         (event) => {
@@ -925,23 +920,16 @@ export default function ChatPage() {
 
   const onEditUser = async (updatedUserData: {
     username?: string;
-    email?: string;
-    method?: string;
     preferences?: UserPreferences;
   }) => {
-    const email = user?.email || session?.user?.email;
     const idToken = (session?.user as any)?.idToken;
-    if (email && idToken) {
-      await api.user.updateUser(
-        session?.user?.email as string,
-        updatedUserData,
-        idToken,
-      );
+    if (idToken) {
+      await api.user.updateUser(updatedUserData, idToken);
 
       setShowUserProfilePopup(false);
 
       // Refresh user data
-      const response = await api.user.getUser(email, idToken);
+      const response = await api.user.getUser(idToken);
       setUser(response);
     }
   };
@@ -1017,7 +1005,6 @@ export default function ChatPage() {
         onClose={() => setShowPaymentModal(false)}
         idToken={(session?.user as any)?.idToken}
         membership={user?.membership}
-        userEmail={user?.email || ""}
         setUser={(user) => setUser(user)}
         setTokenData={setTokenData}
         initialMode={paymentMode}
@@ -1339,10 +1326,7 @@ export default function ChatPage() {
                                   const idToken = (session?.user as any)
                                     ?.idToken;
                                   const conversationsData =
-                                    await api.conversation.getConversations(
-                                      user.email,
-                                      idToken,
-                                    );
+                                    await api.conversation.getConversations(idToken);
                                   setConversations(conversationsData);
                                 }
                               }}
@@ -1366,10 +1350,7 @@ export default function ChatPage() {
                                   const idToken = (session?.user as any)
                                     ?.idToken;
                                   const conversationsData =
-                                    await api.conversation.getConversations(
-                                      user.email,
-                                      idToken,
-                                    );
+                                    await api.conversation.getConversations(idToken);
                                   setConversations(conversationsData);
                                 }
                               }}
@@ -1383,29 +1364,27 @@ export default function ChatPage() {
                           </motion.div>
                         </div>
                       </div>
-                      {conversation.exercises_count &&
+                      {(conversation.exercises_count ?? 0) > 0 &&
                         (conversation?.exercises_correct_count ?? 0) +
                           (conversation?.exercises_almost_count ?? 0) >
                           0 && (
                           <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
-                            {conversation.exercises_correct_count &&
-                              conversation.exercises_correct_count > 0 && (
-                                <div
-                                  className="bg-emerald-500 h-full"
-                                  style={{
-                                    width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%`,
-                                  }}
-                                />
-                              )}
-                            {conversation.exercises_almost_count &&
-                              conversation.exercises_almost_count > 0 && (
-                                <div
-                                  className="bg-amber-400 h-full"
-                                  style={{
-                                    width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%`,
-                                  }}
-                                />
-                              )}
+                            {(conversation.exercises_correct_count ?? 0) > 0 ? (
+                              <div
+                                className="bg-emerald-500 h-full"
+                                style={{
+                                  width: `${((conversation.exercises_correct_count ?? 0) / (conversation.exercises_count ?? 1)) * 100}%`,
+                                }}
+                              />
+                            ) : null}
+                            {(conversation.exercises_almost_count ?? 0) > 0 ? (
+                              <div
+                                className="bg-amber-400 h-full"
+                                style={{
+                                  width: `${((conversation.exercises_almost_count ?? 0) / (conversation.exercises_count ?? 1)) * 100}%`,
+                                }}
+                              />
+                            ) : null}
                           </div>
                         )}
                       <div className="flex flex-wrap gap-1">
@@ -1565,10 +1544,7 @@ export default function ChatPage() {
                                     const idToken = (session?.user as any)
                                       ?.idToken;
                                     const conversationsData =
-                                      await api.conversation.getConversations(
-                                        user.email,
-                                        idToken,
-                                      );
+                                      await api.conversation.getConversations(idToken);
                                     setConversations(conversationsData);
                                   }
                                 }}
@@ -1604,10 +1580,7 @@ export default function ChatPage() {
                                     const idToken = (session?.user as any)
                                       ?.idToken;
                                     const conversationsData =
-                                      await api.conversation.getConversations(
-                                        user.email,
-                                        idToken,
-                                      );
+                                      await api.conversation.getConversations(idToken);
                                     setConversations(conversationsData);
                                   }
                                 }}
@@ -1621,26 +1594,24 @@ export default function ChatPage() {
                             </motion.div>
                           </div>
                         </div>
-                        {conversation.exercises_count &&
+                        {(conversation.exercises_count ?? 0) > 0 &&
                           (conversation?.exercises_correct_count ?? 0) +
                             (conversation?.exercises_almost_count ?? 0) >
                             0 && (
                             <div className="w-full h-1.5 bg-gray-200 rounded-full overflow-hidden flex mb-2">
-                              {conversation.exercises_correct_count &&
-                              conversation.exercises_correct_count > 0 ? (
+                              {(conversation.exercises_correct_count ?? 0) > 0 ? (
                                 <div
                                   className="bg-emerald-500 h-full"
                                   style={{
-                                    width: `${(conversation.exercises_correct_count / conversation.exercises_count) * 100}%`,
+                                    width: `${((conversation.exercises_correct_count ?? 0) / (conversation.exercises_count ?? 1)) * 100}%`,
                                   }}
                                 />
                               ) : null}
-                              {conversation.exercises_almost_count &&
-                              conversation.exercises_almost_count > 0 ? (
+                              {(conversation.exercises_almost_count ?? 0) > 0 ? (
                                 <div
                                   className="bg-amber-400 h-full"
                                   style={{
-                                    width: `${(conversation.exercises_almost_count / conversation.exercises_count) * 100}%`,
+                                    width: `${((conversation.exercises_almost_count ?? 0) / (conversation.exercises_count ?? 1)) * 100}%`,
                                   }}
                                 />
                               ) : null}

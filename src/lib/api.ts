@@ -5,8 +5,9 @@
 
 import { InstructorResponse, MessageData, UserPreferences } from "@/types";
 import { triggerTokenWarning } from "@/app/components/TokenWarningModal";
+import { notifyTokenBalanceChanged } from "@/lib/tokenBalanceEvents";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://dontvibecode.uc.r.appspot.com/';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/';
 
 /**
  * Helper function to get auth headers
@@ -144,11 +145,11 @@ export interface StreamEvent {
 
 export const userAPI = {
   /**
-   * Get user by email
+   * Get the authenticated user
    */
-  getUser: async (email: string, idToken?: string): Promise<import("@/types").User> => {
+  getUser: async (idToken?: string): Promise<import("@/types").User> => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/user/${email}/`,
+      `${API_BASE_URL}api/chat/user/`,
       {
         method: "GET",
         headers: getAuthHeaders(idToken),
@@ -167,43 +168,11 @@ export const userAPI = {
   },
 
   /**
-   * Create a new user
-   */
-  createUser: async (
-    userData: {
-      username: string;
-      email: string;
-      method: string;
-    },
-    idToken?: string
-  ): Promise<import("@/types").User> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/user/`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(idToken),
-        body: JSON.stringify(userData),
-      }
-    );
-
-    if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to create user");
-      if (isTokenWarning) return null as any;
-    }
-
-    const data = await response.json();
-    return transformUserResponse(data);
-  },
-
-  /**
-   * Update user
+   * Update the authenticated user
    */
   updateUser: async (
-    email: string,
     updatedUserData: {
       username?: string;
-      email?: string;
-      method?: string;
       preferences?: UserPreferences;
     },
     idToken?: string
@@ -215,7 +184,7 @@ export const userAPI = {
     };
 
     const response = await fetch(
-      `${API_BASE_URL}api/chat/user/${email}/`,
+      `${API_BASE_URL}api/chat/user/`,
       {
         method: "PUT",
         headers: getAuthHeaders(idToken),
@@ -233,11 +202,11 @@ export const userAPI = {
   },
 
   /**
-   * Get user token usage
+   * Get the authenticated user's token balance
    */
-  getTokenUsage: async (email: string, idToken?: string): Promise<{ token_used: number; token_limit: number } | null> => {
+  getTokenBalance: async (idToken?: string): Promise<{ token_used: number; token_limit: number } | null> => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/token/${email}`,
+      `${API_BASE_URL}api/chat/token/`,
       {
         method: "GET",
         headers: getAuthHeaders(idToken),
@@ -259,11 +228,11 @@ export const userAPI = {
 
 export const conversationAPI = {
   /**
-   * Get all conversations for a user
+   * Get all conversations for the authenticated user
    */
-  getConversations: async (email: string, idToken?: string) => {
+  getConversations: async (idToken?: string) => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/conversations/${email}/`,
+      `${API_BASE_URL}api/chat/conversations/`,
       {
         method: "GET",
         headers: getAuthHeaders(idToken),
@@ -279,11 +248,11 @@ export const conversationAPI = {
   },
 
   /**
-   * Get all bookmarked exercises for a user
+   * Get all bookmarked exercises for the authenticated user
    */
-  getBookmarkedExercises: async (email: string, idToken?: string) => {
+  getBookmarkedExercises: async (idToken?: string) => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/exercise/bookmark/${email}`,
+      `${API_BASE_URL}api/chat/exercise/bookmarks/`,
       {
         method: "GET",
         headers: getAuthHeaders(idToken),
@@ -296,26 +265,6 @@ export const conversationAPI = {
     }
 
     return parseJsonWithWarningCheck(response) ?? [];
-  },
-
-  /**
-   * Get a specific conversation by ID
-   */
-  getConversationById: async (conversationId: string, idToken?: string) => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/conversations/${conversationId}/`,
-      {
-        method: "GET",
-        headers: getAuthHeaders(idToken),
-      }
-    );
-
-    if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get conversation");
-      if (isTokenWarning) return null;
-    }
-
-    return parseJsonWithWarningCheck(response);
   },
 
   /**
@@ -407,75 +356,12 @@ export const conversationAPI = {
 
 export const messageAPI = {
   /**
-   * Send a new message
-   */
-  sendMessage: async (
-    messageData: {
-      created_at: string;
-      text: string;
-      conversation: number | null;
-      from_user: boolean;
-      model_used: string;
-      json: Record<string, any>;
-      experience_level: string;
-    },
-    idToken?: string
-  ): Promise<MessageData | null> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/message/`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(idToken),
-        body: JSON.stringify(messageData),
-      }
-    );
-
-    if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to send message");
-      if (isTokenWarning) return null;
-    }
-
-    const responseJson = await parseJsonWithWarningCheck(response);
-    if (!responseJson) return null;
-    
-    const instructorData = responseJson.json ? 
-      {
-        lessonTitle: responseJson.json.lesson_title,
-        thought: responseJson.json.thought,
-        breakdown: responseJson.json.breakdown,
-        explanation: responseJson.json.explanation,
-        recommendedReadings: responseJson.json.recommendedReadings,
-        exercises: responseJson.json.exercises,
-        tags: responseJson.json.tags,
-      } as InstructorResponse
-    : {};
-
-    // For the sake of consistency, we use CamelCase in the frontend and snake_case in the backend
-    const message: MessageData = {
-      id: responseJson.id,
-      created_at: responseJson.created_at,
-      text: responseJson.text,
-      conversation: responseJson.conversation,
-      fromUser: responseJson.from_user,
-      modelUsed: responseJson.model_used,
-      isSending: responseJson.is_sending,
-      thought: responseJson.thought,
-      json: instructorData,
-    }
-    return message;
-  },
-
-  /**
    * Send a message with real-time streaming of AI thoughts
    */
   sendMessageStreaming: async (
     messageData: {
-      created_at: string;
       text: string;
       conversation: number | null;
-      from_user: boolean;
-      model_used: string;
-      json: Record<string, unknown>;
       experience_level: string;
     },
     onEvent: (event: StreamEvent) => void,
@@ -521,6 +407,7 @@ export const messageAPI = {
               // Check for token warning in stream data - return null silently
               if (event.data && typeof event.data === 'object' && (event.data as any).warning === 'Insufficient tokens') {
                 triggerTokenWarning();
+                notifyTokenBalanceChanged();
                 return null;
               }
               
@@ -564,6 +451,7 @@ export const messageAPI = {
       }
     }
 
+    notifyTokenBalanceChanged();
     return finalMessage;
   }, 
 };
@@ -634,7 +522,7 @@ export interface UploadUrlResponse {
 
 export const uploadAPI = {
   /**
-   * Get a signed URL for uploading a profile image to GCS
+   * Get a signed URL for uploading a profile image
    */
   getProfileImageUploadUrl: async (
     contentType: string,
@@ -658,20 +546,19 @@ export const uploadAPI = {
   },
 
   /**
-   * Upload a file directly to GCS using a signed URL
+   * Upload a file directly to object storage using a signed URL
    */
-  uploadToGCS: async (uploadUrl: string, file: File): Promise<void> => {
+  uploadToSignedUrl: async (uploadUrl: string, file: File): Promise<void> => {
     const response = await fetch(uploadUrl, {
       method: "PUT",
       headers: {
         "Content-Type": file.type,
-        // "Access-Control-Allow-Origin": "*",
       },
       body: file,
     });
 
     if (!response.ok) {
-      throw new Error(`Failed to upload to GCS: ${response.status}`);
+      throw new Error(`Failed to upload image: ${response.status}`);
     }
   },
 
@@ -739,7 +626,7 @@ export const exerciseAPI = {
     idToken?: string
   ): Promise<NewExerciseResponse | null> => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/exercise/new/${messageId}`,
+      `${API_BASE_URL}api/chat/exercise/new/${messageId}/`,
       {
         method: "POST",
         headers: getAuthHeaders(idToken),
@@ -752,7 +639,9 @@ export const exerciseAPI = {
       if (isTokenWarning) return null;
     }
 
-    return parseJsonWithWarningCheck(response);
+    const data = await parseJsonWithWarningCheck(response);
+    notifyTokenBalanceChanged();
+    return data;
   },
 
   /**
@@ -783,7 +672,9 @@ export const exerciseAPI = {
       if (isTokenWarning) return null;
     }
 
-    return parseJsonWithWarningCheck(response);
+    const data = await parseJsonWithWarningCheck(response);
+    notifyTokenBalanceChanged();
+    return data;
   },
 
   /**
@@ -819,7 +710,7 @@ export const exerciseAPI = {
     idToken?: string
   ): Promise<BookmarkExerciseResponse | null> => {
     const response = await fetch(
-      `${API_BASE_URL}api/chat/exercise/bookmark/${exerciseId}`,
+      `${API_BASE_URL}api/chat/exercise/bookmark/${exerciseId}/`,
       {
         method: "POST",
         headers: getAuthHeaders(idToken),

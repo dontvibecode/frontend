@@ -13,8 +13,6 @@ interface UserProfilePopupProps {
   user: User | null;
   onEditUser: (data: {
     username?: string;
-    email?: string;
-    method?: string;
     preferences?: UserPreferences;
   }) => Promise<void>;
 }
@@ -31,7 +29,6 @@ export default function UserProfilePopup({
   const [isSaving, setIsSaving] = useState(false);
 
   const [name, setName] = useState(user?.username ?? "");
-  const [email, setEmail] = useState(user?.email ?? "");
   const [accentColor, setAccentColor] = useState(
     user?.preferences?.accentColor ?? "000000"
   );
@@ -45,7 +42,6 @@ export default function UserProfilePopup({
 
   useEffect(() => {
     setName(user?.username ?? "");
-    setEmail(user?.email ?? "");
     if (user?.preferences?.theme) {
       setTheme(user.preferences.theme);
     }
@@ -63,7 +59,6 @@ export default function UserProfilePopup({
 
       await onEditUser({
         username: name,
-        email: email,
         preferences: {
           theme,
           accentColor,
@@ -126,8 +121,8 @@ export default function UserProfilePopup({
       }
       const { upload_url, public_url } = uploadUrlResponse;
 
-      // Step 2: Upload directly to GCS
-      await uploadAPI.uploadToGCS(upload_url, file);
+      // Step 2: Upload directly to object storage
+      await uploadAPI.uploadToSignedUrl(upload_url, file);
 
       // Step 3: Confirm upload and update user profile
       await uploadAPI.confirmProfileImageUpload(public_url, idToken);
@@ -170,7 +165,6 @@ export default function UserProfilePopup({
   const resetFields = () => {
     console.log("Resetting fields to user data");
     setName(user?.username ?? "");
-    setEmail(user?.email ?? "");
     if (user?.preferences?.theme) {
       setTheme(user.preferences.theme);
     }
@@ -250,9 +244,8 @@ export default function UserProfilePopup({
                     <label className="block text-sm font-medium text-text-70 mb-2">Email</label>
                     <input
                       type="email"
-                      value={email}
+                      value={user?.email ?? ""}
                       readOnly={true}
-                      onChange={(e) => setEmail(e.target.value)}
                       className="w-full px-3 py-2 border border-base-10 bg-base-10 font-light text-text-70 rounded-lg outline-none"
                       placeholder="Enter your email"
                     />

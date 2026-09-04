@@ -21,7 +21,6 @@ interface PaymentModalProps {
   onClose: () => void;
   idToken: string;
   membership?: "free" | "pro";
-  userEmail: string;
   setUser: (user: User) => void;
   setTokenData: (tokenData: TokenData | null) => void;
   initialMode?: "subscription" | "tokens" | "cancellation" | "updateMethod";
@@ -33,7 +32,6 @@ export default function PaymentModal({
   onClose,
   idToken,
   membership,
-  userEmail,
   setUser,
   setTokenData,
   initialMode = "subscription",
@@ -52,9 +50,9 @@ export default function PaymentModal({
   const [setupLoading, setSetupLoading] = useState(false);
 
   const refetchUser = async () => {
-    if (userEmail && idToken) {
+    if (idToken) {
       try {
-        const response = await api.user.getUser(userEmail, idToken);
+        const response = await api.user.getUser(idToken);
         console.log("refetch user response: ", { response });
         setUser(response);
       } catch (err) {
@@ -64,10 +62,10 @@ export default function PaymentModal({
   };
 
   const refetchTokenData = async () => {
-    if (userEmail && idToken) {
+    if (idToken) {
       try {
-        const tokenUsage = await api.user.getTokenUsage(userEmail, idToken);
-        setTokenData(tokenUsage);
+        const tokenBalance = await api.user.getTokenBalance(idToken);
+        setTokenData(tokenBalance);
       } catch (err) {
         console.error("Failed to refetch token data:", err);
       }
@@ -346,11 +344,14 @@ export default function PaymentModal({
       } else {
         setSuccess(true);
         setSubmitting(false);
-        setTimeout(() => {
-          refetchUser();
-          refetchTokenData();
-          setSuccess(false);
-        }, 5000);
+        // Stripe credits tokens / activates Pro asynchronously via webhook, so
+        // poll for a short while instead of reading the balance just once.
+        [2000, 5000, 9000].forEach((delay) =>
+          setTimeout(() => {
+            refetchUser();
+            refetchTokenData();
+          }, delay),
+        );
       }
     };
 
