@@ -41,7 +41,7 @@ const PasswordInput = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
   const PASSWORD = "secret_password";
   const [inputPassword, setInputPassword] = useState("");
   return(
-    <div className="flex h-screen bg-background flex-col items-center justify-center w-20 max-w-xs mx-auto">
+    <div className="flex h-screen bg-background flex-col items-center justify-center w-20 max-w-xs mx-auto w-24">
       <input type="password" value={inputPassword} onChange={(e) => setInputPassword(e.target.value)} placeholder="Enter password" className="w-full p-2 border border-gray-300 rounded-md" />
       <button className="bg-blue-500 text-white p-2 rounded-md cursor-pointer mt-4" onClick={() => {
         if (inputPassword === PASSWORD) {
