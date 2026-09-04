@@ -516,7 +516,6 @@ export default function ChatPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [showSubscriptionSuccessModal, setShowSubscriptionSuccessModal] = useState(false);
   const [showTokenPurchaseSuccessModal, setShowTokenPurchaseSuccessModal] = useState(false);
-  const [showPlusBadge, setShowPlusBadge] = useState(false);
   const difficultyLevels = ["Beginner", "Novice", "Junior", "Senior"];
   const isDebouncing = useRef(false);
 
@@ -584,18 +583,21 @@ export default function ChatPage() {
     }
   }, [sessionIdToken]);
 
+  const refreshUser = useCallback(async () => {
+    if (!sessionIdToken) return;
+    try {
+      setUser(await api.user.getUser(sessionIdToken));
+    } catch (error) {
+      console.error("Failed to refresh user:", error);
+    }
+  }, [sessionIdToken]);
+
   useEffect(() => {
     const loadUser = async () => {
       const idToken = (session?.user as any)?.idToken;
       if (session?.user?.email && idToken) {
         try {
           const response = await api.user.getUser(idToken);
-          if (response.membership == "free") {
-            setShowPlusBadge(false);
-          } else {
-            setShowPlusBadge(true);
-          }
-          console.log("user response: ", { response });
           setUser(response);
           const tokenBalance = await api.user.getTokenBalance(idToken);
           setTokenData(tokenBalance);
@@ -607,19 +609,23 @@ export default function ChatPage() {
     loadUser();
   }, [session?.user?.email]);
 
-  // Refetch the balance whenever an action spends tokens, and when the tab is
-  // refocused (payments and membership changes land via Stripe webhooks).
+  // Refetch the balance whenever an action spends tokens. On refocus also
+  // refetch the user, since a Stripe webhook may have changed the membership
+  // after the payment modal stopped polling for it.
   useEffect(() => {
     const unsubscribe = subscribeToTokenBalanceChange(() => {
       refreshTokenBalance();
     });
-    const handleFocus = () => refreshTokenBalance();
+    const handleFocus = () => {
+      refreshTokenBalance();
+      refreshUser();
+    };
     window.addEventListener("focus", handleFocus);
     return () => {
       unsubscribe();
       window.removeEventListener("focus", handleFocus);
     };
-  }, [refreshTokenBalance]);
+  }, [refreshTokenBalance, refreshUser]);
 
   // Global Ctrl+K listener for search
   useEffect(() => {
@@ -1841,8 +1847,7 @@ export default function ChatPage() {
                 )}
                 <div className="flex flex-col justify-start items-start">
                   <span className="text-sm font-medium">{user?.username}</span>
-                  {/* TODO: Implement show plus badge logic */}
-                  {(showPlusBadge) && (
+                  {user?.membership === "pro" && (
                     <span className="mr-1 text-xs text-base-30 uppercase tracking-wide">
                       Pro
                     </span>
