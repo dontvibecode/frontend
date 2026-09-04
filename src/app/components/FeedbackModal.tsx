@@ -36,13 +36,6 @@ export default function FeedbackModal({ isOpen, onClose, userEmail, idToken }: F
         idToken
       )
       
-      console.log("Feedback submitted:", {
-        // type: feedbackType,
-        message,
-        email: userEmail,
-        timestamp: new Date().toISOString(),
-      });
-      
       setSubmitted(true);
       setTimeout(() => {
         onClose();

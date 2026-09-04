@@ -130,6 +130,12 @@ export default function PaymentModal({
     }
   };
 
+  const needsClientSecret =
+    initialMode === "tokens" ||
+    (initialMode === "subscription" && membership !== "pro");
+  const isInitializing =
+    loading || (needsClientSecret && !clientSecret && !error);
+
   if (!isOpen) return null;
 
   return (
@@ -147,120 +153,122 @@ export default function PaymentModal({
           />
 
           {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.04, ease: "easeOut" }}
-            className="fixed top-[10%] left-1/2 -translate-x-1/2 w-full max-w-2xl max-h-[90vh] z-50 overflow-y-auto"
-          >
-            <div className="bg-background rounded-2xl shadow-2xl border border-base-10 overflow-hidden">
-              <div className="p-6">
-                {loading && (
-                  <div className="flex flex-col gap-6 items-center justify-center py-12">
-                    <div className="w-6 h-6 border-2 border-base-20 border-t-primary-text rounded-full animate-spin" />
-                  </div>
-                )}
+          <div className="fixed inset-0 z-50 grid place-items-center p-4 sm:p-6 pointer-events-none">
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.04, ease: "easeOut" }}
+              className="w-full max-w-2xl max-h-[calc(100vh-2rem)] sm:max-h-[calc(100vh-3rem)] overflow-y-auto pointer-events-auto"
+            >
+              <div className="bg-background rounded-2xl shadow-2xl border border-base-10 overflow-hidden">
+                <div className="p-6">
+                  {isInitializing && (
+                    <div className="flex flex-col gap-6 items-center justify-center py-12">
+                      <div className="w-6 h-6 border-2 border-base-20 border-t-primary-text rounded-full animate-spin" />
+                    </div>
+                  )}
 
-                {error && (
-                  <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
-                    {error}
-                  </div>
-                )}
+                  {error && (
+                    <div className="p-4 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-xl text-sm">
+                      {error}
+                    </div>
+                  )}
 
-                {(initialMode === "tokens" ||
-                  (initialMode === "subscription" &&
-                    membership !== "pro" &&
-                    !loading &&
-                    !error)) &&
-                  clientSecret && (
-                    <Elements
-                      key={clientSecret}
-                      stripe={stripePromise}
-                      options={{
-                        clientSecret,
-                        appearance: {
-                          theme: "stripe",
-                          variables: {
-                            borderRadius: "10px",
-                            fontFamily: "inherit",
+                  {(initialMode === "tokens" ||
+                    (initialMode === "subscription" &&
+                      membership !== "pro" &&
+                      !loading &&
+                      !error)) &&
+                    clientSecret && (
+                      <Elements
+                        key={clientSecret}
+                        stripe={stripePromise}
+                        options={{
+                          clientSecret,
+                          appearance: {
+                            theme: "stripe",
+                            variables: {
+                              borderRadius: "10px",
+                              fontFamily: "inherit",
+                            },
                           },
-                        },
-                      }}
-                    >
-                      <CheckoutForm
+                        }}
+                      >
+                        <CheckoutForm
+                          onClose={onClose}
+                          refetchUser={refetchUser}
+                          refetchTokenData={refetchTokenData}
+                          loading={loading}
+                        />
+                      </Elements>
+                    )}
+                  {initialMode === "subscription" &&
+                    membership === "pro" &&
+                    !loading && (
+                    <div className="mt-4">
+                      {!showUpdatePayment && (
+                        <button
+                          type="button"
+                          onClick={handleUpdatePaymentClick}
+                          disabled={setupLoading}
+                          className="bg-zinc-700 p-4 w-full py-3 px-4 bg-transparent border border-base-10 text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {setupLoading ? "Loading..." : "Change Payment Method"}
+                        </button>
+                      )}
+                      {showUpdatePayment && setupClientSecret && (
+                        <div className="bg-zinc-700 p-4 rounded-xl">
+                          <Elements
+                            key={setupClientSecret}
+                            stripe={stripePromise}
+                            options={{
+                              clientSecret: setupClientSecret,
+                              appearance: {
+                                theme: "stripe",
+                                variables: {
+                                  borderRadius: "10px",
+                                  fontFamily: "inherit",
+                                },
+                              },
+                            }}
+                          >
+                            <UpdatePaymentMethodForm
+                              onClose={() => {
+                                setShowUpdatePayment(false);
+                                setSetupClientSecret(null);
+                              }}
+                              idToken={idToken}
+                            />
+                          </Elements>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  {initialMode === "subscription" &&
+                    membership === "pro" &&
+                    !loading &&
+                    !error && (
+                      <ResumptionForm
                         onClose={onClose}
+                        idToken={idToken}
                         refetchUser={refetchUser}
                         refetchTokenData={refetchTokenData}
-                        loading={loading}
+                        subscriptionActive={subscriptionActive}
                       />
-                    </Elements>
-                  )}
-                {initialMode === "subscription" &&
-                  membership === "pro" &&
-                  !loading && (
-                  <div className="mt-4">
-                    {!showUpdatePayment && (
-                      <button
-                        type="button"
-                        onClick={handleUpdatePaymentClick}
-                        disabled={setupLoading}
-                        className="bg-zinc-700 p-4 w-full py-3 px-4 bg-transparent border border-base-10 text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {setupLoading ? "Loading..." : "Change Payment Method"}
-                      </button>
                     )}
-                    {showUpdatePayment && setupClientSecret && (
-                      <div className="bg-zinc-700 p-4 rounded-xl">
-                        <Elements
-                          key={setupClientSecret}
-                          stripe={stripePromise}
-                          options={{
-                            clientSecret: setupClientSecret,
-                            appearance: {
-                              theme: "stripe",
-                              variables: {
-                                borderRadius: "10px",
-                                fontFamily: "inherit",
-                              },
-                            },
-                          }}
-                        >
-                          <UpdatePaymentMethodForm
-                            onClose={() => {
-                              setShowUpdatePayment(false);
-                              setSetupClientSecret(null);
-                            }}
-                            idToken={idToken}
-                          />
-                        </Elements>
-                      </div>
-                    )}
-                  </div>
-                )}
-                {initialMode === "subscription" &&
-                  membership === "pro" &&
-                  !loading &&
-                  !error && (
-                    <ResumptionForm
+                  {initialMode === "cancellation" && !loading && !error && (
+                    <CancellationForm
                       onClose={onClose}
                       idToken={idToken}
                       refetchUser={refetchUser}
                       refetchTokenData={refetchTokenData}
-                      subscriptionActive={subscriptionActive}
                     />
                   )}
-                {initialMode === "cancellation" && !loading && !error && (
-                  <CancellationForm
-                    onClose={onClose}
-                    idToken={idToken}
-                    refetchUser={refetchUser}
-                    refetchTokenData={refetchTokenData}
-                  />
-                )}
+                </div>
               </div>
-            </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

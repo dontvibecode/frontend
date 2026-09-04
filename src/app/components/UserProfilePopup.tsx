@@ -59,8 +59,6 @@ export default function UserProfilePopup({
   }, [user, setTheme]);
 
 
-  console.log({ user })
-
   const handleSave = async () => {
     try {
       setIsSaving(true);
@@ -171,7 +169,6 @@ export default function UserProfilePopup({
   };
 
   const resetFields = () => {
-    console.log("Resetting fields to user data");
     setName(user?.username ?? "");
     if (user?.preferences?.theme) {
       setTheme(user.preferences.theme);
@@ -182,7 +179,6 @@ export default function UserProfilePopup({
   };
 
   const onClose = () => {
-    console.log("Onclicked");
     resetFields();
     closePopup();
   };

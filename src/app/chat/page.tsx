@@ -542,8 +542,6 @@ export default function ChatPage() {
     if (status === "unauthenticated") {
       setShowLoginModal(true);
     } else if (status === "authenticated" && session?.user?.email) {
-      console.log("Authenticated user email:", session?.user?.email);
-      console.log(status);
       setShowLoginModal(false);
       async function loadConversations() {
         try {
@@ -784,7 +782,6 @@ export default function ChatPage() {
 
       // Fetch the conversation messages using the conversation id from the exercise
       const conversationId = exercise.message__conversation_id;
-      console.log("Conversation ID:", conversationId);
       const messagesData = await api.conversation.getConversationMessages(
         conversationId,
         idToken,
@@ -874,8 +871,8 @@ export default function ChatPage() {
     // Scroll after a small delay to allow the new message to render
     setTimeout(scrollToBottom, 100);
 
+    // Pressing Enter on an empty box is an ordinary thing to do, not a fault.
     if (!message.trim() || !session?.user?.email) {
-      console.error("Missing message or session");
       return;
     }
 
@@ -949,19 +946,14 @@ export default function ChatPage() {
         });
       }
 
-      console.log({ response });
-
       if (conversationId === null && response?.conversation) {
         setConversationId(Number(response?.conversation));
-        console.log("Covnersation ID set to:", response?.conversation);
       }
 
       const messagesData = await api.conversation.getConversationMessages(
         response?.conversation ?? 0,
         (session?.user as any)?.idToken,
       );
-
-      console.log({ messagesData });
 
       setMessages(messagesData);
 

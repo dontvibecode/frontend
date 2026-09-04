@@ -113,7 +113,6 @@ const transformPreferencesToSnakeCase = (prefs: UserPreferences | undefined): an
  * Transform user response from backend to frontend format
  */
 const transformUserResponse = (data: any): import("@/types").User => {
-  console.log({ transformUserResponse: data })
   return {
     id: data.id,
     username: data.username,
@@ -591,8 +590,6 @@ export const uploadAPI = {
       }
     );
 
-    console.log({ confirmProfileImageUpload: response })
-
     if (!response.ok) {
       const isTokenWarning = await handleApiError(response, "Failed to confirm upload");
       if (isTokenWarning) return null;
@@ -758,9 +755,8 @@ export const paymentAPI = {
     );
 
     if (!response.ok) {
-      console.log("Subscription creation failed.");
       const errorData = await response.json().catch(() => ({}));
-      console.error("Error details:", errorData);
+      console.error("Failed to create subscription:", errorData);
       const isTokenWarning = await handleApiError(response, "Failed to create subscription");
       if (isTokenWarning) return null;
     }

@@ -61,7 +61,6 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   const currentExercise = data.exercises?.[activeExerciseIndex];
 
   const correctnessColor = (correctness: number) => {
-    console.log({ correctness });
     if (correctness === null) return 'bg-gray-300';
     if (correctness === 2) return 'bg-emerald-500';
     if (correctness === 1) return 'bg-amber-500';
@@ -158,8 +157,6 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
 
       // Hide reminder
       setShowSaveReminder(false);
-
-      console.log('Code progress saved');
     } catch (error) {
       console.error('Failed to save code progress:', error);
     } finally {
@@ -187,14 +184,6 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
         userSubmissions.push(editedCode[exercise.filename] ?? exercise.code);
       });
 
-      console.log({
-        ability_level: abilityLevel.toLowerCase(),
-        message_id: messageId,
-        exercise_id: data.exercise_id ?? data.exercises[activeExerciseIndex]?.exercise_id,
-        exercise_file_ids: exerciseFileIds,
-        user_submissions: userSubmissions,
-      });
-
       const response = await api.exercise.submitExercise({
         ability_level: abilityLevel.toLowerCase(),
         message_id: messageId,
@@ -204,7 +193,6 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
       }, idToken);
 
       const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
-      console.log('Parsed feedback:', parsedResponse);
       setFeedbackData(parsedResponse);
 
     } catch (error) {
@@ -660,8 +648,6 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
   if (!jsonData) return null;
 
-  console.log({ message })
-
   const currentExercise = jsonData.exercises?.[activeExerciseIndex];
 
   const expandExercises = () => {
@@ -688,7 +674,6 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
         api.exercise.getExercises(message.id!, idToken),
         minTimePromise
       ]);
-      console.log('Fetched exercises:', response);
       setFetchedExercises(response);
     } catch (error) {
       console.error('Failed to fetch exercises:', error);
@@ -709,7 +694,6 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
     }
     try {
       const response = await api.exercise.getNewExercise(message.id!, abilityLevel.toLowerCase(), idToken);
-      console.log('New exercises:', response);
 
       // Transform and add to fetchedExercises
       const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
@@ -753,7 +737,6 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
     try {
       const response = await api.exercise.bookmarkExercise(exerciseId, idToken);
-      console.log('Bookmark response:', response);
 
       // Update fetchedExercises with the new bookmark state
       setFetchedExercises((prev: any) => {

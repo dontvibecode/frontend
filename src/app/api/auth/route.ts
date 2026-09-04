@@ -31,9 +31,7 @@ const mockUserPreferences: Record<string, any> = {};
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
-    
-    console.log('GET /api/auth - Loading preferences for user:', session?.user?.email);
-    
+
     if (!session || !session.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -56,8 +54,6 @@ export async function GET(request: NextRequest) {
       lastUpdated: new Date().toISOString()
     };
 
-    console.log('Loaded preferences for user:', userEmail, preferences);
-
     return NextResponse.json(preferences);
   } catch (error) {
     console.error('Error loading user preferences:', error);
@@ -72,8 +68,6 @@ export async function POST(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
 
-    console.log('POST /api/auth - Saving preferences for user:', session?.user?.email);
-    
     if (!session || !session.user?.email) {
       return NextResponse.json(
         { error: 'Unauthorized' },
@@ -84,8 +78,6 @@ export async function POST(request: NextRequest) {
     const userEmail = session.user.email;
     const preferences = await request.json();
     const token = session.user.idToken;
-
-    console.log('Saving preferences for user:', userEmail, preferences);
 
     // Validate preferences data
     if (!preferences || typeof preferences !== 'object') {
@@ -109,8 +101,6 @@ export async function POST(request: NextRequest) {
 
     // Save to mock database
     mockUserPreferences[userEmail] = updatedPreferences;
-
-    console.log(`Successfully saved preferences for user: ${userEmail}`, updatedPreferences);
 
     return NextResponse.json({
       success: true,
@@ -140,8 +130,6 @@ export async function DELETE(request: NextRequest) {
     const userEmail = session.user.email;
     
     delete mockUserPreferences[userEmail];
-
-    console.log(`Cleared preferences for user: ${userEmail}`);
 
     return NextResponse.json({
       success: true,
