@@ -64,6 +64,19 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  // Apply the persisted theme before React hydrates. Without this, every full
+  // load briefly paints the light variables before ThemeProvider's effect runs.
+  const themeInitScript = `
+    try {
+      const savedTheme = localStorage.getItem("theme") || "light";
+      const resolvedTheme = savedTheme === "system"
+        ? (window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light")
+        : savedTheme;
+      document.documentElement.classList.remove("light", "dark");
+      document.documentElement.classList.add(resolvedTheme);
+    } catch (_) {}
+  `;
+
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "WebSite",
@@ -79,7 +92,10 @@ export default function RootLayout({
   };
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >

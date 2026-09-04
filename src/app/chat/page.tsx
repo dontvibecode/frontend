@@ -511,6 +511,7 @@ export default function ChatPage() {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [userLoading, setUserLoading] = useState(true);
   const [tokenData, setTokenData] = useState<TokenData | null>(null);
   const [bookmarkedExercises, setBookmarkedExercises] = useState<Exercise[]>(
     [],
@@ -686,6 +687,10 @@ export default function ChatPage() {
           setTokenData(tokenBalance);
         } catch (error) {
           console.error("Failed to load authenticated user:", error);
+        } finally {
+          // Cleared even on failure, so a backend error degrades to the plain
+          // row rather than a skeleton that pulses forever.
+          setUserLoading(false);
         }
       }
     };
@@ -1013,10 +1018,10 @@ export default function ChatPage() {
   // Show loading state while checking authentication
   if (status === "loading") {
     return (
-      <div className="flex h-screen items-center justify-center bg-white">
+      <div className="flex h-screen items-center justify-center bg-background">
         <div className="text-center">
-          <div className="w-12 h-12 border-4 border-gray-200 border-t-black rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-500">Loading...</p>
+          <div className="w-12 h-12 border-4 border-base-20 border-t-primary-text rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-text-70">Loading...</p>
         </div>
       </div>
     );
@@ -1297,7 +1302,9 @@ export default function ChatPage() {
             </button>
           </div>
 
-          {bookmarkedExercises.length > 0 && (
+          {/* The skeleton below is unreachable unless loading also opens this
+              section, since there are no bookmarks to count yet. */}
+          {(bookmarksLoading || bookmarkedExercises.length > 0) && (
             <div className="px-4 py-3">
               <h3 className="text-xs font-semibold text-gray-500 uppercase mb-2">
                 Bookmarked Exercises
@@ -1929,34 +1936,47 @@ export default function ChatPage() {
             </AnimatePresence>
 
             {/* User Profile Button */}
-            <button
-              className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
-              onClick={handleUserProfileClick}
-            >
-              <div className="flex items-center gap-2">
-                {user?.preferences?.profileImage ? (
-                  <img
-                    src={user?.preferences?.profileImage ?? ""}
-                    alt={session?.user?.name || "User"}
-                    className="w-8 h-8 rounded-full"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-full bg-loading flex items-center justify-center text-white text-sm font-semibold">
-                    {user?.username?.charAt(0)?.toUpperCase() ||
-                      session?.user?.name?.charAt(0)?.toUpperCase() ||
-                      "U"}
-                  </div>
-                )}
-                <div className="flex flex-col justify-start items-start">
-                  <span className="text-sm font-medium">{user?.username}</span>
-                  {user?.membership === "pro" && (
-                    <span className="mr-1 text-xs text-base-30 uppercase tracking-wide">
-                      Pro
-                    </span>
-                  )}
+            {userLoading ? (
+              // Same metrics as the loaded row, so nothing shifts when it
+              // arrives. Without this the avatar briefly showed a fallback
+              // initial next to a blank name.
+              <div className="w-full flex items-center gap-2 p-2 animate-pulse">
+                <div className="w-8 h-8 rounded-full bg-base-10" />
+                <div className="flex flex-col justify-start items-start gap-1.5">
+                  <div className="h-3 w-24 bg-base-10 rounded" />
+                  <div className="h-2 w-8 bg-base-10 rounded" />
                 </div>
               </div>
-            </button>
+            ) : (
+              <button
+                className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
+                onClick={handleUserProfileClick}
+              >
+                <div className="flex items-center gap-2">
+                  {user?.preferences?.profileImage ? (
+                    <img
+                      src={user?.preferences?.profileImage ?? ""}
+                      alt={session?.user?.name || "User"}
+                      className="w-8 h-8 rounded-full"
+                    />
+                  ) : (
+                    <div className="w-8 h-8 rounded-full bg-loading flex items-center justify-center text-white text-sm font-semibold">
+                      {user?.username?.charAt(0)?.toUpperCase() ||
+                        session?.user?.name?.charAt(0)?.toUpperCase() ||
+                        "U"}
+                    </div>
+                  )}
+                  <div className="flex flex-col justify-start items-start">
+                    <span className="text-sm font-medium">{user?.username}</span>
+                    {user?.membership === "pro" && (
+                      <span className="mr-1 text-xs text-base-30 uppercase tracking-wide">
+                        Pro
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </button>
+            )}
           </div>
         </div>
       </aside>
