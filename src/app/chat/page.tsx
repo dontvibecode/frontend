@@ -259,7 +259,9 @@ const ThoughtDropdown = ({ thought }: { thought: string }) => {
   );
 };
 
-export const AIResponse = ({
+// Not exported: Next.js only allows a page module to export the route
+// conventions, and this is used solely by the component below.
+const AIResponse = ({
   message,
   previousMessage,
   setSelectedLesson,
@@ -490,6 +492,9 @@ export default function ChatPage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
   const [messagesLoading, setMessagesLoading] = useState(false);
+  // Bumped whenever the panel's contents are replaced. A fetch that started
+  // before the bump has been superseded and must not write to the panel.
+  const messagesRequestRef = useRef(0);
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(
     new Map(),
   );
@@ -513,6 +518,8 @@ export default function ChatPage() {
   const [bookmarksExpanded, setBookmarksExpanded] = useState(false);
   const [difficultyIndex, setDifficultyIndex] = useState(0);
   const [chatMenuOpen, setChatMenuOpen] = useState(-1);
+  const [conversationPendingDelete, setConversationPendingDelete] =
+    useState<Conversation | null>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [showSubscriptionSuccessModal, setShowSubscriptionSuccessModal] = useState(false);
@@ -593,6 +600,82 @@ export default function ChatPage() {
     }
   }, [sessionIdToken]);
 
+  const refreshConversations = useCallback(async () => {
+    if (!sessionIdToken) return;
+    try {
+      setConversations(await api.conversation.getConversations(sessionIdToken));
+    } catch (error) {
+      console.error("Failed to refresh conversations:", error);
+    }
+  }, [sessionIdToken]);
+
+  // Pinning and deleting apply to the list first and talk to the server after.
+  // Waiting on the round trip made the sidebar look frozen, and neither change
+  // needs anything back from the server to be drawn correctly.
+  const togglePin = async (conversation: Conversation) => {
+    if (!sessionIdToken) return;
+
+    setConversations((current) =>
+      current.map((c) =>
+        c.id === conversation.id ? { ...c, pinned: !c.pinned } : c,
+      ),
+    );
+
+    try {
+      await api.conversation.pinConversation(
+        Number(conversation.id),
+        sessionIdToken,
+      );
+    } catch (error) {
+      console.error("Failed to pin conversation:", error);
+      setConversations((current) =>
+        current.map((c) =>
+          c.id === conversation.id ? { ...c, pinned: conversation.pinned } : c,
+        ),
+      );
+    }
+  };
+
+  const removeConversation = async (conversation: Conversation) => {
+    if (!sessionIdToken) return;
+
+    const previous = conversations;
+    setConversations((current) =>
+      current.filter((c) => c.id !== conversation.id),
+    );
+
+    // Reading a conversation that no longer exists leaves stranded messages.
+    if (conversationId === Number(conversation.id)) {
+      setConversationId(null);
+      setMessages([]);
+      setSelectedLesson(null);
+      setLessonExpanded(false);
+    }
+
+    try {
+      await api.conversation.deleteConversation(
+        Number(conversation.id),
+        sessionIdToken,
+      );
+    } catch (error) {
+      console.error("Failed to delete conversation:", error);
+      setConversations(previous);
+    }
+  };
+
+  // Emptying the panel needs no network call, so it stays instant even while a
+  // conversation is still loading. Bumping the request id disowns that fetch so
+  // its late reply can't land in the blank chat the user just asked for.
+  const startNewChat = useCallback(() => {
+    messagesRequestRef.current += 1;
+    setConversationId(null);
+    setMessages([]);
+    setMessagesLoading(false);
+    setLessonExpanded(false);
+    setSelectedLesson(null);
+    setUserPrompts(new Map());
+  }, []);
+
   useEffect(() => {
     const loadUser = async () => {
       const idToken = (session?.user as any)?.idToken;
@@ -638,24 +721,23 @@ export default function ChatPage() {
       }
       if ((e.ctrlKey || e.metaKey) && e.key === "n") {
         e.preventDefault();
-        setConversationId(null);
-        setMessages([]);
-        setLessonExpanded(false);
-        setSelectedLesson(null);
+        startNewChat();
       }
       if (e.key === "Escape") {
         setSearchOpen(false);
         setSearchQuery("");
+        setConversationPendingDelete(null);
       }
     };
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  }, [startNewChat]);
 
   const handleConversationClick = async (conversation: Conversation) => {
     // Switch the selection before awaiting, so the sidebar and the skeleton
     // both react to the click instead of only once the messages arrive.
+    const requestId = ++messagesRequestRef.current;
     setConversationId(Number(conversation.id));
     setMessagesLoading(true);
     try {
@@ -663,6 +745,7 @@ export default function ChatPage() {
         Number(conversation.id),
         (session?.user as any)?.idToken,
       );
+      if (messagesRequestRef.current !== requestId) return;
       setMessages(messagesData);
       setSelectedLesson(null);
       setLessonExpanded(false);
@@ -674,7 +757,8 @@ export default function ChatPage() {
         // router.push("/login?error=session_expired");
       }
     } finally {
-      setMessagesLoading(false);
+      // Whatever replaced this request owns the spinner now.
+      if (messagesRequestRef.current === requestId) setMessagesLoading(false);
     }
   };
 
@@ -795,6 +879,7 @@ export default function ChatPage() {
     }
 
     const currentMessage = message;
+    const requestId = messagesRequestRef.current;
     setLoading(true);
     try {
       const idToken = (session.user as any)?.idToken;
@@ -844,6 +929,14 @@ export default function ChatPage() {
         idToken,
       );
 
+      // A new chat was started while this was sending. The reply is saved and
+      // will be there when the conversation is reopened, but dropping it into
+      // the blank panel the user moved to would look like it reverted.
+      if (messagesRequestRef.current !== requestId) {
+        void refreshConversations();
+        return;
+      }
+
       if (
         response?.json &&
         response?.json?.exercises &&
@@ -871,6 +964,11 @@ export default function ChatPage() {
 
       setMessages(messagesData);
 
+      // A first message creates the conversation, and later ones change its
+      // title and exercise count, so the sidebar is stale either way. Left
+      // unawaited: the reply is already on screen and shouldn't wait for it.
+      void refreshConversations();
+
       // Scroll to bottom after response arrives
       setTimeout(() => {
         const chatContainer = document.getElementById("chat-container");
@@ -892,7 +990,9 @@ export default function ChatPage() {
       console.error("Error sending message:", error);
 
       // Remove the "sending" message on error
-      setMessages(messages.filter((m) => !m.isSending));
+      if (messagesRequestRef.current === requestId) {
+        setMessages(messages.filter((m) => !m.isSending));
+      }
 
       if (isTokenError(error)) {
         await signOut({ redirect: false });
@@ -1080,6 +1180,53 @@ export default function ChatPage() {
         </motion.div>
       </ModalTemplate>
 
+      {/* Delete Chat Confirmation */}
+      <ModalTemplate
+        isOpen={conversationPendingDelete !== null}
+        onClose={() => setConversationPendingDelete(null)}
+        title="Delete chat"
+        maxWidthClassName="max-w-sm"
+      >
+        <div className="flex flex-col gap-5 pt-2">
+          <div className="flex items-start gap-3">
+            <div className="w-10 h-10 shrink-0 bg-red-500/10 rounded-full flex items-center justify-center">
+              <Icon
+                icon="solar:trash-bin-trash-bold"
+                className="w-5 h-5 text-red-500"
+              />
+            </div>
+            <p className="text-sm text-text-60 pt-1">
+              <span className="font-medium text-primary-text">
+                {conversationPendingDelete?.title?.trim() || "This chat"}
+              </span>{" "}
+              and everything in it will be deleted. This can&apos;t be undone.
+            </p>
+          </div>
+          <div className="flex gap-2">
+            {/* Focus starts on Cancel so a stray Enter can't delete a chat. */}
+            <button
+              type="button"
+              autoFocus
+              onClick={() => setConversationPendingDelete(null)}
+              className="flex-1 py-2.5 px-4 bg-transparent border border-button-border hover:bg-base-10 text-primary-text font-medium rounded-full cursor-pointer transition-colors duration-200"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                const target = conversationPendingDelete;
+                setConversationPendingDelete(null);
+                if (target) removeConversation(target);
+              }}
+              className="flex-1 py-2.5 px-4 bg-red-500 hover:bg-red-600 text-white font-medium rounded-full cursor-pointer transition-colors duration-200"
+            >
+              Delete
+            </button>
+          </div>
+        </div>
+      </ModalTemplate>
+
       <aside className="w-64 border-r border-theme-border flex flex-col">
         <div className="p-2 flex flex-row border-b border-theme-border">
           <div
@@ -1130,12 +1277,7 @@ export default function ChatPage() {
               </div>
             </button>
             <button
-              onClick={() => {
-                setConversationId(null);
-                setMessages([]);
-                setLessonExpanded(false);
-                setSelectedLesson(null);
-              }}
+              onClick={startNewChat}
               className="cursor-pointer w-full flex flex-row items-center gap-2 bg-opaque-button hover:bg-opaque-button-hover transition-colors duration-300 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-lg overflow-hidden border border-button-border hover:border-button-border-hover rounded-2xl p-3 text-primary-text mx-auto"
             >
               <svg
@@ -1243,9 +1385,9 @@ export default function ChatPage() {
               <div className="space-y-1">
                 {conversations
                   .filter((c) => c.pinned)
-                  .map((conversation: Conversation, index: number) => (
+                  .map((conversation: Conversation) => (
                     <div
-                      key={`pinned-${index}`}
+                      key={conversation.id}
                       onClick={() => handleConversationClick(conversation)}
                       className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
                     >
@@ -1326,20 +1468,10 @@ export default function ChatPage() {
                                 },
                                 scale: { duration: 0.1 },
                               }}
-                              onClick={async (e) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
                                 setChatMenuOpen(-1);
-                                await api.conversation.pinConversation(
-                                  Number(conversation.id),
-                                  (session?.user as any)?.idToken,
-                                );
-                                if (user?.email) {
-                                  const idToken = (session?.user as any)
-                                    ?.idToken;
-                                  const conversationsData =
-                                    await api.conversation.getConversations(idToken);
-                                  setConversations(conversationsData);
-                                }
+                                togglePin(conversation);
                               }}
                               className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
                             >
@@ -1350,20 +1482,10 @@ export default function ChatPage() {
                             </motion.div>
                             <motion.div
                               transition={{ scale: { duration: 0.1 } }}
-                              onClick={async (e) => {
+                              onClick={(e) => {
                                 e.stopPropagation();
-                                if (user?.email) {
-                                  setChatMenuOpen(-1);
-                                  await api.conversation.deleteConversation(
-                                    Number(conversation.id),
-                                    (session?.user as any)?.idToken,
-                                  );
-                                  const idToken = (session?.user as any)
-                                    ?.idToken;
-                                  const conversationsData =
-                                    await api.conversation.getConversations(idToken);
-                                  setConversations(conversationsData);
-                                }
+                                setChatMenuOpen(-1);
+                                setConversationPendingDelete(conversation);
                               }}
                               className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
                             >
@@ -1461,9 +1583,9 @@ export default function ChatPage() {
                 <>
                   {conversations
                     .filter((c) => !c.pinned)
-                    .map((conversation: Conversation, index: number) => (
+                    .map((conversation: Conversation) => (
                       <div
-                        key={`chat-${index}`}
+                        key={conversation.id}
                         onClick={() => handleConversationClick(conversation)}
                         className="relative p-2 rounded-lg hover:bg-base-5 group cursor-pointer duration-200 ease-in-out"
                       >
@@ -1544,20 +1666,10 @@ export default function ChatPage() {
                                   },
                                   scale: { duration: 0.1 },
                                 }}
-                                onClick={async (e) => {
+                                onClick={(e) => {
                                   e.stopPropagation();
                                   setChatMenuOpen(-1);
-                                  await api.conversation.pinConversation(
-                                    Number(conversation.id),
-                                    (session?.user as any)?.idToken,
-                                  );
-                                  if (user?.email) {
-                                    const idToken = (session?.user as any)
-                                      ?.idToken;
-                                    const conversationsData =
-                                      await api.conversation.getConversations(idToken);
-                                    setConversations(conversationsData);
-                                  }
+                                  togglePin(conversation);
                                 }}
                                 className="bg-container-secondary border border-base-5 text-currentColor backdrop-blur-md rounded-full p-2 cursor-pointer transition-colors"
                               >
@@ -1580,20 +1692,10 @@ export default function ChatPage() {
                                   },
                                   scale: { duration: 0.1 },
                                 }}
-                                onClick={async (e) => {
+                                onClick={(e) => {
                                   e.stopPropagation();
-                                  if (user?.email) {
-                                    setChatMenuOpen(-1);
-                                    await api.conversation.deleteConversation(
-                                      Number(conversation.id),
-                                      (session?.user as any)?.idToken,
-                                    );
-                                    const idToken = (session?.user as any)
-                                      ?.idToken;
-                                    const conversationsData =
-                                      await api.conversation.getConversations(idToken);
-                                    setConversations(conversationsData);
-                                  }
+                                  setChatMenuOpen(-1);
+                                  setConversationPendingDelete(conversation);
                                 }}
                                 className="bg-red-500 text-white backdrop-blur-md border border-black/10 rounded-full p-2 cursor-pointer"
                               >
@@ -1913,9 +2015,23 @@ export default function ChatPage() {
       {!lessonExpanded && (
         <aside className="w-96 border-l border-theme-border flex flex-col bg-base">
           <div
-            className="flex-1 overflow-y-auto p-4 space-y-4"
+            className="relative flex-1 overflow-y-auto p-4 space-y-4"
             id="chat-container"
           >
+            {!messagesLoading && messages.length === 0 && (
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-8 text-center pointer-events-none select-none">
+                <Icon
+                  icon="solar:pen-new-square-linear"
+                  className="w-8 h-8 text-base-30"
+                />
+                <span className="text-sm font-medium text-base-40">
+                  New chat
+                </span>
+                <span className="text-xs text-base-30">
+                  Describe what you&apos;re stuck on to get started.
+                </span>
+              </div>
+            )}
             {messagesLoading &&
               [0, 1, 2].map((idx) => (
                 <div key={idx} className="w-full space-y-4 animate-pulse">
