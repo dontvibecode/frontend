@@ -489,6 +489,7 @@ export default function ChatPage() {
   const [messages, setMessages] = useState<MessageData[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [conversationsLoading, setConversationsLoading] = useState(true);
+  const [messagesLoading, setMessagesLoading] = useState(false);
   const [userPrompts, setUserPrompts] = useState<Map<number, string>>(
     new Map(),
   );
@@ -653,13 +654,15 @@ export default function ChatPage() {
   }, []);
 
   const handleConversationClick = async (conversation: Conversation) => {
+    // Switch the selection before awaiting, so the sidebar and the skeleton
+    // both react to the click instead of only once the messages arrive.
+    setConversationId(Number(conversation.id));
+    setMessagesLoading(true);
     try {
-      console.log("Selected conversation:", conversation);
       const messagesData = await api.conversation.getConversationMessages(
         Number(conversation.id),
         (session?.user as any)?.idToken,
       );
-      setConversationId(Number(conversation.id));
       setMessages(messagesData);
       setSelectedLesson(null);
       setLessonExpanded(false);
@@ -670,6 +673,8 @@ export default function ChatPage() {
         await signOut({ redirect: false });
         // router.push("/login?error=session_expired");
       }
+    } finally {
+      setMessagesLoading(false);
     }
   };
 
@@ -1667,13 +1672,15 @@ export default function ChatPage() {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-1">
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-bold text-currentColor">
-                    {tokenData
-                      ? (
-                          (tokenData?.token_limit ?? 0) - (tokenData?.token_used ?? 0)
-                        ).toLocaleString()
-                      : 0}
-                  </span>
+                  {tokenData ? (
+                    <span className="text-xs font-bold text-currentColor">
+                      {(
+                        (tokenData.token_limit ?? 0) - (tokenData.token_used ?? 0)
+                      ).toLocaleString()}
+                    </span>
+                  ) : (
+                    <span className="inline-block h-3 w-12 bg-base-10 rounded animate-pulse align-middle" />
+                  )}
                   <span className="text-xs text-base-40">tokens remaining</span>
                 </div>
               </div>
@@ -1909,7 +1916,23 @@ export default function ChatPage() {
             className="flex-1 overflow-y-auto p-4 space-y-4"
             id="chat-container"
           >
-            {messages.map((message: MessageData, index: number) => {
+            {messagesLoading &&
+              [0, 1, 2].map((idx) => (
+                <div key={idx} className="w-full space-y-4 animate-pulse">
+                  <div className="w-full flex justify-end">
+                    <div className="h-9 w-32 bg-base-10 rounded-2xl" />
+                  </div>
+                  <div className="w-full flex justify-start">
+                    <div className="w-11/12 space-y-2 bg-base-10 rounded-2xl p-3">
+                      <div className="h-3 w-full bg-base-20 rounded" />
+                      <div className="h-3 w-5/6 bg-base-20 rounded" />
+                      <div className="h-3 w-3/4 bg-base-20 rounded" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            {!messagesLoading &&
+              messages.map((message: MessageData, index: number) => {
               return !!(message.fromUser || (message as any).from_user) ? (
                 <div key={index} className="w-full flex justify-end">
                   <motion.div
