@@ -64,8 +64,11 @@ export interface UserPreferences {
   shareData?: boolean;
   fontSize?: 'small' | 'medium' | 'large';    
   compactMode?: boolean;
-  tab_size?: number; // 1-8, default 2
+  tab_size?: number; // 1-8
 }
+
+/** Matches the `Preferences.tab_size` default in the Django model. */
+export const DEFAULT_TAB_SIZE = 4;
 
 export interface User {
   id: number;

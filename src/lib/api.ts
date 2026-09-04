@@ -549,13 +549,26 @@ export const uploadAPI = {
    * Upload a file directly to object storage using a signed URL
    */
   uploadToSignedUrl: async (uploadUrl: string, file: File): Promise<void> => {
-    const response = await fetch(uploadUrl, {
-      method: "PUT",
-      headers: {
-        "Content-Type": file.type,
-      },
-      body: file,
-    });
+    let response: Response;
+    try {
+      response = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: {
+          "Content-Type": file.type,
+        },
+        body: file,
+      });
+    } catch (error) {
+      // This PUT goes straight to the storage bucket, so fetch rejecting means
+      // the browser never got a usable response: almost always the bucket's
+      // CORS policy not listing this origin. "Failed to fetch" alone sends
+      // people looking at the backend, which is not involved in this step.
+      console.error(
+        `Direct upload to storage failed. Check that the bucket's CORS policy allows ${window.location.origin}.`,
+        error,
+      );
+      throw new Error("Couldn't reach image storage from this site.");
+    }
 
     if (!response.ok) {
       throw new Error(`Failed to upload image: ${response.status}`);

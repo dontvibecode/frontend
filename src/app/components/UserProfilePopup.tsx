@@ -2,10 +2,18 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
-import { User, UserPreferences } from "@/types/api";
+import { motion } from "framer-motion";
+import { Icon } from "@iconify/react";
+import { DEFAULT_TAB_SIZE, User, UserPreferences } from "@/types/api";
 import { useTheme } from "./ThemeProvider";
 import { uploadAPI } from "@/lib/api";
 import ModalTemplate from "./ModalTemplate";
+
+const THEME_OPTIONS = [
+  { value: "light", label: "Light", icon: "solar:sun-2-linear" },
+  { value: "dark", label: "Dark", icon: "solar:moon-linear" },
+  { value: "system", label: "System", icon: "solar:monitor-linear" },
+] as const;
 
 interface UserProfilePopupProps {
   isOpen: boolean;
@@ -33,7 +41,7 @@ export default function UserProfilePopup({
     user?.preferences?.accentColor ?? "000000"
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
-  const [tabSize, setTabSize] = useState(user?.preferences?.tab_size ?? 2);
+  const [tabSize, setTabSize] = useState(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);
 
   // Profile image upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -47,7 +55,7 @@ export default function UserProfilePopup({
     }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tab_size ?? 2);
+    setTabSize(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);
   }, [user, setTheme]);
 
 
@@ -170,7 +178,7 @@ export default function UserProfilePopup({
     }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
-    setTabSize(user?.preferences?.tab_size ?? 2);
+    setTabSize(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);
   };
 
   const onClose = () => {
@@ -191,12 +199,18 @@ export default function UserProfilePopup({
                   <div className="text-center">
                     <div className="relative inline-block">
                       <div
-                        className={`w-20 h-20 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3 cursor-pointer relative ${isUploading ? "opacity-70" : "hover:opacity-90"} transition-opacity`}
+                        className={`group w-32 h-32 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3 cursor-pointer relative ${isUploading ? "opacity-70" : ""} transition-opacity`}
                         onClick={handleImageClick}
                       >
+                        {!isUploading && (
+                          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-black/45 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Icon icon="solar:camera-linear" className="w-6 h-6" />
+                            <span className="text-xs font-medium">Change</span>
+                          </div>
+                        )}
                         {isUploading && (
                           <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                            <svg className="animate-spin w-6 h-6 text-white" fill="none" viewBox="0 0 24 24">
+                            <svg className="animate-spin w-8 h-8 text-white" fill="none" viewBox="0 0 24 24">
                               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
                             </svg>
@@ -206,7 +220,7 @@ export default function UserProfilePopup({
                           <img src={user?.preferences?.profileImage} alt="Profile" className="w-full h-full object-cover" />
                         ) : (
                           <div className="w-full h-full bg-loading flex items-center justify-center">
-                            <span className="text-white font-semibold text-lg">
+                            <span className="text-white font-semibold text-4xl">
                               {user?.username?.charAt(0)?.toUpperCase() ||
                                 session?.user?.name?.charAt(0)?.toUpperCase() ||
                                 "U"}
@@ -253,15 +267,36 @@ export default function UserProfilePopup({
 
                   <div>
                     <label className="block text-sm font-medium text-text-70 mb-2">Theme</label>
-                    <select
-                      value={theme}
-                      onChange={(e) => setTheme(e.target.value as "light" | "dark" | "system")}
-                      className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
-                    >
-                      <option value="light">Light</option>
-                      <option value="dark">Dark</option>
-                      <option value="system">System</option>
-                    </select>
+                    <div className="grid grid-cols-3 gap-1 p-1 bg-base-10 rounded-xl">
+                      {THEME_OPTIONS.map((option) => {
+                        const isActive = theme === option.value;
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            onClick={() => setTheme(option.value)}
+                            aria-pressed={isActive}
+                            className={`relative flex items-center justify-center py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                              isActive
+                                ? "text-primary-text"
+                                : "text-text-60 hover:text-primary-text"
+                            }`}
+                          >
+                            {isActive && (
+                              <motion.span
+                                layoutId="theme-option-pill"
+                                transition={{ type: "spring", stiffness: 400, damping: 32 }}
+                                className="absolute inset-0 bg-container-primary rounded-lg shadow-sm"
+                              />
+                            )}
+                            <span className="relative flex items-center gap-2">
+                              <Icon icon={option.icon} className="w-4 h-4" />
+                              {option.label}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div>

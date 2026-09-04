@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MessageData } from "@/types";
+import { DEFAULT_TAB_SIZE, MessageData } from "@/types";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import CodeMirror from "@uiw/react-codemirror";
@@ -45,7 +45,7 @@ interface ExerciseModuleProps {
   tabSize?: number;
 }
 
-export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise, isBookmarked, tabSize = 2 }: ExerciseModuleProps) {
+export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise, isBookmarked, tabSize = DEFAULT_TAB_SIZE }: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -643,7 +643,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   );
 }
 
-export default function Lesson({ message, userPrompt, initialExpandedLesson, setLessonExpanded, lessonExpanded, abilityLevel, tabSize = 2, onBookmarkChange }: LessonProps) {
+export default function Lesson({ message, userPrompt, initialExpandedLesson, setLessonExpanded, lessonExpanded, abilityLevel, tabSize = DEFAULT_TAB_SIZE, onBookmarkChange }: LessonProps) {
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
   const [loadingExercises, setLoadingExercises] = useState(false);

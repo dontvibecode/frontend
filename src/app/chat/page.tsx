@@ -16,6 +16,7 @@ import api from "@/lib/api";
 import { subscribeToTokenBalanceChange } from "@/lib/tokenBalanceEvents";
 import {
   Conversation,
+  DEFAULT_TAB_SIZE,
   Exercise,
   MessageData,
   TokenData,
@@ -1977,7 +1978,7 @@ export default function ChatPage() {
             userPrompt={selectedLesson.originalMessage}
             lessonExpanded={lessonExpanded}
             abilityLevel={difficultyLevels[difficultyIndex]}
-            tabSize={user?.preferences?.tab_size ?? 2}
+            tabSize={user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE}
             initialExpandedLesson={lessonExpanded}
             onBookmarkChange={handleBookmarkChange}
           />
