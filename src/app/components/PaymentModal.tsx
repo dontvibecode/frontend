@@ -40,9 +40,6 @@ export default function PaymentModal({
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [mode, setMode] = useState<"subscription" | "tokens" | "cancellation" | "updateMethod">(
-    initialMode,
-  );
   const [showUpdatePayment, setShowUpdatePayment] = useState(false);
   const [setupClientSecret, setSetupClientSecret] = useState<string | null>(
     null,
@@ -80,20 +77,20 @@ export default function PaymentModal({
       return;
     }
 
-    // Set mode from initialMode when modal opens
-    setMode(initialMode);
-
+    // Only the two flows that actually take a card need a client secret.
+    // Cancelling and resuming call our own API and must not create a
+    // subscription just to have something for Elements to mount against.
     const fetchClientSecret = async () => {
       setLoading(true);
       setError(null);
 
       try {
-        if (mode === "subscription" || mode === "cancellation") {
+        if (initialMode === "subscription" && membership !== "pro") {
           const result = await paymentAPI.createSubscription(idToken);
           if (result) {
             setClientSecret(result.client_secret);
           }
-        } else if (mode === "tokens") {
+        } else if (initialMode === "tokens") {
           const tokenAmount = 200000;
           const result = await paymentAPI.buyTokens(
             {
@@ -111,7 +108,7 @@ export default function PaymentModal({
     };
 
     fetchClientSecret();
-  }, [isOpen, mode, idToken]);
+  }, [isOpen, initialMode, idToken, membership]);
 
   const handleUpdatePaymentClick = async () => {
     if (showUpdatePayment) {
@@ -171,8 +168,11 @@ export default function PaymentModal({
                   </div>
                 )}
 
-                {(mode == "tokens" ||
-                  (membership == "free" && !loading && !error)) &&
+                {(initialMode === "tokens" ||
+                  (initialMode === "subscription" &&
+                    membership !== "pro" &&
+                    !loading &&
+                    !error)) &&
                   clientSecret && (
                     <Elements
                       key={clientSecret}
@@ -196,7 +196,9 @@ export default function PaymentModal({
                       />
                     </Elements>
                   )}
-                {mode == "subscription" && membership === "pro" && !loading && (
+                {initialMode === "subscription" &&
+                  membership === "pro" &&
+                  !loading && (
                   <div className="mt-4">
                     {!showUpdatePayment && (
                       <button
@@ -236,60 +238,26 @@ export default function PaymentModal({
                     )}
                   </div>
                 )}
-                {mode == "subscription" &&
+                {initialMode === "subscription" &&
                   membership === "pro" &&
                   !loading &&
-                  !error &&
-                  clientSecret && (
-                    <Elements
-                      key={clientSecret}
-                      stripe={stripePromise}
-                      options={{
-                        clientSecret,
-                        appearance: {
-                          theme: "stripe",
-                          variables: {
-                            borderRadius: "10px",
-                            fontFamily: "inherit",
-                          },
-                        },
-                      }}
-                    >
-                      <ResumptionForm
-                        onClose={onClose}
-                        idToken={idToken}
-                        refetchUser={refetchUser}
-                        refetchTokenData={refetchTokenData}
-                        subscriptionActive={subscriptionActive}
-                      />
-                    </Elements>
-                  )}
-                {mode === "cancellation" &&
-                  clientSecret &&
-                  !loading &&
                   !error && (
-                    <Elements
-                      key={clientSecret}
-                      stripe={stripePromise}
-                      options={{
-                        clientSecret,
-                        appearance: {
-                          theme: "stripe",
-                          variables: {
-                            borderRadius: "10px",
-                            fontFamily: "inherit",
-                          },
-                        },
-                      }}
-                      >
-                      <CancellationForm
-                        onClose={onClose}
-                        idToken={idToken}
-                        refetchUser={refetchUser}
-                        refetchTokenData={refetchTokenData}
-                      />
-                    </Elements>
+                    <ResumptionForm
+                      onClose={onClose}
+                      idToken={idToken}
+                      refetchUser={refetchUser}
+                      refetchTokenData={refetchTokenData}
+                      subscriptionActive={subscriptionActive}
+                    />
                   )}
+                {initialMode === "cancellation" && !loading && !error && (
+                  <CancellationForm
+                    onClose={onClose}
+                    idToken={idToken}
+                    refetchUser={refetchUser}
+                    refetchTokenData={refetchTokenData}
+                  />
+                )}
               </div>
             </div>
           </motion.div>
@@ -437,8 +405,6 @@ function CancellationForm({
   refetchUser: () => void;
   refetchTokenData: () => void;
 }) {
-  const stripe = useStripe();
-  const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -446,7 +412,6 @@ function CancellationForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
 
     setSubmitting(true);
     setError(null);
@@ -516,10 +481,10 @@ function CancellationForm({
       <div className="mt-6 space-y-3">
         <button
           type="submit"
-          disabled={!stripe || submitting}
-          className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {submitting ? "Processing..." : "Cancel Pro Subscription"}
+            disabled={submitting}
+            className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            {submitting ? "Processing..." : "Cancel Pro Subscription"}
         </button>
         <button
           type="button"
@@ -547,15 +512,12 @@ function ResumptionForm({
   refetchTokenData: () => void;
   subscriptionActive?: boolean | null;
 }) {
-  const stripe = useStripe();
-  const elements = useElements();
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!stripe || !elements) return;
 
     setSubmitting(true);
     setError(null);
@@ -623,7 +585,7 @@ function ResumptionForm({
       <div className="mt-6 space-y-3">
         <button
           type="submit"
-          disabled={!stripe || submitting || !!subscriptionActive}
+            disabled={submitting || !!subscriptionActive}
           className="w-full py-3 px-4 bg-primary-text text-secondary-text font-medium rounded-full hover:bg-text-80 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {submitting ? "Processing..." : "Resume Pro Subscription"}
