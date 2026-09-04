@@ -45,7 +45,7 @@ export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProvide
   );
 
   // Apply theme to document
-  const applyTheme = useCallback((newTheme: Theme) => {
+  const applyTheme = useCallback((newTheme: Theme, persist = true) => {
     if (typeof window === "undefined") return;
     
     const root = document.documentElement;
@@ -55,7 +55,9 @@ export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProvide
     root.classList.add(effectiveTheme);
     setResolvedTheme(effectiveTheme);
 
-    localStorage.setItem("theme", newTheme);
+    if (persist) {
+      localStorage.setItem("theme", newTheme);
+    }
   }, []);
 
   const setTheme = useCallback((newTheme: Theme) => {
@@ -65,16 +67,19 @@ export function ThemeProvider({ children, defaultTheme = "light" }: ThemeProvide
 
   // Initialize on mount - load saved theme from localStorage
   useEffect(() => {
-    const savedTheme = getInitialTheme(defaultTheme);
-    setThemeState(savedTheme);
-    applyTheme(savedTheme);
+    const savedTheme = localStorage.getItem("theme") as Theme | null;
+    const initialTheme = savedTheme || getInitialTheme(defaultTheme);
+    setThemeState(initialTheme);
+    // Leave storage empty when this device has no preference yet. That lets
+    // the user profile supply its server-side preference exactly once.
+    applyTheme(initialTheme, Boolean(savedTheme));
 
     // Listen for system theme changes
     const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
     const handleChange = () => {
       const currentTheme = localStorage.getItem("theme") as Theme | null;
       if (currentTheme === "system") {
-        applyTheme("system");
+        applyTheme("system", false);
       }
     };
 

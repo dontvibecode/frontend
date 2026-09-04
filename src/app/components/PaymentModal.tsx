@@ -25,6 +25,7 @@ interface PaymentModalProps {
   setTokenData: (tokenData: TokenData | null) => void;
   initialMode?: "subscription" | "tokens" | "cancellation" | "updateMethod";
   subscriptionActive?: boolean | null;
+  onPlanSyncingChange?: (isSyncing: boolean) => void;
 }
 
 export default function PaymentModal({
@@ -36,6 +37,7 @@ export default function PaymentModal({
   setTokenData,
   initialMode = "subscription",
   subscriptionActive,
+  onPlanSyncingChange = () => {},
 }: PaymentModalProps) {
   const [clientSecret, setClientSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -46,15 +48,17 @@ export default function PaymentModal({
   );
   const [setupLoading, setSetupLoading] = useState(false);
 
-  const refetchUser = async () => {
+  const refetchUser = async (): Promise<User | null> => {
     if (idToken) {
       try {
         const response = await api.user.getUser(idToken);
         setUser(response);
+        return response;
       } catch (err) {
         console.error("Failed to refetch user data:", err);
       }
     }
+    return null;
   };
 
   const refetchTokenData = async () => {
@@ -200,6 +204,8 @@ export default function PaymentModal({
                           refetchUser={refetchUser}
                           refetchTokenData={refetchTokenData}
                           loading={loading}
+                        isSubscriptionPurchase={initialMode === "subscription"}
+                        onPlanSyncingChange={onPlanSyncingChange}
                         />
                       </Elements>
                     )}
@@ -255,6 +261,7 @@ export default function PaymentModal({
                         refetchUser={refetchUser}
                         refetchTokenData={refetchTokenData}
                         subscriptionActive={subscriptionActive}
+                        onPlanSyncingChange={onPlanSyncingChange}
                       />
                     )}
                   {initialMode === "cancellation" && !loading && !error && (
@@ -263,6 +270,7 @@ export default function PaymentModal({
                       idToken={idToken}
                       refetchUser={refetchUser}
                       refetchTokenData={refetchTokenData}
+                      onPlanSyncingChange={onPlanSyncingChange}
                     />
                   )}
                 </div>
@@ -280,11 +288,15 @@ function CheckoutForm({
   refetchUser,
   refetchTokenData,
   loading,
+  isSubscriptionPurchase,
+  onPlanSyncingChange,
 }: {
   onClose: () => void;
-  refetchUser: () => void;
-  refetchTokenData: () => void;
+  refetchUser: () => Promise<User | null>;
+  refetchTokenData: () => Promise<void>;
   loading: boolean;
+  isSubscriptionPurchase: boolean;
+  onPlanSyncingChange: (isSyncing: boolean) => void;
 }) {
   const stripe = useStripe();
   const elements = useElements();
@@ -313,12 +325,25 @@ function CheckoutForm({
     } else {
       setSuccess(true);
       setSubmitting(false);
+      if (isSubscriptionPurchase) {
+        onPlanSyncingChange(true);
+      }
       // Stripe credits tokens / activates Pro asynchronously via webhook, so
       // poll for a short while instead of reading the balance just once.
       [2000, 5000, 9000].forEach((delay) =>
-        setTimeout(() => {
-          refetchUser();
-          refetchTokenData();
+        setTimeout(async () => {
+          const [updatedUser] = await Promise.all([
+            refetchUser(),
+            refetchTokenData(),
+          ]);
+          if (
+            isSubscriptionPurchase &&
+            (delay === 9000 ||
+              (updatedUser?.membership === "pro" &&
+                updatedUser.subscriptionActive))
+          ) {
+            onPlanSyncingChange(false);
+          }
         }, delay),
       );
     }
@@ -407,11 +432,13 @@ function CancellationForm({
   idToken,
   refetchUser,
   refetchTokenData,
+  onPlanSyncingChange,
 }: {
   onClose: () => void;
   idToken: string;
-  refetchUser: () => void;
-  refetchTokenData: () => void;
+  refetchUser: () => Promise<User | null>;
+  refetchTokenData: () => Promise<void>;
+  onPlanSyncingChange: (isSyncing: boolean) => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -427,14 +454,14 @@ function CancellationForm({
     try {
       const result = await paymentAPI.cancelSubscription(idToken);
       if (result) {
+        onPlanSyncingChange(true);
         setSuccess(true);
         setPeriodEnd(result.active_until);
-        setTimeout(() => {
-          refetchUser();
-          refetchTokenData();
-        }, 5000);
+        await Promise.all([refetchUser(), refetchTokenData()]);
+        onPlanSyncingChange(false);
       }
     } catch (err: any) {
+      onPlanSyncingChange(false);
       setError(err?.message || "Failed to cancel subscription.");
     } finally {
       setSubmitting(false);
@@ -513,12 +540,14 @@ function ResumptionForm({
   refetchUser,
   refetchTokenData,
   subscriptionActive,
+  onPlanSyncingChange,
 }: {
   onClose: () => void;
   idToken: string;
-  refetchUser: () => void;
-  refetchTokenData: () => void;
+  refetchUser: () => Promise<User | null>;
+  refetchTokenData: () => Promise<void>;
   subscriptionActive?: boolean | null;
+  onPlanSyncingChange: (isSyncing: boolean) => void;
 }) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -533,13 +562,13 @@ function ResumptionForm({
     try {
       const result = await paymentAPI.resumeSubscription(idToken);
       if (result) {
+        onPlanSyncingChange(true);
         setSuccess(true);
-        setTimeout(() => {
-          refetchUser();
-          refetchTokenData();
-        }, 5000);
+        await Promise.all([refetchUser(), refetchTokenData()]);
+        onPlanSyncingChange(false);
       }
     } catch (err: any) {
+      onPlanSyncingChange(false);
       setError(err?.message || "Failed to resume subscription.");
     } finally {
       setSubmitting(false);

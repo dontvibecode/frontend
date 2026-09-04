@@ -36,29 +36,6 @@ import { useTheme } from "../components/ThemeProvider";
 import FeedbackModal from "../components/FeedbackModal";
 import ModalTemplate from "../components/ModalTemplate";
 
-const CHAT_ACCESS_STORAGE_KEY = "chat_access_granted";
-
-const PasswordInput = ({ onAuthSuccess }: { onAuthSuccess: () => void }) => {
-  const PASSWORD = "secret_password";
-  const [inputPassword, setInputPassword] = useState("");
-  return(
-    <div className="flex h-screen bg-background flex-col items-center justify-center w-20 max-w-xs mx-auto w-24">
-      <input type="password" value={inputPassword} onChange={(e) => setInputPassword(e.target.value)} placeholder="Enter password" className="w-full p-2 border border-gray-300 rounded-md" />
-      <button className="bg-blue-500 text-white p-2 rounded-md cursor-pointer mt-4" onClick={() => {
-        if (inputPassword === PASSWORD) {
-          try {
-            localStorage.setItem(CHAT_ACCESS_STORAGE_KEY, "true");
-          } catch {
-            // localStorage may be unavailable (e.g., privacy mode); fall through to in-memory state
-          }
-          onAuthSuccess();
-        }
-      }}>Submit</button>
-    </div>
-  )
-
-};
-
 const TypewriterHero = () => {
   const lines = [
     "Code like it matters.",
@@ -466,16 +443,6 @@ export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
   const { resolvedTheme, setTheme } = useTheme();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-  useEffect(() => {
-    try {
-      if (localStorage.getItem(CHAT_ACCESS_STORAGE_KEY) === "true") {
-        setIsAuthenticated(true);
-      }
-    } catch {
-      // localStorage may be unavailable; user will need to re-enter the password this session
-    }
-  }, []);
   const [message, setMessage] = useState("");
   const [streamStage, setStreamStage] = useState<
     | "routing"
@@ -505,6 +472,7 @@ export default function ChatPage() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [isPlanSyncing, setIsPlanSyncing] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"subscription" | "tokens" | "cancellation" | "updateMethod">("subscription");
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -1057,12 +1025,6 @@ export default function ChatPage() {
     setSearchQuery("");
   };
 
-  if (!isAuthenticated) {
-    return (
-      <PasswordInput onAuthSuccess={() => setIsAuthenticated(true)} />
-    );
-  }
-
   return (
     <div className="flex h-screen bg-background">
       {/* Login Modal */}
@@ -1095,6 +1057,7 @@ export default function ChatPage() {
         onClose={() => setShowUpgradeModal(false)}
         subscriptionActive={user?.subscriptionActive}
         membershipExpiresAt={user?.membershipExpiresAt}
+        isPlanSyncing={isPlanSyncing}
         onDowngrade={() => {
           setPaymentMode("cancellation");
           setShowPaymentModal(true);
@@ -1118,6 +1081,7 @@ export default function ChatPage() {
         setTokenData={setTokenData}
         initialMode={paymentMode}
         subscriptionActive={user?.subscriptionActive}
+        onPlanSyncingChange={setIsPlanSyncing}
       />
 
       {/* User Profile Popup */}

@@ -51,7 +51,17 @@ export default function UserProfilePopup({
   useEffect(() => {
     setName(user?.username ?? "");
     if (user?.preferences?.theme) {
-      setTheme(user.preferences.theme);
+      // API refetches happen after payments, membership changes, and window
+      // focus. They must not overwrite a theme the user already selected on
+      // this device. Only seed the theme from the profile when no local choice
+      // exists yet.
+      try {
+        if (!localStorage.getItem("theme")) {
+          setTheme(user.preferences.theme);
+        }
+      } catch {
+        // Storage can be unavailable in privacy mode; keep the active theme.
+      }
     }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
@@ -170,9 +180,6 @@ export default function UserProfilePopup({
 
   const resetFields = () => {
     setName(user?.username ?? "");
-    if (user?.preferences?.theme) {
-      setTheme(user.preferences.theme);
-    }
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
     setTabSize(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);

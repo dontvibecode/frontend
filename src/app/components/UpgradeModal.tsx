@@ -13,6 +13,7 @@ interface UpgradeModalProps {
   onSelectTokens: () => void;
   subscriptionActive?: boolean | null;
   membershipExpiresAt?: string | null;
+  isPlanSyncing?: boolean;
 }
 
 export default function UpgradeModal({
@@ -23,6 +24,7 @@ export default function UpgradeModal({
   onSelectTokens,
   subscriptionActive,
   membershipExpiresAt,
+  isPlanSyncing = false,
 }: UpgradeModalProps) {
   const { resolvedTheme } = useTheme();
   return (
@@ -67,10 +69,16 @@ export default function UpgradeModal({
 
                   <button
                     onClick={onDowngrade}
-                    disabled={!subscriptionActive}
-                    className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full mb-6 disabled:opacity-50 cursor-pointer"
+                    disabled={!subscriptionActive || isPlanSyncing}
+                    className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full mb-6 disabled:opacity-50 disabled:cursor-wait cursor-pointer"
                   >
-                    {membershipExpiresAt ? subscriptionActive ? "Downgrade" : `Pro membership valid until ${new Date(membershipExpiresAt).toLocaleDateString()}` : "Current plan"}
+                    {isPlanSyncing
+                      ? "Updating plan..."
+                      : membershipExpiresAt
+                        ? subscriptionActive
+                          ? "Downgrade"
+                          : `Pro membership valid until ${new Date(membershipExpiresAt).toLocaleDateString()}`
+                        : "Current plan"}
                   </button>
 
                   <div className="space-y-3 text-sm">
@@ -109,9 +117,16 @@ export default function UpgradeModal({
 
                   <button
                     onClick={onSelectPro}
-                    className="w-full py-3 px-4 bg-primary-text text-background font-medium rounded-full mb-6 hover:opacity-90 transition-opacity disabled:opacity-50 cursor-pointer"
+                    disabled={isPlanSyncing}
+                    className="w-full py-3 px-4 bg-primary-text text-background font-medium rounded-full mb-6 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-wait cursor-pointer"
                   >
-                    {membershipExpiresAt ? subscriptionActive ? "Current plan | Click to manage" : "Resume subscription" : "Get Pro plan"}
+                    {isPlanSyncing
+                      ? "Updating plan..."
+                      : membershipExpiresAt
+                        ? subscriptionActive
+                          ? "Current plan | Click to manage"
+                          : "Resume subscription"
+                        : "Get Pro plan"}
                   </button>
 
                   <p className="text-xs text-text-60 mb-4">Everything in Free, plus:</p>
