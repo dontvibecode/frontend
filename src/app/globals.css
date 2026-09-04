@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* Bind dark: to the .dark class ThemeProvider puts on <html>. Tailwind v4 only
+   reads tailwind.config.ts when a @config directive loads it, so the
+   `darkMode: "class"` declared there never took effect and dark: utilities
+   silently followed the OS setting instead of the in-app theme toggle. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
   color-scheme: light;
   --background: #ffffff;

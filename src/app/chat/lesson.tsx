@@ -45,6 +45,214 @@ interface ExerciseModuleProps {
   tabSize?: number;
 }
 
+// The three feedback panels were byte-for-byte identical apart from their hue,
+// so their colours live here and the markup below is written once. Dark values
+// tint the surface rather than lightening it, so the panel still reads as part
+// of the dark page instead of a bright card punched into it.
+const FEEDBACK_VARIANTS: Record<number, {
+  motionKey: string;
+  panel: string;
+  blobTop: string;
+  blobBottom: string;
+  badge: string;
+  iconPath: string;
+  heading: string;
+  summary: string;
+  divider: string;
+  accent: string;
+  body: string;
+}> = {
+  2: {
+    motionKey: "correct",
+    panel:
+      "from-emerald-50 to-lime-50 border-emerald-200/60 dark:from-emerald-950/50 dark:to-lime-950/30 dark:border-emerald-800/50",
+    blobTop:
+      "from-emerald-200/30 to-lime-200/30 dark:from-emerald-500/10 dark:to-lime-500/10",
+    blobBottom:
+      "from-green-200/20 to-emerald-200/20 dark:from-green-500/10 dark:to-emerald-500/10",
+    badge:
+      "from-emerald-500 to-lime-500 shadow-emerald-500/25 dark:shadow-emerald-500/10",
+    iconPath: "M5 13l4 4L19 7",
+    heading: "text-emerald-900 dark:text-emerald-50",
+    summary: "text-emerald-700/80 dark:text-emerald-200/70",
+    divider: "border-emerald-200/50 dark:border-emerald-800/40",
+    accent: "text-emerald-800 dark:text-emerald-300",
+    body: "text-emerald-700/70 dark:text-emerald-200/60",
+  },
+  1: {
+    motionKey: "partially_correct",
+    panel:
+      "from-amber-50 to-yellow-50 border-amber-200/60 dark:from-amber-950/50 dark:to-yellow-950/30 dark:border-amber-800/50",
+    blobTop:
+      "from-amber-200/30 to-yellow-200/30 dark:from-amber-500/10 dark:to-yellow-500/10",
+    blobBottom:
+      "from-orange-200/20 to-amber-200/20 dark:from-orange-500/10 dark:to-amber-500/10",
+    badge:
+      "from-amber-500 to-yellow-500 shadow-amber-500/25 dark:shadow-amber-500/10",
+    iconPath: "M12 9v2m0 4h.01",
+    heading: "text-amber-900 dark:text-amber-50",
+    summary: "text-amber-700/80 dark:text-amber-200/70",
+    divider: "border-amber-200/50 dark:border-amber-800/40",
+    accent: "text-amber-800 dark:text-amber-300",
+    body: "text-amber-700/70 dark:text-amber-200/60",
+  },
+  0: {
+    motionKey: "incorrect",
+    panel:
+      "from-rose-50 to-orange-50 border-rose-200/60 dark:from-rose-950/50 dark:to-orange-950/30 dark:border-rose-800/50",
+    blobTop:
+      "from-rose-200/30 to-orange-200/30 dark:from-rose-500/10 dark:to-orange-500/10",
+    blobBottom:
+      "from-red-200/20 to-rose-200/20 dark:from-red-500/10 dark:to-rose-500/10",
+    badge: "from-rose-500 to-red-500 shadow-rose-500/25 dark:shadow-rose-500/10",
+    iconPath: "M6 18L18 6M6 6l12 12",
+    heading: "text-rose-900 dark:text-rose-50",
+    summary: "text-rose-700/80 dark:text-rose-200/70",
+    divider: "border-rose-200/50 dark:border-rose-800/40",
+    accent: "text-rose-800 dark:text-rose-300",
+    body: "text-rose-700/70 dark:text-rose-200/60",
+  },
+};
+
+const CODE_BLOCK_STYLE = {
+  margin: 0,
+  padding: "0.75rem 1rem",
+  background: "#1E1E1E",
+  fontSize: "13px",
+};
+
+function FeedbackCodeBlock({
+  label,
+  tone,
+  language,
+  children,
+}: {
+  label: string;
+  tone: "wrong" | "right";
+  language: string;
+  children: string;
+}) {
+  // Fixed regardless of the panel's hue: red is always the submitted code and
+  // green always the fix, so they stay legible next to any variant.
+  const toneClasses =
+    tone === "wrong"
+      ? {
+          text: "text-rose-600 dark:text-rose-400",
+          dot: "bg-rose-500",
+          border: "border-rose-200/50 dark:border-rose-900/60",
+        }
+      : {
+          text: "text-emerald-600 dark:text-emerald-400",
+          dot: "bg-emerald-500",
+          border: "border-emerald-200/50 dark:border-emerald-900/60",
+        };
+
+  return (
+    <div className="mb-3">
+      <div className={`text-xs font-medium mb-1 flex items-center gap-1 ${toneClasses.text}`}>
+        <span className={`w-2 h-2 rounded-full ${toneClasses.dot}`}></span>
+        {label}
+      </div>
+      <div className={`rounded-lg overflow-hidden border ${toneClasses.border}`}>
+        <SyntaxHighlighter language={language} style={vscDarkPlus} customStyle={CODE_BLOCK_STYLE}>
+          {children}
+        </SyntaxHighlighter>
+      </div>
+    </div>
+  );
+}
+
+function FeedbackPanel({ feedback, language }: { feedback: any; language: string }) {
+  const variant = FEEDBACK_VARIANTS[feedback.correctness as 0 | 1 | 2];
+  if (!variant) return null;
+
+  const diffs = feedback.corrections?.diffs ?? [];
+  const statements = feedback.corrections?.statements ?? [];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      transition={{ duration: 0.3 }}
+      className={`mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br border p-5 ${variant.panel}`}
+    >
+      <div
+        className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br rounded-full blur-2xl -translate-y-1/2 translate-x-1/2 ${variant.blobTop}`}
+      />
+      <div
+        className={`absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr rounded-full blur-xl translate-y-1/2 -translate-x-1/2 ${variant.blobBottom}`}
+      />
+
+      <div className="relative">
+        <div className="flex items-start gap-4">
+          <div
+            className={`flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg ${variant.badge}`}
+          >
+            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={variant.iconPath} />
+            </svg>
+          </div>
+          <div className="flex-1">
+            <h3 className={`text-lg font-semibold mb-1 ${variant.heading}`}>
+              <Markdown>{feedback.heading}</Markdown>
+            </h3>
+            <div className={`text-sm leading-relaxed whitespace-pre-wrap ${variant.summary}`}>
+              <Markdown>{feedback.summary}</Markdown>
+            </div>
+          </div>
+        </div>
+
+        {diffs.length > 0 && (
+          <div className={`mt-4 pt-4 border-t space-y-4 ${variant.divider}`}>
+            {diffs.map((diff: any, idx: number) => (
+              <div key={idx}>
+                <div className="flex items-center gap-2 mb-3">
+                  <svg
+                    className={`w-4 h-4 ${variant.accent}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                    />
+                  </svg>
+                  <span className={`text-sm font-medium ${variant.accent}`}>{diff.headline}</span>
+                </div>
+
+                <FeedbackCodeBlock label="Your code:" tone="wrong" language={language}>
+                  {diff.incorrect_code}
+                </FeedbackCodeBlock>
+                <FeedbackCodeBlock label="Suggested fix:" tone="right" language={language}>
+                  {diff.correct_code}
+                </FeedbackCodeBlock>
+
+                <div className={`text-sm leading-relaxed ${variant.body}`}>
+                  <Markdown compact>{diff.comment}</Markdown>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {statements.length > 0 && (
+          <div className={`mt-4 pt-4 border-t ${variant.divider}`}>
+            {statements.map((statement: string, idx: number) => (
+              <div key={idx} className={`text-sm leading-relaxed mb-2 ${variant.body}`}>
+                <Markdown compact>{statement}</Markdown>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </motion.div>
+  );
+}
+
 export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise, isBookmarked, tabSize = DEFAULT_TAB_SIZE }: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [feedbackData, setFeedbackData] = useState<any>(null);
@@ -59,6 +267,11 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   const SAVE_REMINDER_DELAY = 10000; // Auto remind to save after 10 seconds
 
   const currentExercise = data.exercises?.[activeExerciseIndex];
+  const feedbackLanguage = currentExercise?.filename?.endsWith('.py')
+    ? 'python'
+    : currentExercise?.filename?.endsWith('.java')
+      ? 'java'
+      : 'javascript';
 
   const correctnessColor = (correctness: number) => {
     if (correctness === null) return 'bg-gray-300';
@@ -302,18 +515,18 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
-            className="flex items-center justify-between bg-amber-50 border border-amber-200 rounded-lg px-4 py-2 mt-2"
+            className="flex items-center justify-between bg-amber-50 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800/50 rounded-lg px-4 py-2 mt-2"
           >
             <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
-              <span className="text-sm text-black">You have unsaved changes</span>
+              <span className="text-sm text-black dark:text-amber-50">You have unsaved changes</span>
             </div>
             <button
               onClick={saveCodeProgress}
               disabled={saving}
-              className="cursor-pointer text-sm font-medium text-black hover:text-black/90 hover:bg-amber-100 px-3 py-1 rounded-md transition-colors"
+              className="cursor-pointer text-sm font-medium text-black dark:text-amber-50 hover:text-black/90 hover:bg-amber-100 dark:hover:bg-amber-900/50 px-3 py-1 rounded-md transition-colors"
             >
               {saving ? 'Saving...' : 'Save now'}
             </button>
@@ -386,245 +599,12 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
 
       {/* Feedback Dialogs */}
       <AnimatePresence mode="wait">
-        {feedbackData?.correctness === 2 && feedbackData && (
-          <motion.div
-            key="correct"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-50 to-lime-50 border border-emerald-200/60 p-5"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-200/30 to-lime-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-green-200/20 to-emerald-200/20 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
-
-            <div className="relative">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-lime-500 flex items-center justify-center shadow-lg shadow-emerald-500/25">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-emerald-900 mb-1">
-                    <Markdown>{feedbackData.heading}</Markdown>
-                  </h3>
-                  <p className="text-sm text-emerald-700/80 leading-relaxed whitespace-pre-wrap">
-                    <Markdown>{feedbackData.summary}</Markdown>
-                  </p>
-                </div>
-              </div>
-
-              {/* <div className="mt-4 flex items-center gap-3">
-                <button 
-                  onClick={() => { setFeedbackData(null); }}
-                  className="cursor-pointer px-4 py-2 text-sm font-medium text-emerald-700 hover:text-emerald-900 hover:bg-emerald-100/50 rounded-lg transition-colors"
-                >
-                  Dismiss
-                </button>
-              </div> */}
-            </div>
-          </motion.div>
-        )}
-
-        {feedbackData?.correctness === 1 && feedbackData && (
-          <motion.div
-            key="partially_correct"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-50 to-yellow-50 border border-amber-200/60 p-5"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-amber-200/30 to-yellow-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-orange-200/20 to-amber-200/20 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
-
-            <div className="relative">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-amber-500 to-yellow-500 flex items-center justify-center shadow-lg shadow-amber-500/25">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M12 9v2m0 4h.01" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-amber-900 mb-1">
-                    <Markdown>{feedbackData.heading}</Markdown>
-                  </h3>
-                  <p className="text-sm text-amber-700/80 leading-relaxed whitespace-pre-wrap">
-                    <Markdown>{feedbackData.summary}</Markdown>
-                  </p>
-                </div>
-              </div>
-
-              {/* Code diffs */}
-              {feedbackData.corrections?.diffs?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-amber-200/50 space-y-4">
-                  {feedbackData.corrections.diffs.map((diff: any, idx: number) => (
-                    <div key={idx}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <svg className="w-4 h-4 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <span className="text-sm font-medium text-amber-800">{diff.headline}</span>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="text-xs font-medium text-rose-600 mb-1 flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                          Your code:
-                        </div>
-                        <div className="rounded-lg overflow-hidden border border-rose-200/50">
-                          <SyntaxHighlighter
-                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
-                            style={vscDarkPlus}
-                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
-                          >
-                            {diff.incorrect_code}
-                          </SyntaxHighlighter>
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="text-xs font-medium text-emerald-600 mb-1 flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                          Suggested fix:
-                        </div>
-                        <div className="rounded-lg overflow-hidden border border-emerald-200/50">
-                          <SyntaxHighlighter
-                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
-                            style={vscDarkPlus}
-                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
-                          >
-                            {diff.correct_code}
-                          </SyntaxHighlighter>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-amber-700/70 leading-relaxed"><Markdown compact>{diff.comment}</Markdown></p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Statements */}
-              {feedbackData.corrections?.statements?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-amber-200/50">
-                  {feedbackData.corrections.statements.map((statement: string, idx: number) => (
-                    <p key={idx} className="text-sm text-amber-700/70 leading-relaxed mb-2"><Markdown compact>{statement}</Markdown></p>
-                  ))}
-                </div>
-              )}
-
-              {/* <div className="mt-4 flex items-center gap-3">
-                <button 
-                  onClick={() => { setFeedbackData(null); }}
-                  className="cursor-pointer px-4 py-2 text-sm font-medium text-amber-700 hover:text-amber-900 hover:bg-amber-100/50 rounded-lg transition-colors"
-                >
-                  Dismiss
-                </button>
-              </div> */}
-            </div>
-          </motion.div>
-        )}
-
-        {feedbackData?.correctness === 0 && feedbackData && (
-          <motion.div
-            key="incorrect"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.3 }}
-            className="mt-6 relative overflow-hidden rounded-2xl bg-gradient-to-br from-rose-50 to-orange-50 border border-rose-200/60 p-5"
-          >
-            <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-rose-200/30 to-orange-200/30 rounded-full blur-2xl -translate-y-1/2 translate-x-1/2" />
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-red-200/20 to-rose-200/20 rounded-full blur-xl translate-y-1/2 -translate-x-1/2" />
-
-            <div className="relative">
-              <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center shadow-lg shadow-rose-500/25">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-rose-900 mb-1">
-                    <Markdown>{feedbackData.heading}</Markdown>
-                  </h3>
-                  <span className="text-sm text-rose-700/80 leading-relaxed whitespace-pre-wrap">
-                    <Markdown>{feedbackData.summary}</Markdown>
-                  </span>
-                </div>
-              </div>
-
-              {/* Code diffs */}
-              {feedbackData.corrections?.diffs?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-rose-200/50 space-y-4">
-                  {feedbackData.corrections.diffs.map((diff: any, idx: number) => (
-                    <div key={idx}>
-                      <div className="flex items-center gap-2 mb-3">
-                        <svg className="w-4 h-4 text-rose-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                        </svg>
-                        <span className="text-sm font-medium text-rose-800">{diff.headline}</span>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="text-xs font-medium text-rose-600 mb-1 flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                          Your code:
-                        </div>
-                        <div className="rounded-lg overflow-hidden border border-rose-200/50">
-                          <SyntaxHighlighter
-                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
-                            style={vscDarkPlus}
-                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
-                          >
-                            {diff.incorrect_code}
-                          </SyntaxHighlighter>
-                        </div>
-                      </div>
-
-                      <div className="mb-3">
-                        <div className="text-xs font-medium text-emerald-600 mb-1 flex items-center gap-1">
-                          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                          Suggested fix:
-                        </div>
-                        <div className="rounded-lg overflow-hidden border border-emerald-200/50">
-                          <SyntaxHighlighter
-                            language={currentExercise?.filename?.endsWith('.py') ? 'python' : currentExercise?.filename?.endsWith('.java') ? 'java' : 'javascript'}
-                            style={vscDarkPlus}
-                            customStyle={{ margin: 0, padding: '0.75rem 1rem', background: '#1E1E1E', fontSize: '13px' }}
-                          >
-                            {diff.correct_code}
-                          </SyntaxHighlighter>
-                        </div>
-                      </div>
-
-                      <p className="text-sm text-rose-700/70 leading-relaxed"><Markdown compact>{diff.comment}</Markdown></p>
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Statements */}
-              {feedbackData.corrections?.statements?.length > 0 && (
-                <div className="mt-4 pt-4 border-t border-rose-200/50">
-                  {feedbackData.corrections.statements.map((statement: string, idx: number) => (
-                    <p key={idx} className="text-sm text-rose-700/70 leading-relaxed mb-2"><Markdown compact>{statement}</Markdown></p>
-                  ))}
-                </div>
-              )}
-              {/* 
-              <div className="mt-4 flex items-center gap-3">
-                <button 
-                  onClick={() => { setFeedbackData(null); }}
-                  className="cursor-pointer px-4 py-2 text-sm font-medium text-rose-700 hover:text-rose-900 hover:bg-rose-100/50 rounded-lg transition-colors"
-                >
-                  Dismiss
-                </button>
-              </div> */}
-            </div>
-          </motion.div>
+        {feedbackData && (
+          <FeedbackPanel
+            key={feedbackData.correctness}
+            feedback={feedbackData}
+            language={feedbackLanguage}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -995,15 +975,15 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                             {topLanguages.map(([lang, count]) => {
                               const percent = Math.round((count / totalFiles) * 100);
                               const colors: Record<string, string> = {
-                                'JavaScript': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-                                'TypeScript': 'bg-blue-100 text-blue-800 border-blue-200',
-                                'Python': 'bg-green-100 text-green-800 border-green-200',
-                                'Java': 'bg-orange-100 text-orange-800 border-orange-200',
-                                'JSON': 'bg-gray-100 text-gray-700 border-gray-200',
-                                'HTML': 'bg-red-100 text-red-800 border-red-200',
-                                'CSS': 'bg-purple-100 text-purple-800 border-purple-200',
+                                'JavaScript': 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800/50',
+                                'TypeScript': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50',
+                                'Python': 'bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800/50',
+                                'Java': 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800/50',
+                                'JSON': 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700',
+                                'HTML': 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/50',
+                                'CSS': 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50',
                               };
-                              const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200';
+                              const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700';
                               return (
                                 <span
                                   key={lang}

@@ -1,5 +1,9 @@
 import type { Config } from "tailwindcss";
 
+// Not loaded: Tailwind v4 only reads this file via a @config directive, which
+// globals.css deliberately does not use. The colours below are defined again in
+// the @theme block there, and dark mode is set by @custom-variant. Editing this
+// file has no effect; change globals.css instead.
 export default {
   content: [
     "./src/**/*.{js,ts,jsx,tsx,mdx}",
