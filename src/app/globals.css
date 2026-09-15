@@ -225,3 +225,12 @@ body {
   border: 3px solid #1a1a1a;
 }
 
+
+/* The line being read aloud. SpeechProvider toggles this class on the DOM
+   directly, so following along never re-renders the lesson. */
+.speech-active {
+  border-radius: 0.25rem;
+  background-color: var(--base-10);
+  box-shadow: 0 0 0 0.25rem var(--base-10);
+  transition: background-color 150ms ease, box-shadow 150ms ease;
+}

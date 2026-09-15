@@ -65,6 +65,9 @@ export interface UserPreferences {
   fontSize?: 'small' | 'medium' | 'large';    
   compactMode?: boolean;
   tab_size?: number; // 1-8
+  voiceEnabled?: boolean;
+  voiceId?: string;
+  speechRate?: number;
 }
 
 /** Matches the `Preferences.tab_size` default in the Django model. */
@@ -85,3 +88,43 @@ export interface TokenData {
   token_used: number;
   token_limit: number;
 }
+
+export type SpeechScope = "summary" | "full";
+
+/** When one spoken line starts, in seconds from the start of the audio. */
+export interface SpeechMark {
+  field: string;
+  line: number;
+  start: number;
+}
+
+/** One spoken line, for the browser's voice to read when ElevenLabs can't. */
+export interface SpeechUnit {
+  field: string;
+  line: number;
+  text: string;
+}
+
+export interface SpeechVoice {
+  id: string;
+  name: string;
+  description: string;
+  preview_url: string | null;
+}
+
+export interface SpeechVoicesResponse {
+  available: boolean;
+  voices: SpeechVoice[];
+  default_voice_id: string | null;
+}
+
+export type SpeechClipResult =
+  | {
+      kind: "audio";
+      url: string;
+      duration: number | null;
+      marks: SpeechMark[];
+      voiceId: string;
+      cached: boolean;
+    }
+  | { kind: "browser"; reason: string; units: SpeechUnit[] };

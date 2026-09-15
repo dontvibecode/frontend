@@ -35,6 +35,12 @@ import PaymentModal from "../components/PaymentModal";
 import { useTheme } from "../components/ThemeProvider";
 import FeedbackModal from "../components/FeedbackModal";
 import ModalTemplate from "../components/ModalTemplate";
+import {
+  SpeakButton,
+  SpeechContextProvider,
+  SpeechMiniPlayer,
+  useSpeechController,
+} from "../components/SpeechProvider";
 
 const TypewriterHero = () => {
   const lines = [
@@ -256,9 +262,15 @@ const AIResponse = ({
 
   if (!jsonData || Object.keys(jsonData).length === 0 || !message) {
     return (
-      <div className="bg-base-10 border border-theme-border rounded-2xl p-3">
-        <div className="text-sm text-text-90">
+      <div
+        className="bg-base-10 border border-theme-border rounded-2xl p-3"
+        data-speech-message={message?.id}
+      >
+        <div className="text-sm text-text-90" data-speech-field="text">
           <Markdown compact>{message?.text as string}</Markdown>
+        </div>
+        <div className="flex justify-end -mb-1 -mr-1">
+          <SpeakButton messageId={message?.id} scope="full" />
         </div>
       </div>
     );
@@ -277,22 +289,26 @@ const AIResponse = ({
           response: message,
         })
       }
+      data-speech-message={message.id}
       className={`
         cursor-pointer bg-container-primary border border-base-10 rounded-2xl
       `}
     >
       <div className={`p-3 bg-backdrop rounded-2xl`}>
         {/* Breakdown */}
-        <h1 className="text-xl text-primary-text mb-3 font-semibold">
-          {jsonData.lessonTitle ??
-            (jsonData as any).lesson_title ??
-            "No Title Available"}
-        </h1>
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <h1 className="text-xl text-primary-text font-semibold" data-speech-field="title">
+            {jsonData.lessonTitle ??
+              (jsonData as any).lesson_title ??
+              "No Title Available"}
+          </h1>
+          <SpeakButton messageId={message.id} scope="summary" />
+        </div>
 
         {message.thought && <ThoughtDropdown thought={message.thought} />}
 
         {jsonData.breakdown && (
-          <p className="text-sm text-primary-text mb-3 font-regular">
+          <p className="text-sm text-primary-text mb-3 font-regular" data-speech-field="breakdown">
             {jsonData.breakdown}
           </p>
         )}
@@ -577,6 +593,32 @@ export default function ChatPage() {
     }
   }, [sessionIdToken]);
 
+  // Voice settings save as they change. The switch flips at once; if saving
+  // fails, reloading the user puts it back the way the server has it.
+  const updatePreferences = useCallback(
+    async (changes: Partial<UserPreferences>) => {
+      if (!sessionIdToken) return;
+      setUser((current) =>
+        current
+          ? { ...current, preferences: { ...current.preferences, ...changes } }
+          : current,
+      );
+      try {
+        await api.user.updateUser({ preferences: changes }, sessionIdToken);
+      } catch (error) {
+        console.error("Failed to save voice settings:", error);
+        void refreshUser();
+      }
+    },
+    [sessionIdToken, refreshUser],
+  );
+
+  const speech = useSpeechController({
+    idToken: sessionIdToken,
+    preferences: user?.preferences,
+    onPreferencesChange: updatePreferences,
+  });
+
   // Pinning and deleting apply to the list first and talk to the server after.
   // Waiting on the round trip made the sidebar look frozen, and neither change
   // needs anything back from the server to be drawn correctly.
@@ -849,6 +891,11 @@ export default function ChatPage() {
       return;
     }
 
+    // The reply is read aloud after a long wait, by which point some browsers
+    // no longer count it as the user's doing. Unlock audio now, while this
+    // click or key press still counts.
+    if (speech.voiceEnabled) speech.unlock();
+
     const currentMessage = message;
     const requestId = messagesRequestRef.current;
     setLoading(true);
@@ -929,6 +976,13 @@ export default function ChatPage() {
       );
 
       setMessages(messagesData);
+
+      // Read the new reply aloud if the user turned that on. A lesson reads its
+      // summary; the lesson panel has a button for the whole thing.
+      if (response && response.id !== undefined && user?.preferences?.voiceEnabled) {
+        const isLesson = !!response.json && Object.keys(response.json).length > 0;
+        void speech.play(response.id, isLesson ? "summary" : "full");
+      }
 
       // A first message creates the conversation, and later ones change its
       // title and exercise count, so the sidebar is stale either way. Left
@@ -1026,6 +1080,7 @@ export default function ChatPage() {
   };
 
   return (
+    <SpeechContextProvider value={speech}>
     <div className="flex h-screen bg-background">
       {/* Login Modal */}
       <LoginModal
@@ -2135,6 +2190,23 @@ export default function ChatPage() {
                 Gemini
               </button>
               <button
+                type="button"
+                onClick={() => speech.setVoiceEnabled(!speech.voiceEnabled)}
+                aria-pressed={speech.voiceEnabled}
+                title={speech.voiceEnabled ? "Stop reading replies aloud" : "Read replies aloud"}
+                className={`cursor-pointer font-semibold px-3 py-1.5 rounded-full text-sm transition-all h-8 flex items-center gap-1.5 ${
+                  speech.voiceEnabled
+                    ? "bg-primary-text text-secondary-text"
+                    : "bg-base-10 text-text-70 hover:bg-base-20"
+                }`}
+              >
+                <Icon
+                  icon={speech.voiceEnabled ? "solar:volume-loud-bold" : "solar:volume-cross-linear"}
+                  className="w-4 h-4"
+                />
+                Voice
+              </button>
+              <button
                 onClick={sendMessage}
                 disabled={loading || !message.trim()}
                 className="ml-auto w-8 h-8 rounded-full bg-primary-text flex items-center justify-center hover:bg-gray-800 transition-all disabled:bg-gray-300 disabled:cursor-not-allowed"
@@ -2155,5 +2227,7 @@ export default function ChatPage() {
         </aside>
       )}
     </div>
+    <SpeechMiniPlayer />
+    </SpeechContextProvider>
   );
 }

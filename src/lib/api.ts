@@ -3,7 +3,14 @@
  * All API calls should go through this file for consistency and maintainability
  */
 
-import { InstructorResponse, MessageData, UserPreferences } from "@/types";
+import {
+  InstructorResponse,
+  MessageData,
+  SpeechClipResult,
+  SpeechScope,
+  SpeechVoicesResponse,
+  UserPreferences,
+} from "@/types";
 import { triggerTokenWarning } from "@/app/components/TokenWarningModal";
 import { notifyTokenBalanceChanged } from "@/lib/tokenBalanceEvents";
 
@@ -88,6 +95,9 @@ const transformPreferencesToCamelCase = (prefs: any): UserPreferences | undefine
     fontSize: prefs.font_size,
     compactMode: prefs.compact_mode,
     tab_size: prefs.tab_size,
+    voiceEnabled: prefs.voice_enabled,
+    voiceId: prefs.voice_id,
+    speechRate: prefs.speech_rate,
   };
 };
 
@@ -109,6 +119,9 @@ const transformPreferencesToSnakeCase = (prefs: UserPreferences | undefined): an
     font_size: prefs.fontSize,
     compact_mode: prefs.compactMode,
     tab_size: prefs.tab_size,
+    voice_enabled: prefs.voiceEnabled,
+    voice_id: prefs.voiceId,
+    speech_rate: prefs.speechRate,
   };
 };
 
@@ -903,6 +916,65 @@ export const feedbackAPI = {
   }
 }
 // ============================================================================
+// SPEECH API
+// ============================================================================
+
+export const speechAPI = {
+  /**
+   * Voices the picker may offer, and whether premium voices work at all
+   */
+  getVoices: async (idToken?: string): Promise<SpeechVoicesResponse> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/speech/voices/`, {
+      method: "GET",
+      headers: getAuthHeaders(idToken),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to get voices: ${response.status}`);
+    }
+
+    return response.json();
+  },
+
+  /**
+   * Narration for one message. Resolves to playable audio or, when premium
+   * audio can't be served (no key, allowance used up, text too long), to the
+   * prepared text for the browser's own voice. Throws for anything else.
+   */
+  getClip: async (
+    messageId: number,
+    scope: SpeechScope,
+    idToken?: string
+  ): Promise<SpeechClipResult> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/speech/${messageId}/`, {
+      method: "POST",
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify({ scope }),
+    });
+    const data = await response.json().catch(() => ({}));
+
+    if (response.ok) {
+      return {
+        kind: "audio",
+        url: data.url,
+        duration: data.duration,
+        marks: data.marks ?? [],
+        voiceId: data.voice_id,
+        cached: data.cached,
+      };
+    }
+    if (Array.isArray(data.units) && data.units.length > 0) {
+      return { kind: "browser", reason: data.error, units: data.units };
+    }
+
+    const error: any = new Error(`Failed to get narration: ${response.status}`);
+    error.response = { data };
+    error.status = response.status;
+    throw error;
+  },
+};
+
+// ============================================================================
 // COMBINED API OBJECT (for convenience)
 // ============================================================================
 
@@ -914,6 +986,7 @@ const api = {
   upload: uploadAPI,
   payment: paymentAPI,
   feedback: feedbackAPI,
+  speech: speechAPI,
 };
 
 export default api;

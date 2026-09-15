@@ -159,7 +159,12 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
 }
 
 /**
- * Parses a full markdown string and returns React elements
+ * Parses a full markdown string and returns React elements.
+ *
+ * Every block carries data-speech-line: its 1-based source line (a code block
+ * uses its opening fence line). Narration highlights the line being read by
+ * that number, and backend/chatbot/services/speech_text.py numbers lines the
+ * same way, so a change to how lines are walked here must be made there too.
  */
 export function parseMarkdown(markdown: string, compact: boolean = false): React.ReactElement {
   if (!markdown) return <></>;
@@ -192,6 +197,7 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
       elements.push(
         <pre
           key={`code-${codeBlock.startIndex}`}
+          data-speech-line={codeBlock.startIndex}
           className={`bg-base-10 border border-base-10 rounded-lg p-3 overflow-x-auto ${compact ? '' : 'my-3'}`}
         >
           <code className="text-sm font-mono text-primary-text whitespace-pre">{code}</code>
@@ -256,7 +262,7 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
       elements.push(
         React.createElement(
           HeadingTag,
-          { key: `heading-${lineIndex}`, className: headingClasses[level] },
+          { key: `heading-${lineIndex}`, className: headingClasses[level], "data-speech-line": lineIndex },
           content
         )
       );
@@ -271,6 +277,7 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
       elements.push(
         <blockquote
           key={`blockquote-${lineIndex}`}
+          data-speech-line={lineIndex}
           className={`border-l-4 border-gray-300 pl-4 py-1 text-gray-600 italic ${compact ? '' : 'my-2'}`}
         >
           {content}
@@ -287,7 +294,7 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
         currentList = { type: 'ul', items: [] };
       }
       const content = parseInlineMarkdown(ulMatch[1], `ul-${lineIndex}`);
-      currentList.items.push(<li key={`li-${lineIndex}`}>{content}</li>);
+      currentList.items.push(<li key={`li-${lineIndex}`} data-speech-line={lineIndex}>{content}</li>);
       continue;
     }
 
@@ -299,7 +306,7 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
         currentList = { type: 'ol', items: [] };
       }
       const content = parseInlineMarkdown(olMatch[1], `ol-${lineIndex}`);
-      currentList.items.push(<li key={`li-${lineIndex}`}>{content}</li>);
+      currentList.items.push(<li key={`li-${lineIndex}`} data-speech-line={lineIndex}>{content}</li>);
       continue;
     }
 
@@ -307,7 +314,7 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
     flushList();
     const content = parseInlineMarkdown(trimmedLine, `p-${lineIndex}`);
     elements.push(
-      <p key={`p-${lineIndex}`} className={compact ? '' : 'my-2'}>
+      <p key={`p-${lineIndex}`} data-speech-line={lineIndex} className={compact ? '' : 'my-2'}>
         {content}
       </p>
     );
