@@ -1,51 +1,59 @@
 import React from 'react';
+import katex from 'katex';
 
 /**
  * Markdown Parser Utility
- * 
+ *
  * Supported Markdown Syntax:
  * ==========================
- * 
+ *
  * **Bold Text**
  *   - Syntax: **text** or __text__
  *   - Example: **important** → <strong>important</strong>
- * 
+ *
  * *Italic Text*
  *   - Syntax: *text* or _text_
  *   - Example: *emphasis* → <em>emphasis</em>
- * 
+ *
  * ~~Strikethrough~~
  *   - Syntax: ~~text~~
  *   - Example: ~~deleted~~ → <del>deleted</del>
- * 
+ *
  * `Inline Code`
  *   - Syntax: `code`
  *   - Example: `const x = 1` → <code>const x = 1</code>
- * 
+ *
  * [Links](url)
  *   - Syntax: [text](url)
  *   - Example: [Google](https://google.com) → <a href="...">Google</a>
- * 
+ *
+ * $Math$
+ *   - Syntax: $tex$ or \(tex\) inline; $$tex$$ or \[tex\] for display math,
+ *     either on one line or with the delimiters on their own lines
+ *   - Example: $d_k$ → d with subscript k, rendered by KaTeX
+ *   - A $ followed by a space, or a closing $ after a space or before a
+ *     digit, stays text, so prices like $5 are not read as math
+ *
  * ### Headings
  *   - Syntax: # H1, ## H2, ### H3 (at start of line)
  *   - Example: ### Section Title → <h3>Section Title</h3>
- * 
+ *
  * - Bullet Points
  *   - Syntax: - item or * item (at start of line)
  *   - Example: - First item → <li>First item</li>
- * 
+ *
  * 1. Numbered Lists
  *   - Syntax: 1. item, 2. item (at start of line)
  *   - Example: 1. First → <li>First</li> (in <ol>)
- * 
+ *
  * > Blockquotes
  *   - Syntax: > text (at start of line)
  *   - Example: > Quote → <blockquote>Quote</blockquote>
- * 
+ *
  * --- Horizontal Rule
  *   - Syntax: --- or *** or ___ (alone on line)
  *   - Example: --- → <hr />
- * 
+ *
  * ```language
  * Code Block
  * ```
@@ -55,18 +63,76 @@ import React from 'react';
 
 type ParsedElement = string | React.ReactElement;
 
+const DISPLAY_MATH_DELIMITERS: Array<[open: string, close: string]> = [
+  ['$$', '$$'],
+  ['\\[', '\\]'],
+];
+
 /**
- * Parses inline markdown syntax (bold, italic, strikethrough, code, links)
+ * Renders TeX to HTML. KaTeX escapes text and, without its `trust` option,
+ * rejects commands that emit links or raw HTML, so the output is safe to
+ * inject. Invalid TeX (e.g. half-streamed) renders as its source in red.
+ */
+function renderMath(tex: string, displayMode: boolean): string {
+  return katex.renderToString(tex, { displayMode, throwOnError: false });
+}
+
+/**
+ * Whether a line starts display math. `complete` means the whole equation is
+ * on the line; otherwise a block opens and runs until a line ending in
+ * `close`. An equation followed by more text is left to the inline parser.
+ * backend/chatbot/services/speech_text.py mirrors this in `_display_math`.
+ */
+function matchDisplayMath(line: string): { tex: string; close: string; complete: boolean } | null {
+  for (const [open, close] of DISPLAY_MATH_DELIMITERS) {
+    if (!line.startsWith(open)) continue;
+    const rest = line.slice(open.length);
+    const closeIndex = rest.indexOf(close);
+    if (closeIndex === -1) return { tex: rest, close, complete: false };
+    if (closeIndex === rest.length - close.length) {
+      return { tex: rest.slice(0, closeIndex), close, complete: true };
+    }
+    return null;
+  }
+  return null;
+}
+
+/**
+ * Parses inline markdown syntax (math, bold, italic, strikethrough, code, links)
  */
 function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElement[] {
   const elements: ParsedElement[] = [];
   let remaining = text;
   let keyIndex = 0;
 
+  // Math comes first so that, when patterns start at the same index, the
+  // underscores and asterisks inside TeX are not taken for emphasis.
   const patterns: Array<{
     regex: RegExp;
     render: (match: RegExpMatchArray, key: string) => React.ReactElement;
   }> = [
+    // Display math within a line: $$tex$$ or \[tex\]. Math never spans a
+    // backtick, so a stray $ can't swallow the start of inline code.
+    {
+      regex: /\$\$([^`]+?)\$\$|\\\[(.+?)\\\]/,
+      render: (match, key) => (
+        <span
+          key={key}
+          className="block overflow-x-auto overflow-y-hidden"
+          dangerouslySetInnerHTML={{ __html: renderMath(match[1] || match[2], true) }}
+        />
+      ),
+    },
+    // Inline math: $tex$ or \(tex\)
+    {
+      regex: /\$(?![\s$])((?:\\\$|[^$\n`])+?)(?<![\s\\])\$(?!\d)|\\\((.+?)\\\)/,
+      render: (match, key) => (
+        <span
+          key={key}
+          dangerouslySetInnerHTML={{ __html: renderMath(match[1] || match[2], false) }}
+        />
+      ),
+    },
     // Bold: **text** or __text__
     {
       regex: /\*\*(.+?)\*\*|__(.+?)__/,
@@ -162,9 +228,10 @@ function parseInlineMarkdown(text: string, keyPrefix: string = ''): ParsedElemen
  * Parses a full markdown string and returns React elements.
  *
  * Every block carries data-speech-line: its 1-based source line (a code block
- * uses its opening fence line). Narration highlights the line being read by
- * that number, and backend/chatbot/services/speech_text.py numbers lines the
- * same way, so a change to how lines are walked here must be made there too.
+ * or display math block uses its opening line). Narration highlights the line
+ * being read by that number, and backend/chatbot/services/speech_text.py
+ * numbers lines the same way, so a change to how lines are walked here must be
+ * made there too.
  */
 export function parseMarkdown(markdown: string, compact: boolean = false): React.ReactElement {
   if (!markdown) return <></>;
@@ -173,6 +240,7 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
   const elements: React.ReactElement[] = [];
   let currentList: { type: 'ul' | 'ol'; items: React.ReactElement[] } | null = null;
   let codeBlock: { language: string; lines: string[]; startIndex: number } | null = null;
+  let mathBlock: { close: string; lines: string[]; startIndex: number } | null = null;
   let lineIndex = 0;
 
   const flushList = () => {
@@ -207,9 +275,38 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
     }
   };
 
+  const pushDisplayMath = (tex: string, startIndex: number) => {
+    elements.push(
+      <div
+        key={`math-${startIndex}`}
+        data-speech-line={startIndex}
+        className={`overflow-x-auto overflow-y-hidden ${compact ? '' : 'my-3'}`}
+        dangerouslySetInnerHTML={{ __html: renderMath(tex, true) }}
+      />
+    );
+  };
+
+  const flushMathBlock = () => {
+    if (mathBlock) {
+      pushDisplayMath(mathBlock.lines.join('\n'), mathBlock.startIndex);
+      mathBlock = null;
+    }
+  };
+
   for (const line of lines) {
     const trimmedLine = line.trim();
     lineIndex++;
+
+    // If inside a display math block, collect lines until the closing delimiter
+    if (mathBlock) {
+      if (trimmedLine.endsWith(mathBlock.close)) {
+        mathBlock.lines.push(trimmedLine.slice(0, -mathBlock.close.length));
+        flushMathBlock();
+      } else {
+        mathBlock.lines.push(line);
+      }
+      continue;
+    }
 
     // Check for code block start/end
     if (trimmedLine.startsWith('```')) {
@@ -241,6 +338,18 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmedLine)) {
       flushList();
       elements.push(<hr key={`hr-${lineIndex}`} className={`border-gray-200 ${compact ? '' : 'my-4'}`} />);
+      continue;
+    }
+
+    // Display math: $$tex$$ on one line, or a $$ ... $$ block
+    const displayMath = matchDisplayMath(trimmedLine);
+    if (displayMath) {
+      flushList();
+      if (displayMath.complete) {
+        pushDisplayMath(displayMath.tex, lineIndex);
+      } else {
+        mathBlock = { close: displayMath.close, lines: [displayMath.tex], startIndex: lineIndex };
+      }
       continue;
     }
 
@@ -320,9 +429,10 @@ export function parseMarkdown(markdown: string, compact: boolean = false): React
     );
   }
 
-  // Flush any remaining list or code block
+  // Flush any remaining list, code block or math block
   flushList();
   flushCodeBlock();
+  flushMathBlock();
 
   return <div className="markdown-content">{elements}</div>;
 }
