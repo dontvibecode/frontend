@@ -4,10 +4,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { DEFAULT_TAB_SIZE, User, UserPreferences } from "@/types/api";
+import { DEFAULT_TAB_SIZE, SpeechVoicesResponse, User, UserPreferences } from "@/types/api";
 import { useTheme } from "./ThemeProvider";
-import { uploadAPI } from "@/lib/api";
+import { speechAPI, uploadAPI } from "@/lib/api";
+import { SPEECH_RATES } from "@/lib/speech";
 import ModalTemplate from "./ModalTemplate";
+import { useSpeech } from "./SpeechProvider";
 
 const THEME_OPTIONS = [
   { value: "light", label: "Light", icon: "solar:sun-2-linear" },
@@ -42,6 +44,11 @@ export default function UserProfilePopup({
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
   const [tabSize, setTabSize] = useState(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);
+  const [voiceEnabled, setVoiceEnabled] = useState(user?.preferences?.voiceEnabled ?? false);
+  const [voiceId, setVoiceId] = useState(user?.preferences?.voiceId ?? "");
+  const [speechRate, setSpeechRate] = useState<number>(user?.preferences?.speechRate ?? 1);
+  const [voices, setVoices] = useState<SpeechVoicesResponse | null>(null);
+  const speech = useSpeech();
 
   // Profile image upload state
   const [isUploading, setIsUploading] = useState(false);
@@ -66,7 +73,29 @@ export default function UserProfilePopup({
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
     setTabSize(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);
+    setVoiceEnabled(user?.preferences?.voiceEnabled ?? false);
+    setVoiceId(user?.preferences?.voiceId ?? "");
+    setSpeechRate(user?.preferences?.speechRate ?? 1);
   }, [user, setTheme]);
+
+  // Fetched on first open rather than on page load: most visits never open settings.
+  useEffect(() => {
+    if (!isOpen || voices) return;
+    const idToken = (session as any)?.user?.idToken as string | undefined;
+    if (!idToken) return;
+    speechAPI
+      .getVoices(idToken)
+      .then(setVoices)
+      .catch((error) => {
+        console.error("Failed to load voices:", error);
+        setVoices({ available: false, voices: [], default_voice_id: null });
+      });
+  }, [isOpen, voices, session]);
+
+  const playPreview = (url: string) => {
+    if (speech) speech.previewVoice(url);
+    else new Audio(url).play().catch((error) => console.warn("Voice preview failed:", error));
+  };
 
 
   const handleSave = async () => {
@@ -80,6 +109,9 @@ export default function UserProfilePopup({
           accentColor,
           language,
           tab_size: tabSize,
+          voiceEnabled,
+          voiceId,
+          speechRate,
         },
       });
 
@@ -183,6 +215,9 @@ export default function UserProfilePopup({
     setAccentColor(user?.preferences?.accentColor ?? "000000");
     setLanguage(user?.preferences?.language ?? "en");
     setTabSize(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);
+    setVoiceEnabled(user?.preferences?.voiceEnabled ?? false);
+    setVoiceId(user?.preferences?.voiceId ?? "");
+    setSpeechRate(user?.preferences?.speechRate ?? 1);
   };
 
   const onClose = () => {
@@ -323,6 +358,104 @@ export default function UserProfilePopup({
                         Number of spaces for each tab in the code editor
                       </p>
                     </div>
+                  </div>
+
+                  <div>
+                    <h3 className="text-sm font-semibold text-primary-text mb-4">Voice</h3>
+                    <div className="flex items-center justify-between gap-4 mb-4">
+                      <div>
+                        <span className="block text-sm font-medium text-text-70">Read replies aloud</span>
+                        <span className="block text-xs text-text-70">
+                          New replies start reading as soon as they arrive
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-checked={voiceEnabled}
+                        aria-label="Read replies aloud"
+                        onClick={() => setVoiceEnabled(!voiceEnabled)}
+                        className={`w-9 h-5 rounded-full relative shrink-0 cursor-pointer transition-colors ${voiceEnabled ? "bg-emerald-500" : "bg-base-20"}`}
+                      >
+                        <motion.span
+                          initial={false}
+                          animate={{ x: voiceEnabled ? 16 : 0 }}
+                          transition={{ duration: 0.2, ease: "easeInOut" }}
+                          className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
+                        />
+                      </button>
+                    </div>
+
+                    <label className="block text-sm font-medium text-text-70 mb-2">Voice</label>
+                    {voices === null ? (
+                      <div className="h-24 bg-base-10 rounded-lg animate-pulse" />
+                    ) : voices.available ? (
+                      <div className="space-y-1 max-h-56 overflow-y-auto scrollbar-hide">
+                        {voices.voices.map((voice) => {
+                          const isSelected = (voiceId || voices.default_voice_id) === voice.id;
+                          return (
+                            <div
+                              key={voice.id}
+                              className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${isSelected ? "border-primary-text bg-base-5" : "border-base-10 hover:bg-base-5"}`}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => setVoiceId(voice.id)}
+                                aria-pressed={isSelected}
+                                className="flex-1 min-w-0 text-left cursor-pointer"
+                              >
+                                <span className="block text-sm font-medium text-primary-text">{voice.name}</span>
+                                {voice.description && (
+                                  <span className="block text-xs text-text-70 line-clamp-2">{voice.description}</span>
+                                )}
+                              </button>
+                              {voice.preview_url && (
+                                <button
+                                  type="button"
+                                  onClick={() => playPreview(voice.preview_url as string)}
+                                  aria-label={`Preview ${voice.name}`}
+                                  className="w-8 h-8 shrink-0 rounded-full hover:bg-base-10 flex items-center justify-center cursor-pointer text-text-70"
+                                >
+                                  <Icon icon="solar:play-linear" className="w-4 h-4" />
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-xs text-text-70">
+                        Premium voices aren&apos;t set up, so replies are read with your browser&apos;s built-in voice.
+                      </p>
+                    )}
+
+                    <label className="block text-sm font-medium text-text-70 mt-4 mb-2">Speed</label>
+                    <div className="grid grid-cols-6 gap-1 p-1 bg-base-10 rounded-xl">
+                      {SPEECH_RATES.map((option) => (
+                        <button
+                          key={option}
+                          type="button"
+                          onClick={() => setSpeechRate(option)}
+                          aria-pressed={speechRate === option}
+                          className={`py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${speechRate === option ? "bg-container-primary text-primary-text shadow-sm" : "text-text-70 hover:text-primary-text"}`}
+                        >
+                          {option}×
+                        </button>
+                      ))}
+                    </div>
+                    {voices?.available && (
+                      <p className="mt-2 text-xs text-text-70">
+                        Voices by{" "}
+                        <a
+                          href="https://elevenlabs.io"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="underline"
+                        >
+                          ElevenLabs
+                        </a>
+                      </p>
+                    )}
                   </div>
 
                   <button

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { DEFAULT_TAB_SIZE, MessageData } from "@/types";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { SpeakButton } from "../components/SpeechProvider";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import CodeMirror from "@uiw/react-codemirror";
 import { vscodeDark } from "@uiw/codemirror-theme-vscode";
@@ -1099,16 +1100,18 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
       ) : (
         <motion.div
           key="collapsed-card"
+          data-speech-message={message.id}
           initial={{ opacity: 0, x: -50 }}
           animate={{ opacity: 1, x: 0 }}
           exit={{ opacity: 0, x: -100 }}
           transition={{ duration: 0.3, ease: "easeInOut" }}
           className="max-w-4xl mx-auto p-6 bg-background mt-0 shadow-[0_0_60px_rgba(0,0,0,0.04)]"
         >
-          <div className="flex items-center justify-between mb-6 pb-4 border-b border-base-10">
-            <h1 className="text-3xl font-bold text-primary-text">
+          <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-base-10">
+            <h1 className="text-3xl font-bold text-primary-text" data-speech-field="title">
               {jsonData.lessonTitle ?? (jsonData as any).lesson_title ?? (jsonData.exercises?.[0]?.filename?.replace('.java', '').replace('.py', '').replace('.js', '') || 'Lesson')}
             </h1>
+            <SpeakButton messageId={message.id} scope="full" label="Narrate lesson" />
             {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
               <svg
                 className="w-6 h-6 text-gray-600"
@@ -1143,13 +1146,13 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
           {/* Breakdown/Explanation */}
           {jsonData.breakdown && (
-            <div className="mb-6 leading-relaxed text-text-90">
+            <div className="mb-6 leading-relaxed text-text-90" data-speech-field="breakdown">
               <Markdown>{jsonData.breakdown}</Markdown>
             </div>
           )}
 
           {jsonData.explanation && (
-            <div className="mb-8 leading-relaxed text-text-90">
+            <div className="mb-8 leading-relaxed text-text-90" data-speech-field="explanation">
               <Markdown>{jsonData.explanation}</Markdown>
             </div>
           )}

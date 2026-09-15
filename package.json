@@ -18,6 +18,7 @@
     "@uiw/codemirror-theme-vscode": "^4.25.4",
     "@uiw/react-codemirror": "^4.25.4",
     "framer-motion": "^12.23.12",
+    "katex": "^0.18.7",
     "next": "15.5.0",
     "next-auth": "^4.24.11",
     "pnpm": "^10.24.0",
