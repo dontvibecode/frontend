@@ -218,7 +218,8 @@ export default function PaymentModal({
                           type="button"
                           onClick={handleUpdatePaymentClick}
                           disabled={setupLoading}
-                          className="bg-zinc-500 p-4 w-full py-3 px-4 border border-base-10 text-text-70 dark:text-text-30 font-medium rounded-full hover:bg-base-10 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="w-full py-3 px-4 bg-base-10 text-primary-text font-medium rounded-full hover:bg-base-20 cursor-pointer transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+
                         >
                           {setupLoading ? "Loading..." : "Change Payment Method"}
                         </button>
