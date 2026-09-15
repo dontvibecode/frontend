@@ -7,7 +7,10 @@ import { InstructorResponse, MessageData, UserPreferences } from "@/types";
 import { triggerTokenWarning } from "@/app/components/TokenWarningModal";
 import { notifyTokenBalanceChanged } from "@/lib/tokenBalanceEvents";
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000/';
+// Call sites below append `api/...`, so normalise to exactly one trailing slash
+// regardless of how NEXT_PUBLIC_API_URL happens to be set.
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
+const API_BASE_URL = API_ORIGIN.endsWith('/') ? API_ORIGIN : API_ORIGIN + '/';
 
 /**
  * Helper function to get auth headers
