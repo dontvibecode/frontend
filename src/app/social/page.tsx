@@ -78,8 +78,35 @@ export default function SocialPage() {
           </div>
         </div>
       </header>
-      <main className="mt-16">
-        
+      <main className="min-h-screen flex items-center justify-center px-6">
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="max-w-md text-center flex flex-col items-center"
+        >
+          <div className="mb-6 w-14 h-14 rounded-2xl bg-base-10 border border-base-10 flex items-center justify-center shadow-[0px_0px_50px_rgba(0,0,0,0.08)]">
+            <Icon icon="solar:users-group-rounded-linear" className="w-7 h-7 text-text-70" />
+          </div>
+          <span className="mb-3 text-xs font-semibold uppercase tracking-widest text-text-60">
+            Coming soon
+          </span>
+          <h1 className="text-3xl font-semibold text-primary-text mb-3">
+            Community lessons are on the way
+          </h1>
+          <p className="text-text-70 mb-8 leading-relaxed">
+            Soon you&apos;ll be able to browse lessons other learners have shared,
+            and fork them into your own chats. In the meantime, keep sharing
+            yours from the chat.
+          </p>
+          <Link
+            href="/chat"
+            className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] px-5 py-2.5 rounded-full bg-primary-text text-background transition-all flex items-center gap-2"
+          >
+            Back to chat
+            <Icon icon="solar:arrow-right-linear" className="w-4 h-4" />
+          </Link>
+        </motion.div>
       </main>
     </div>
   );

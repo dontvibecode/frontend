@@ -1,53 +1,7 @@
 import { lessonAPI } from "@/lib/api";
+import { setLessonShared, useLessonShared } from "@/lib/lessonShareStore";
 import { Check, Globe, Share2 } from "lucide-react";
-import { useEffect, useState, useSyncExternalStore } from "react";
-
-/**
- * Keyed external store for lesson share state so any number of <ShareButton />
- * instances for the same lessonId stay in sync without prop drilling.
- */
-const sharedStateByLessonId = new Map<number, boolean>();
-const listenersByLessonId = new Map<number, Set<() => void>>();
-
-function notifyLessonListeners(lessonId: number) {
-  listenersByLessonId.get(lessonId)?.forEach((listener) => listener());
-}
-
-function setSharedForLesson(lessonId: number, value: boolean) {
-  if (sharedStateByLessonId.get(lessonId) === value) return;
-  sharedStateByLessonId.set(lessonId, value);
-  notifyLessonListeners(lessonId);
-}
-
-function useLessonShared(lessonId: number, initialShared = false): [boolean, (next: boolean) => void] {
-  useEffect(() => {
-    if (!sharedStateByLessonId.has(lessonId)) {
-      sharedStateByLessonId.set(lessonId, Boolean(initialShared));
-    }
-  }, [lessonId, initialShared]);
-
-  const isShared = useSyncExternalStore(
-    (onStoreChange) => {
-      let set = listenersByLessonId.get(lessonId);
-      if (!set) {
-        set = new Set();
-        listenersByLessonId.set(lessonId, set);
-      }
-      set.add(onStoreChange);
-      return () => {
-        set?.delete(onStoreChange);
-        if (set?.size === 0) {
-          listenersByLessonId.delete(lessonId);
-        }
-      };
-    },
-    () => sharedStateByLessonId.get(lessonId) ?? Boolean(initialShared),
-    () => Boolean(initialShared),
-  );
-
-  const updateShared = (next: boolean) => setSharedForLesson(lessonId, next);
-  return [isShared, updateShared];
-}
+import { useState } from "react";
 
 interface Props {
   lessonId: number;
@@ -64,7 +18,8 @@ export function ShareButton({
   idToken,
   label = false,
 }: Props) {
-  const [isShared, setIsShared] = useLessonShared(lessonId, shared);
+  const isShared = useLessonShared(lessonId, shared);
+  const setIsShared = (next: boolean) => setLessonShared(lessonId, next);
   const [isPending, setIsPending] = useState(false);
   const [justShared, setJustShared] = useState(false);
 

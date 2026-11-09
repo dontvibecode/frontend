@@ -325,6 +325,7 @@ export const conversationAPI = {
       fromUser: msg.from_user,
       modelUsed: msg.model_used,
       thought: msg.thought,
+      shared: Boolean(msg.shared),
       json: msg.json
         ? ({
             lessonTitle: msg.json.lesson_title,

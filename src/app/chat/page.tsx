@@ -42,6 +42,7 @@ import {
   useSpeechController,
 } from "../components/SpeechProvider";
 import { ShareButton } from "../components/ShareButton";
+import { primeLessonShares } from "@/lib/lessonShareStore";
 
 const TypewriterHero = () => {
   const lines = [
@@ -767,6 +768,7 @@ export default function ChatPage() {
         (session?.user as any)?.idToken,
       );
       if (messagesRequestRef.current !== requestId) return;
+      primeLessonShares(messagesData);
       setMessages(messagesData);
       setSelectedLesson(null);
       setLessonExpanded(false);
@@ -808,6 +810,7 @@ export default function ChatPage() {
         conversationId,
         idToken,
       );
+      primeLessonShares(messagesData);
 
       // Find the message that contains this exercise
       const exerciseMessage = messagesData.find(
