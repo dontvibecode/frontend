@@ -41,6 +41,7 @@ import {
   SpeechMiniPlayer,
   useSpeechController,
 } from "../components/SpeechProvider";
+import { ShareButton } from "../components/ShareButton";
 
 const TypewriterHero = () => {
   const lines = [
@@ -249,9 +250,11 @@ const AIResponse = ({
   message,
   previousMessage,
   setSelectedLesson,
+  idToken,
 }: {
   message: MessageData;
   previousMessage: string;
+  idToken?: string;
   setSelectedLesson: (lesson: {
     originalMessage: string;
     response: MessageData;
@@ -259,6 +262,7 @@ const AIResponse = ({
 }) => {
   const { resolvedTheme } = useTheme();
   const jsonData = message?.json;
+
 
   if (!jsonData || Object.keys(jsonData).length === 0 || !message) {
     return (
@@ -302,7 +306,10 @@ const AIResponse = ({
               (jsonData as any).lesson_title ??
               "No Title Available"}
           </h1>
-          <SpeakButton messageId={message.id} scope="summary" />
+          <div className="flex items-center gap-1 shrink-0">
+            <SpeakButton messageId={message.id} scope="summary" />
+            <ShareButton lessonId={message.id} shared={message.shared} size={15} idToken={idToken} />
+          </div>
         </div>
 
         {message.thought && <ThoughtDropdown thought={message.thought} />}
@@ -910,6 +917,8 @@ export default function ChatPage() {
       setMessages([
         ...messages,
         {
+          id: 0,
+          shared: false,
           isSending: true,
           text: currentMessage,
           fromUser: true,
@@ -2120,6 +2129,7 @@ export default function ChatPage() {
                     messages[index - 1]?.text || "**NO PREVIOUS MESSAGE FOUND**"
                   }
                   setSelectedLesson={setSelectedLesson}
+                  idToken={sessionIdToken}
                 />
               );
             })}

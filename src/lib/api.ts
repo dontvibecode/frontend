@@ -5,6 +5,7 @@
 
 import {
   InstructorResponse,
+  LessonData,
   MessageData,
   SpeechClipResult,
   SpeechScope,
@@ -16,8 +17,8 @@ import { notifyTokenBalanceChanged } from "@/lib/tokenBalanceEvents";
 
 // Call sites below append `api/...`, so normalise to exactly one trailing slash
 // regardless of how NEXT_PUBLIC_API_URL happens to be set.
-const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:8000';
-const API_BASE_URL = API_ORIGIN.endsWith('/') ? API_ORIGIN : API_ORIGIN + '/';
+const API_ORIGIN = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000";
+const API_BASE_URL = API_ORIGIN.endsWith("/") ? API_ORIGIN : API_ORIGIN + "/";
 
 /**
  * Helper function to get auth headers
@@ -63,14 +64,17 @@ const parseJsonWithWarningCheck = async (response: Response): Promise<any> => {
  * Helper function to handle API errors
  * Returns true if it was a token warning (no error thrown), throws otherwise
  */
-const handleApiError = async (response: Response, context: string): Promise<boolean> => {
+const handleApiError = async (
+  response: Response,
+  context: string,
+): Promise<boolean> => {
   const errorData = await response.json().catch(() => ({}));
-  
+
   if (checkForTokenWarning(errorData)) {
     // Don't throw - just show modal and return true to indicate token warning
     return true;
   }
-  
+
   const error: any = new Error(`${context}: ${response.status}`);
   error.response = { data: errorData };
   error.status = response.status;
@@ -80,7 +84,9 @@ const handleApiError = async (response: Response, context: string): Promise<bool
 /**
  * Transform user preferences from snake_case (backend) to camelCase (frontend)
  */
-const transformPreferencesToCamelCase = (prefs: any): UserPreferences | undefined => {
+const transformPreferencesToCamelCase = (
+  prefs: any,
+): UserPreferences | undefined => {
   if (!prefs) return undefined;
   return {
     theme: prefs.theme,
@@ -104,7 +110,9 @@ const transformPreferencesToCamelCase = (prefs: any): UserPreferences | undefine
 /**
  * Transform user preferences from camelCase (frontend) to snake_case (backend)
  */
-const transformPreferencesToSnakeCase = (prefs: UserPreferences | undefined): any => {
+const transformPreferencesToSnakeCase = (
+  prefs: UserPreferences | undefined,
+): any => {
   if (!prefs) return undefined;
   return {
     theme: prefs.theme,
@@ -141,13 +149,13 @@ const transformUserResponse = (data: any): import("@/types").User => {
 };
 
 // Add this type above the messageAPI object
-export type StreamStage = 
-  | 'routing' 
-  | 'routing_thought' 
-  | 'instructor' 
-  | 'instructor_thought' 
-  | 'complete' 
-  | 'error';
+export type StreamStage =
+  | "routing"
+  | "routing_thought"
+  | "instructor"
+  | "instructor_thought"
+  | "complete"
+  | "error";
 
 export interface StreamEvent {
   stage: StreamStage;
@@ -163,13 +171,10 @@ export const userAPI = {
    * Get the authenticated user
    */
   getUser: async (idToken?: string): Promise<import("@/types").User> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/user/`,
-      {
-        method: "GET",
-        headers: getAuthHeaders(idToken),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}api/chat/user/`, {
+      method: "GET",
+      headers: getAuthHeaders(idToken),
+    });
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
@@ -190,7 +195,7 @@ export const userAPI = {
       username?: string;
       preferences?: UserPreferences;
     },
-    idToken?: string
+    idToken?: string,
   ): Promise<import("@/types").User> => {
     // Transform preferences to snake_case for the backend
     const backendData = {
@@ -198,17 +203,17 @@ export const userAPI = {
       preferences: transformPreferencesToSnakeCase(updatedUserData.preferences),
     };
 
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/user/`,
-      {
-        method: "PUT",
-        headers: getAuthHeaders(idToken),
-        body: JSON.stringify(backendData),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}api/chat/user/`, {
+      method: "PUT",
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify(backendData),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to update user");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to update user",
+      );
       if (isTokenWarning) return null as any;
     }
 
@@ -219,17 +224,19 @@ export const userAPI = {
   /**
    * Get the authenticated user's token balance
    */
-  getTokenBalance: async (idToken?: string): Promise<{ token_used: number; token_limit: number } | null> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/token/`,
-      {
-        method: "GET",
-        headers: getAuthHeaders(idToken),
-      }
-    );
+  getTokenBalance: async (
+    idToken?: string,
+  ): Promise<{ token_used: number; token_limit: number } | null> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/token/`, {
+      method: "GET",
+      headers: getAuthHeaders(idToken),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get token usage");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get token usage",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -246,16 +253,16 @@ export const conversationAPI = {
    * Get all conversations for the authenticated user
    */
   getConversations: async (idToken?: string) => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/conversations/`,
-      {
-        method: "GET",
-        headers: getAuthHeaders(idToken),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}api/chat/conversations/`, {
+      method: "GET",
+      headers: getAuthHeaders(idToken),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get conversations");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get conversations",
+      );
       if (isTokenWarning) return [];
     }
 
@@ -271,11 +278,14 @@ export const conversationAPI = {
       {
         method: "GET",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get bookmarked exercises");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get bookmarked exercises",
+      );
       if (isTokenWarning) return [];
     }
 
@@ -287,24 +297,26 @@ export const conversationAPI = {
    */
   getConversationMessages: async (
     conversationId: number,
-    idToken?: string
+    idToken?: string,
   ): Promise<MessageData[]> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/conversations/messages/${conversationId}/`,
       {
         method: "GET",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get conversation messages");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get conversation messages",
+      );
       if (isTokenWarning) return [];
     }
 
-    const responseJson = await response.json();
-    if (checkForTokenWarning(responseJson)) return [];
-    
+    const responseJson = await parseJsonWithWarningCheck(response);
+
     return responseJson.map((msg: any) => ({
       id: msg.id,
       created_at: msg.created_at,
@@ -313,14 +325,16 @@ export const conversationAPI = {
       fromUser: msg.from_user,
       modelUsed: msg.model_used,
       thought: msg.thought,
-      json: msg.json ? {
-        lessonTitle: msg.json.lesson_title,
-        breakdown: msg.json.breakdown,
-        explanation: msg.json.explanation,
-        recommendedReadings: msg.json.recommendedReadings,
-        exercises: msg.json.exercises,
-        tags: msg.json.tags,
-      } as InstructorResponse : {},
+      json: msg.json
+        ? ({
+            lessonTitle: msg.json.lesson_title,
+            breakdown: msg.json.breakdown,
+            explanation: msg.json.explanation,
+            recommendedReadings: msg.json.recommendedReadings,
+            exercises: msg.json.exercises,
+            tags: msg.json.tags,
+          } as InstructorResponse)
+        : {},
     })) as MessageData[];
   },
 
@@ -333,11 +347,14 @@ export const conversationAPI = {
       {
         method: "DELETE",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to delete conversation");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to delete conversation",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -353,11 +370,14 @@ export const conversationAPI = {
       {
         method: "POST",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to pin conversation");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to pin conversation",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -380,66 +400,74 @@ export const messageAPI = {
       experience_level: string;
     },
     onEvent: (event: StreamEvent) => void,
-    idToken?: string
+    idToken?: string,
   ): Promise<MessageData | null> => {
     const response = await fetch(`${API_BASE_URL}api/chat/message/stream/`, {
-      method: 'POST',
+      method: "POST",
       headers: getAuthHeaders(idToken),
       body: JSON.stringify(messageData),
     });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to send message");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to send message",
+      );
       if (isTokenWarning) return null;
     }
 
     const reader = response.body?.getReader();
     if (!reader) {
-      throw new Error('No response body');
+      throw new Error("No response body");
     }
 
     const decoder = new TextDecoder();
     let finalMessage: MessageData | null = null;
-    let buffer = '';
+    let buffer = "";
 
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
       buffer += decoder.decode(value, { stream: true });
-      const events = buffer.split('\n\n');
-      buffer = events.pop() || '';
+      const events = buffer.split("\n\n");
+      buffer = events.pop() || "";
 
       for (const eventText of events) {
         if (!eventText.trim()) continue;
 
-        const lines = eventText.split('\n');
+        const lines = eventText.split("\n");
         for (const line of lines) {
-          if (line.startsWith('data: ')) {
+          if (line.startsWith("data: ")) {
             try {
               const event: StreamEvent = JSON.parse(line.slice(6));
-              
+
               // Check for token warning in stream data - return null silently
-              if (event.data && typeof event.data === 'object' && (event.data as any).warning === 'Insufficient tokens') {
+              if (
+                event.data &&
+                typeof event.data === "object" &&
+                (event.data as any).warning === "Insufficient tokens"
+              ) {
                 triggerTokenWarning();
                 notifyTokenBalanceChanged();
                 return null;
               }
-              
+
               onEvent(event);
 
-              if (event.stage === 'complete' && event.data) {
+              if (event.stage === "complete" && event.data) {
                 const responseJson = event.data as any;
                 const instructorData = responseJson.json
-                  ? {
+                  ? ({
                       lessonTitle: responseJson.json.lesson_title,
                       thought: responseJson.json.thought,
                       breakdown: responseJson.json.breakdown,
                       explanation: responseJson.json.explanation,
-                      recommendedReadings: responseJson.json.recommendedReadings,
+                      recommendedReadings:
+                        responseJson.json.recommendedReadings,
                       exercises: responseJson.json.exercises,
                       tags: responseJson.json.tags,
-                    } as InstructorResponse
+                    } as InstructorResponse)
                   : {};
 
                 finalMessage = {
@@ -452,14 +480,15 @@ export const messageAPI = {
                   isSending: false,
                   thought: responseJson.thought,
                   json: instructorData,
+                  shared: responseJson.shared,
                 };
               }
 
-              if (event.stage === 'error') {
+              if (event.stage === "error") {
                 throw new Error(event.data as string);
               }
             } catch (e) {
-              console.error('Failed to parse SSE event:', line, e);
+              console.error("Failed to parse SSE event:", line, e);
             }
           }
         }
@@ -468,7 +497,65 @@ export const messageAPI = {
 
     notifyTokenBalanceChanged();
     return finalMessage;
-  }, 
+  },
+};
+
+// ============================================================================
+// LESSON API
+// ============================================================================
+
+export const lessonAPI = {
+  /**
+   * Get all lessons for all users
+   */
+  getLessons: async (idToken?: string): Promise<LessonData[]> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/lessons/`, {
+      method: "GET",
+      headers: getAuthHeaders(idToken),
+    });
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get lessons",
+      );
+      if (isTokenWarning) return [];
+    }
+
+    const responseJson = await parseJsonWithWarningCheck(response);
+    return responseJson.map((lesson: any) => ({
+      message_id: lesson.id,
+      json: lesson.json,
+      shared: lesson.shared,
+      shared_at: lesson.shared_at,
+      shared_by: lesson.shared_by,
+      likes: lesson.likes,
+      forks: lesson.forks,
+    })) as LessonData[];
+  },
+
+  toggleLessonShare: async (
+    lessonId: number,
+    idToken?: string,
+  ): Promise<{ lesson_id: number; shared: boolean } | null> => {
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/lessons/share/${lessonId}/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+      },
+    );
+
+    if (!response.ok) {
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to toggle lesson share",
+      );
+      if (isTokenWarning) return null;
+    }
+
+    return parseJsonWithWarningCheck(response);
+  },
 };
 
 // ============================================================================
@@ -541,7 +628,7 @@ export const uploadAPI = {
    */
   getProfileImageUploadUrl: async (
     contentType: string,
-    idToken?: string
+    idToken?: string,
   ): Promise<UploadUrlResponse | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/upload/profile-image-url/`,
@@ -549,11 +636,14 @@ export const uploadAPI = {
         method: "POST",
         headers: getAuthHeaders(idToken),
         body: JSON.stringify({ content_type: contentType }),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get upload URL");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get upload URL",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -595,7 +685,7 @@ export const uploadAPI = {
    */
   confirmProfileImageUpload: async (
     publicUrl: string,
-    idToken?: string
+    idToken?: string,
   ): Promise<{ profile_image: string } | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/upload/profile-image-confirm/`,
@@ -603,11 +693,14 @@ export const uploadAPI = {
         method: "POST",
         headers: getAuthHeaders(idToken),
         body: JSON.stringify({ public_url: publicUrl }),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to confirm upload");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to confirm upload",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -625,18 +718,21 @@ export const exerciseAPI = {
    */
   getExercises: async (
     messageId: number,
-    idToken?: string
+    idToken?: string,
   ): Promise<GetExercisesResponse | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/exercise/${messageId}/`,
       {
         method: "GET",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get exercises");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get exercises",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -649,7 +745,7 @@ export const exerciseAPI = {
   getNewExercise: async (
     messageId: number,
     abilityLevel: string,
-    idToken?: string
+    idToken?: string,
   ): Promise<NewExerciseResponse | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/exercise/new/${messageId}/`,
@@ -657,11 +753,14 @@ export const exerciseAPI = {
         method: "POST",
         headers: getAuthHeaders(idToken),
         body: JSON.stringify({ ability_level: abilityLevel }),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to get new exercise");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to get new exercise",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -681,20 +780,20 @@ export const exerciseAPI = {
       exercise_file_ids: number[];
       user_submissions: string[];
     },
-    
-    idToken?: string
+
+    idToken?: string,
   ): Promise<ExerciseSubmissionResponse | null> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/exercise/submit/`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(idToken),
-        body: JSON.stringify(submissionData),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}api/chat/exercise/submit/`, {
+      method: "POST",
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify(submissionData),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to submit exercise");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to submit exercise",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -706,22 +805,24 @@ export const exerciseAPI = {
   /**
    * Save code progress
    */
-  saveCodeProgress: async (submissionData: {
+  saveCodeProgress: async (
+    submissionData: {
       user_submissions: string[];
       exercise_file_ids: number[];
     },
-    idToken?: string
+    idToken?: string,
   ): Promise<void> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/exercise/save/`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(idToken),
-        body: JSON.stringify(submissionData),
-      })
+    const response = await fetch(`${API_BASE_URL}api/chat/exercise/save/`, {
+      method: "POST",
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify(submissionData),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to save code progress");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to save code progress",
+      );
       if (isTokenWarning) return;
     }
 
@@ -733,24 +834,27 @@ export const exerciseAPI = {
    */
   bookmarkExercise: async (
     exerciseId: number,
-    idToken?: string
+    idToken?: string,
   ): Promise<BookmarkExerciseResponse | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/exercise/bookmark/${exerciseId}/`,
       {
         method: "POST",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to bookmark exercise");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to bookmark exercise",
+      );
       if (isTokenWarning) return null;
     }
 
     return parseJsonWithWarningCheck(response);
   },
-}
+};
 // ============================================================================
 // PAYMENT API
 // ============================================================================
@@ -760,20 +864,23 @@ export const paymentAPI = {
    * Create a subscription and get the client_secret for Stripe Elements
    */
   createSubscription: async (
-    idToken?: string
+    idToken?: string,
   ): Promise<{ subscription_id: string; client_secret: string } | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/payments/subscribe/`,
       {
         method: "POST",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error("Failed to create subscription:", errorData);
-      const isTokenWarning = await handleApiError(response, "Failed to create subscription");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to create subscription",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -785,19 +892,19 @@ export const paymentAPI = {
    */
   buyTokens: async (
     data: { token_amount: 200000 },
-    idToken: string
+    idToken: string,
   ): Promise<{ client_secret: string } | null> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/payments/tokens/`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(idToken),
-        body: JSON.stringify(data),
-      }
-    );
+    const response = await fetch(`${API_BASE_URL}api/chat/payments/tokens/`, {
+      method: "POST",
+      headers: getAuthHeaders(idToken),
+      body: JSON.stringify(data),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to create token purchase");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to create token purchase",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -808,18 +915,22 @@ export const paymentAPI = {
    * Cancel the user's Pro subscription at period end
    */
   cancelSubscription: async (
-    idToken?: string
-  ): Promise<{ status: string; message: string; active_until: string } | null> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/payments/cancel/`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(idToken),
-      }
-    );
+    idToken?: string,
+  ): Promise<{
+    status: string;
+    message: string;
+    active_until: string;
+  } | null> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/payments/cancel/`, {
+      method: "POST",
+      headers: getAuthHeaders(idToken),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to cancel subscription");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to cancel subscription",
+      );
       if (isTokenWarning) return null;
     }
 
@@ -830,18 +941,22 @@ export const paymentAPI = {
    * Resume a cancelled Pro subscription (if still within the current billing period)
    */
   resumeSubscription: async (
-    idToken?: string
-  ): Promise<{ status: string; message: string; active_until: string } | null> => {
-    const response = await fetch(
-      `${API_BASE_URL}api/chat/payments/resume/`,
-      {
-        method: "POST",
-        headers: getAuthHeaders(idToken),
-      }
-    );
+    idToken?: string,
+  ): Promise<{
+    status: string;
+    message: string;
+    active_until: string;
+  } | null> => {
+    const response = await fetch(`${API_BASE_URL}api/chat/payments/resume/`, {
+      method: "POST",
+      headers: getAuthHeaders(idToken),
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to resume subscription");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to resume subscription",
+      );
       if (isTokenWarning) return null;
     }
     return parseJsonWithWarningCheck(response);
@@ -851,18 +966,21 @@ export const paymentAPI = {
    * Create a SetupIntent to save a new payment method
    */
   createSetupIntent: async (
-    idToken?: string
+    idToken?: string,
   ): Promise<{ client_secret: string } | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/payments/setup-intent/`,
       {
         method: "POST",
         headers: getAuthHeaders(idToken),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to create setup intent");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to create setup intent",
+      );
       if (isTokenWarning) return null;
     }
     return parseJsonWithWarningCheck(response);
@@ -873,7 +991,7 @@ export const paymentAPI = {
    */
   updatePaymentMethod: async (
     paymentMethodId: string,
-    idToken?: string
+    idToken?: string,
   ): Promise<{ status: string; message: string } | null> => {
     const response = await fetch(
       `${API_BASE_URL}api/chat/payments/update-method/`,
@@ -881,11 +999,14 @@ export const paymentAPI = {
         method: "POST",
         headers: getAuthHeaders(idToken),
         body: JSON.stringify({ payment_method_id: paymentMethodId }),
-      }
+      },
     );
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to update payment method");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to update payment method",
+      );
       if (isTokenWarning) return null;
     }
     return parseJsonWithWarningCheck(response);
@@ -905,16 +1026,19 @@ export const feedbackAPI = {
       method: "POST",
       headers: getAuthHeaders(idToken),
       body: JSON.stringify({ email, message }),
-    })
+    });
 
     if (!response.ok) {
-      const isTokenWarning = await handleApiError(response, "Failed to cancel subscription");
+      const isTokenWarning = await handleApiError(
+        response,
+        "Failed to cancel subscription",
+      );
       if (isTokenWarning) return null;
     }
 
     return parseJsonWithWarningCheck(response);
-  }
-}
+  },
+};
 // ============================================================================
 // SPEECH API
 // ============================================================================
@@ -944,13 +1068,16 @@ export const speechAPI = {
   getClip: async (
     messageId: number,
     scope: SpeechScope,
-    idToken?: string
+    idToken?: string,
   ): Promise<SpeechClipResult> => {
-    const response = await fetch(`${API_BASE_URL}api/chat/speech/${messageId}/`, {
-      method: "POST",
-      headers: getAuthHeaders(idToken),
-      body: JSON.stringify({ scope }),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}api/chat/speech/${messageId}/`,
+      {
+        method: "POST",
+        headers: getAuthHeaders(idToken),
+        body: JSON.stringify({ scope }),
+      },
+    );
     const data = await response.json().catch(() => ({}));
 
     if (response.ok) {

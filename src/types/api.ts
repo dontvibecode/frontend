@@ -1,5 +1,6 @@
 export interface MessageData {
-  id?: number;
+  id: number;
+  shared: boolean;
   text: string | null;
   created_at: string;
   conversation: number;
@@ -8,6 +9,15 @@ export interface MessageData {
   isSending?: boolean;
   thought?: string;
   json: InstructorResponse | null;
+}
+
+export interface LessonData {
+  message_id: number;
+  json: InstructorResponse;
+  shared_at: string;
+  shared_by: number;
+  likes: number;
+  forks: number;
 }
 
 export interface RecommendedReading {

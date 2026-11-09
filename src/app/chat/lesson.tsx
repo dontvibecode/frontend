@@ -17,11 +17,15 @@ import { Markdown } from "@/lib/markdownParser";
 import ExpandedSkeletonLoader from "../components/ExpandedSkeletonLoader";
 
 import { useTheme } from "../components/ThemeProvider";
-import { getGlassGradientBorderClass, getGlassGradientBorderClassInner } from "../components/glassGradientBorder";
+import {
+  getGlassGradientBorderClass,
+  getGlassGradientBorderClassInner,
+} from "../components/glassGradientBorder";
+import { ShareButton } from "../components/ShareButton";
 
 const getLanguageExtension = (filename: string) => {
-  if (filename.endsWith('.py')) return python();
-  if (filename.endsWith('.java')) return java();
+  if (filename.endsWith(".py")) return python();
+  if (filename.endsWith(".java")) return java();
   return javascript();
 };
 
@@ -33,7 +37,11 @@ interface LessonProps {
   abilityLevel: string;
   tabSize?: number;
   initialExpandedLesson?: boolean;
-  onBookmarkChange?: (exerciseId: number, bookmarked: boolean, exerciseData: any) => void;
+  onBookmarkChange?: (
+    exerciseId: number,
+    bookmarked: boolean,
+    exerciseData: any,
+  ) => void;
 }
 
 interface ExerciseModuleProps {
@@ -50,19 +58,22 @@ interface ExerciseModuleProps {
 // so their colours live here and the markup below is written once. Dark values
 // tint the surface rather than lightening it, so the panel still reads as part
 // of the dark page instead of a bright card punched into it.
-const FEEDBACK_VARIANTS: Record<number, {
-  motionKey: string;
-  panel: string;
-  blobTop: string;
-  blobBottom: string;
-  badge: string;
-  iconPath: string;
-  heading: string;
-  summary: string;
-  divider: string;
-  accent: string;
-  body: string;
-}> = {
+const FEEDBACK_VARIANTS: Record<
+  number,
+  {
+    motionKey: string;
+    panel: string;
+    blobTop: string;
+    blobBottom: string;
+    badge: string;
+    iconPath: string;
+    heading: string;
+    summary: string;
+    divider: string;
+    accent: string;
+    body: string;
+  }
+> = {
   2: {
     motionKey: "correct",
     panel:
@@ -105,7 +116,8 @@ const FEEDBACK_VARIANTS: Record<number, {
       "from-rose-200/30 to-orange-200/30 dark:from-rose-500/10 dark:to-orange-500/10",
     blobBottom:
       "from-red-200/20 to-rose-200/20 dark:from-red-500/10 dark:to-rose-500/10",
-    badge: "from-rose-500 to-red-500 shadow-rose-500/25 dark:shadow-rose-500/10",
+    badge:
+      "from-rose-500 to-red-500 shadow-rose-500/25 dark:shadow-rose-500/10",
     iconPath: "M6 18L18 6M6 6l12 12",
     heading: "text-rose-900 dark:text-rose-50",
     summary: "text-rose-700/80 dark:text-rose-200/70",
@@ -150,12 +162,20 @@ function FeedbackCodeBlock({
 
   return (
     <div className="mb-3">
-      <div className={`text-xs font-medium mb-1 flex items-center gap-1 ${toneClasses.text}`}>
+      <div
+        className={`text-xs font-medium mb-1 flex items-center gap-1 ${toneClasses.text}`}
+      >
         <span className={`w-2 h-2 rounded-full ${toneClasses.dot}`}></span>
         {label}
       </div>
-      <div className={`rounded-lg overflow-hidden border ${toneClasses.border}`}>
-        <SyntaxHighlighter language={language} style={vscDarkPlus} customStyle={CODE_BLOCK_STYLE}>
+      <div
+        className={`rounded-lg overflow-hidden border ${toneClasses.border}`}
+      >
+        <SyntaxHighlighter
+          language={language}
+          style={vscDarkPlus}
+          customStyle={CODE_BLOCK_STYLE}
+        >
           {children}
         </SyntaxHighlighter>
       </div>
@@ -163,7 +183,13 @@ function FeedbackCodeBlock({
   );
 }
 
-function FeedbackPanel({ feedback, language }: { feedback: any; language: string }) {
+function FeedbackPanel({
+  feedback,
+  language,
+}: {
+  feedback: any;
+  language: string;
+}) {
   const variant = FEEDBACK_VARIANTS[feedback.correctness as 0 | 1 | 2];
   if (!variant) return null;
 
@@ -190,15 +216,27 @@ function FeedbackPanel({ feedback, language }: { feedback: any; language: string
           <div
             className={`flex-shrink-0 w-10 h-10 rounded-xl bg-gradient-to-br flex items-center justify-center shadow-lg ${variant.badge}`}
           >
-            <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d={variant.iconPath} />
+            <svg
+              className="w-5 h-5 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d={variant.iconPath}
+              />
             </svg>
           </div>
           <div className="flex-1">
             <h3 className={`text-lg font-semibold mb-1 ${variant.heading}`}>
               <Markdown>{feedback.heading}</Markdown>
             </h3>
-            <div className={`text-sm leading-relaxed whitespace-pre-wrap ${variant.summary}`}>
+            <div
+              className={`text-sm leading-relaxed whitespace-pre-wrap ${variant.summary}`}
+            >
               <Markdown>{feedback.summary}</Markdown>
             </div>
           </div>
@@ -222,13 +260,23 @@ function FeedbackPanel({ feedback, language }: { feedback: any; language: string
                       d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                     />
                   </svg>
-                  <span className={`text-sm font-medium ${variant.accent}`}>{diff.headline}</span>
+                  <span className={`text-sm font-medium ${variant.accent}`}>
+                    {diff.headline}
+                  </span>
                 </div>
 
-                <FeedbackCodeBlock label="Your code:" tone="wrong" language={language}>
+                <FeedbackCodeBlock
+                  label="Your code:"
+                  tone="wrong"
+                  language={language}
+                >
                   {diff.incorrect_code}
                 </FeedbackCodeBlock>
-                <FeedbackCodeBlock label="Suggested fix:" tone="right" language={language}>
+                <FeedbackCodeBlock
+                  label="Suggested fix:"
+                  tone="right"
+                  language={language}
+                >
                   {diff.correct_code}
                 </FeedbackCodeBlock>
 
@@ -243,7 +291,10 @@ function FeedbackPanel({ feedback, language }: { feedback: any; language: string
         {statements.length > 0 && (
           <div className={`mt-4 pt-4 border-t ${variant.divider}`}>
             {statements.map((statement: string, idx: number) => (
-              <div key={idx} className={`text-sm leading-relaxed mb-2 ${variant.body}`}>
+              <div
+                key={idx}
+                className={`text-sm leading-relaxed mb-2 ${variant.body}`}
+              >
                 <Markdown compact>{statement}</Markdown>
               </div>
             ))}
@@ -254,7 +305,15 @@ function FeedbackPanel({ feedback, language }: { feedback: any; language: string
   );
 }
 
-export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookmarkExercise, isBookmarked, tabSize = DEFAULT_TAB_SIZE }: ExerciseModuleProps) {
+export function ExerciseModule({
+  data,
+  messageId,
+  abilityLevel,
+  index = 0,
+  bookmarkExercise,
+  isBookmarked,
+  tabSize = DEFAULT_TAB_SIZE,
+}: ExerciseModuleProps) {
   const [editedCode, setEditedCode] = useState<Record<string, string>>({});
   const [feedbackData, setFeedbackData] = useState<any>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -268,25 +327,28 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   const SAVE_REMINDER_DELAY = 10000; // Auto remind to save after 10 seconds
 
   const currentExercise = data.exercises?.[activeExerciseIndex];
-  const feedbackLanguage = currentExercise?.filename?.endsWith('.py')
-    ? 'python'
-    : currentExercise?.filename?.endsWith('.java')
-      ? 'java'
-      : 'javascript';
+  const feedbackLanguage = currentExercise?.filename?.endsWith(".py")
+    ? "python"
+    : currentExercise?.filename?.endsWith(".java")
+      ? "java"
+      : "javascript";
 
   const correctnessColor = (correctness: number) => {
-    if (correctness === null) return 'bg-gray-300';
-    if (correctness === 2) return 'bg-emerald-500';
-    if (correctness === 1) return 'bg-amber-500';
-    if (correctness === 0) return 'bg-red-500';
-    return 'bg-gray-300';
+    if (correctness === null) return "bg-gray-300";
+    if (correctness === 2) return "bg-emerald-500";
+    if (correctness === 1) return "bg-amber-500";
+    if (correctness === 0) return "bg-red-500";
+    return "bg-gray-300";
   };
 
   const hasUnsavedChanges = useCallback(() => {
     if (!data.exercises) return false;
     return data.exercises.some((exercise: any) => {
       const currentCode = editedCode[exercise.filename] ?? exercise.code;
-      const savedCode = lastSavedCodeRef.current[exercise.filename] ?? exercise.user_submission ?? exercise.code;
+      const savedCode =
+        lastSavedCodeRef.current[exercise.filename] ??
+        exercise.user_submission ??
+        exercise.code;
       return currentCode !== savedCode;
     });
   }, [editedCode, data.exercises]);
@@ -305,7 +367,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
       });
       lastSavedCodeRef.current = initialSaved;
       if (Object.keys(initialCode).length > 0) {
-        setEditedCode(prev => ({ ...initialCode, ...prev }));
+        setEditedCode((prev) => ({ ...initialCode, ...prev }));
       }
     }
   }, [data.exercises]);
@@ -345,7 +407,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   const saveCodeProgress = async () => {
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
-      console.error('No idToken found in session');
+      console.error("No idToken found in session");
       return;
     }
 
@@ -354,25 +416,29 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
       const exerciseFileIds = Object.keys(editedCode).map(
         (exerciseFilename) =>
           data.exercises?.find(
-            (exercise: any) => exercise.filename === exerciseFilename
-          )?.id
+            (exercise: any) => exercise.filename === exerciseFilename,
+          )?.id,
       );
-      const response = await api.exercise.saveCodeProgress({
-        user_submissions: Object.values(editedCode),
-        exercise_file_ids: exerciseFileIds,
-      }, idToken);
+      const response = await api.exercise.saveCodeProgress(
+        {
+          user_submissions: Object.values(editedCode),
+          exercise_file_ids: exerciseFileIds,
+        },
+        idToken,
+      );
 
       // Update last saved state
       const savedState: Record<string, string> = {};
       data.exercises?.forEach((exercise: any) => {
-        savedState[exercise.filename] = editedCode[exercise.filename] ?? exercise.code;
+        savedState[exercise.filename] =
+          editedCode[exercise.filename] ?? exercise.code;
       });
       lastSavedCodeRef.current = savedState;
 
       // Hide reminder
       setShowSaveReminder(false);
     } catch (error) {
-      console.error('Failed to save code progress:', error);
+      console.error("Failed to save code progress:", error);
     } finally {
       setSaving(false);
     }
@@ -384,7 +450,7 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
 
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
-      console.error('No idToken found in session');
+      console.error("No idToken found in session");
       return;
     }
 
@@ -398,19 +464,24 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
         userSubmissions.push(editedCode[exercise.filename] ?? exercise.code);
       });
 
-      const response = await api.exercise.submitExercise({
-        ability_level: abilityLevel.toLowerCase(),
-        message_id: messageId,
-        exercise_id: data.exercise_id ?? data.exercises[activeExerciseIndex]?.exercise_id,
-        exercise_file_ids: exerciseFileIds,
-        user_submissions: userSubmissions,
-      }, idToken);
+      const response = await api.exercise.submitExercise(
+        {
+          ability_level: abilityLevel.toLowerCase(),
+          message_id: messageId,
+          exercise_id:
+            data.exercise_id ??
+            data.exercises[activeExerciseIndex]?.exercise_id,
+          exercise_file_ids: exerciseFileIds,
+          user_submissions: userSubmissions,
+        },
+        idToken,
+      );
 
-      const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      const parsedResponse =
+        typeof response === "string" ? JSON.parse(response) : response;
       setFeedbackData(parsedResponse);
-
     } catch (error) {
-      console.error('Failed to submit exercise:', error);
+      console.error("Failed to submit exercise:", error);
     } finally {
       setSubmitting(false);
     }
@@ -422,8 +493,12 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
     <div className="text-sm mb-4">
       <div className="flex items-center justify-between mb-3">
         <div className="flex items-center gap-2 ml-2">
-          <div className={`${correctnessColor(data.correctness)} w-2 h-2 rounded-full`} />
-          <h2 className="text-xl font-semibold text-primary-text">{currentExercise.title || 'Exercise ' + (index + 1)}</h2>
+          <div
+            className={`${correctnessColor(data.correctness)} w-2 h-2 rounded-full`}
+          />
+          <h2 className="text-xl font-semibold text-primary-text">
+            {currentExercise.title || "Exercise " + (index + 1)}
+          </h2>
         </div>
         <motion.button
           onClick={() => bookmarkExercise(data.id)}
@@ -448,42 +523,51 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
           </svg>
         </motion.button>
       </div>
-      <p className="text-primary-text font-medium text-lg mb-4">{currentExercise.text || 'Exercise ' + (index + 1)}</p>
+      <p className="text-primary-text font-medium text-lg mb-4">
+        {currentExercise.text || "Exercise " + (index + 1)}
+      </p>
       <div className="bg-[#2D2D2D] px-4 py-2 rounded-t-lg">
-        <span className="text-white/80 text-sm">{currentExercise.filename}</span>
+        <span className="text-white/80 text-sm">
+          {currentExercise.filename}
+        </span>
       </div>
       {data.exercises && data.exercises.length > 1 && (
         <div className="bg-[#252526] flex items-center overflow-x-auto border-b border-[#1E1E1E]">
           {data.exercises.map((exercise: any, index: number) => {
-            const ext = exercise.filename.split('.').pop() || '';
+            const ext = exercise.filename.split(".").pop() || "";
             const iconColors: Record<string, string> = {
-              'py': 'text-yellow-400',
-              'java': 'text-orange-500',
-              'js': 'text-yellow-300',
-              'ts': 'text-blue-400',
-              'tsx': 'text-blue-400',
-              'jsx': 'text-blue-300',
+              py: "text-yellow-400",
+              java: "text-orange-500",
+              js: "text-yellow-300",
+              ts: "text-blue-400",
+              tsx: "text-blue-400",
+              jsx: "text-blue-300",
             };
-            const iconColor = iconColors[ext] || 'text-gray-400';
+            const iconColor = iconColors[ext] || "text-gray-400";
 
             return (
               <button
                 key={index}
                 onClick={() => setActiveExerciseIndex(index)}
-                className={`cursor-pointer group relative flex items-center gap-2 px-3 py-2 text-[13px] font-normal transition-colors duration-150 border-r border-[#1E1E1E] min-w-max ${activeExerciseIndex === index
-                  ? 'bg-[#1E1E1E] text-white'
-                  : 'bg-[#2D2D2D] text-gray-400 hover:bg-[#2A2A2A] hover:text-gray-300'
-                  }`}
+                className={`cursor-pointer group relative flex items-center gap-2 px-3 py-2 text-[13px] font-normal transition-colors duration-150 border-r border-[#1E1E1E] min-w-max ${
+                  activeExerciseIndex === index
+                    ? "bg-[#1E1E1E] text-white"
+                    : "bg-[#2D2D2D] text-gray-400 hover:bg-[#2A2A2A] hover:text-gray-300"
+                }`}
               >
                 {/* Active tab top accent */}
                 {activeExerciseIndex === index && (
                   <span className="absolute top-0 left-0 right-0 h-[2px] bg-[#007ACC]" />
                 )}
                 {/* File type icon */}
-                <svg className={`w-4 h-4 flex-shrink-0 ${iconColor}`} viewBox="0 0 24 24" fill="currentColor">
-                  {ext === 'py' ? (
+                <svg
+                  className={`w-4 h-4 flex-shrink-0 ${iconColor}`}
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  {ext === "py" ? (
                     <path d="M12 0C5.4 0 5.8 2.8 5.8 2.8v2.9h6.4v.9H3.8S0 6.2 0 12.1s3.3 5.7 3.3 5.7h2v-2.7s-.1-3.3 3.2-3.3h5.5s3.1 0 3.1-3v-5S17.5 0 12 0zm-3.1 1.7c.6 0 1 .5 1 1s-.5 1-1 1c-.6 0-1-.5-1-1s.5-1 1-1z M12 24c6.6 0 6.2-2.8 6.2-2.8v-2.9h-6.4v-.9h8.4s3.8.4 3.8-5.5-3.3-5.7-3.3-5.7h-2v2.7s.1 3.3-3.2 3.3H10s-3.1 0-3.1 3v5s-.4 3.8 5.1 3.8zm3.1-1.7c-.6 0-1-.5-1-1s.5-1 1-1c.6 0 1 .5 1 1s-.5 1-1 1z" />
-                  ) : ext === 'java' ? (
+                  ) : ext === "java" ? (
                     <path d="M8.9 18.6s-1 .6.7.8c2.1.3 3.2.2 5.5-.3 0 0 .6.4 1.5.7-5.2 2.3-11.9-.1-7.7-1.2m-.6-2.8s-1.2.9.6 1c2.2.2 4 .2 7-.3 0 0 .4.4 1.1.7-6.4 1.9-13.5.1-8.7-1.4m5.1-4.7c1.3 1.5-.3 2.8-.3 2.8s3.3-1.7 1.8-3.8c-1.4-2-2.5-3 3.3-6.4 0 0-9.1 2.3-4.8 7.4m7.6 11s.7.6-.8 1.1c-2.9.9-12.1 1.2-14.6 0-.9-.4.8-.9 1.3-1 .5-.1.8-.1.8-.1-1-.7-6.2 1.3-2.6 1.9 9.6 1.6 17.5-.7 15.9-1.9m-10.9-7.9s-4.4 1-1.6 1.4c1.2.2 3.6.1 5.8-.1 1.8-.1 3.6-.4 3.6-.4s-.6.3-1.1.6c-4.4 1.2-12.9.6-10.5-.5 2.1-1 3.8-1 3.8-1m7.8 4.4c4.5-2.3 2.4-4.6.9-4.3-.4.1-.5.2-.5.2s.1-.2.4-.3c2.8-1 5 3-1 4.5 0 0 .1-.1.2-.1" />
                   ) : (
                     <path d="M3 3h18v18H3V3zm16.5 15.5v-11h-15v11h15zM6.5 8.5h4v4h-4v-4z" />
@@ -497,10 +581,15 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
       )}
       <CodeMirror
         value={editedCode[currentExercise.filename] ?? currentExercise.code}
-        onChange={(value: string) => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: value }))}
+        onChange={(value: string) =>
+          setEditedCode((prev) => ({
+            ...prev,
+            [currentExercise.filename]: value,
+          }))
+        }
         theme={vscodeDark}
         extensions={[getLanguageExtension(currentExercise.filename)]}
-        style={{ fontSize: '14px' }}
+        style={{ fontSize: "14px" }}
         basicSetup={{
           tabSize: tabSize,
           lineNumbers: true,
@@ -519,17 +608,29 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
             className="flex items-center justify-between bg-amber-50 border border-amber-200 dark:bg-amber-950/40 dark:border-amber-800/50 rounded-lg px-4 py-2 mt-2"
           >
             <div className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-amber-600 dark:text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              <svg
+                className="w-4 h-4 text-amber-600 dark:text-amber-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                />
               </svg>
-              <span className="text-sm text-black dark:text-amber-50">You have unsaved changes</span>
+              <span className="text-sm text-black dark:text-amber-50">
+                You have unsaved changes
+              </span>
             </div>
             <button
               onClick={saveCodeProgress}
               disabled={saving}
               className="cursor-pointer text-sm font-medium text-black dark:text-amber-50 hover:text-black/90 hover:bg-amber-100 dark:hover:bg-amber-900/50 px-3 py-1 rounded-md transition-colors"
             >
-              {saving ? 'Saving...' : 'Save now'}
+              {saving ? "Saving..." : "Save now"}
             </button>
           </motion.div>
         )}
@@ -544,14 +645,33 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
           >
             {submitting ? (
               <>
-                <svg className="animate-spin w-4 h-4 text-primary-text" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <svg
+                  className="animate-spin w-4 h-4 text-primary-text"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
-                <span className="text-sm text-background m-0 font-medium tracking-wide">Checking...</span>
+                <span className="text-sm text-background m-0 font-medium tracking-wide">
+                  Checking...
+                </span>
               </>
             ) : (
-              <span className="text-sm text-background m-0 font-medium tracking-wide">Submit</span>
+              <span className="text-sm text-background m-0 font-medium tracking-wide">
+                Submit
+              </span>
             )}
           </button>
           <button
@@ -561,24 +681,58 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
           >
             {saving ? (
               <>
-                <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                <svg
+                  className="animate-spin w-4 h-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
                 </svg>
-                <span className="text-sm font-medium text-primary-text">Saving...</span>
+                <span className="text-sm font-medium text-primary-text">
+                  Saving...
+                </span>
               </>
             ) : (
               <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"
+                  />
                 </svg>
-                <span className="text-sm font-medium text-primary-text">Save</span>
+                <span className="text-sm font-medium text-primary-text">
+                  Save
+                </span>
               </>
             )}
           </button>
         </div>
         <button
-          onClick={() => setEditedCode(prev => ({ ...prev, [currentExercise.filename]: currentExercise.code }))}
+          onClick={() =>
+            setEditedCode((prev) => ({
+              ...prev,
+              [currentExercise.filename]: currentExercise.code,
+            }))
+          }
           className="flex cursor-pointer items-center gap-2 px-4 py-2 text-text-70 hover:text-primary-text hover:bg-base-5 rounded-lg transition-colors group"
         >
           <svg
@@ -612,7 +766,16 @@ export function ExerciseModule({ data, messageId, abilityLevel, index = 0, bookm
   );
 }
 
-export default function Lesson({ message, userPrompt, initialExpandedLesson, setLessonExpanded, lessonExpanded, abilityLevel, tabSize = DEFAULT_TAB_SIZE, onBookmarkChange }: LessonProps) {
+export default function Lesson({
+  message,
+  userPrompt,
+  initialExpandedLesson,
+  setLessonExpanded,
+  lessonExpanded,
+  abilityLevel,
+  tabSize = DEFAULT_TAB_SIZE,
+  onBookmarkChange,
+}: LessonProps) {
   const jsonData = message.json;
   const [activeExerciseIndex, setActiveExerciseIndex] = useState(0);
   const [loadingExercises, setLoadingExercises] = useState(false);
@@ -639,11 +802,13 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
   const fetchExercises = async () => {
     setLoading(true);
-    const minTimePromise = new Promise<void>((resolve) => setTimeout(resolve, 1000));
+    const minTimePromise = new Promise<void>((resolve) =>
+      setTimeout(resolve, 1000),
+    );
 
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
-      console.error('No idToken found in session');
+      console.error("No idToken found in session");
       await minTimePromise;
       setLoading(false);
       return;
@@ -653,11 +818,11 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
     try {
       const [response] = await Promise.all([
         api.exercise.getExercises(message.id!, idToken),
-        minTimePromise
+        minTimePromise,
       ]);
       setFetchedExercises(response);
     } catch (error) {
-      console.error('Failed to fetch exercises:', error);
+      console.error("Failed to fetch exercises:", error);
       await minTimePromise;
     } finally {
       setLoadingExercises(false);
@@ -669,15 +834,20 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
     setGeneratingExercises(true);
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
-      console.error('No idToken found in session');
+      console.error("No idToken found in session");
       setGeneratingExercises(false);
       return;
     }
     try {
-      const response = await api.exercise.getNewExercise(message.id!, abilityLevel.toLowerCase(), idToken);
+      const response = await api.exercise.getNewExercise(
+        message.id!,
+        abilityLevel.toLowerCase(),
+        idToken,
+      );
 
       // Transform and add to fetchedExercises
-      const parsedResponse = typeof response === 'string' ? JSON.parse(response) : response;
+      const parsedResponse =
+        typeof response === "string" ? JSON.parse(response) : response;
 
       // Use exercise_id from response
       const exerciseId = parsedResponse.id;
@@ -694,16 +864,16 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           id: idx,
           exercise_id: exerciseId,
           user_submission: null,
-        }))
+        })),
       };
 
       // Add to fetchedExercises using exercise_id as key
       setFetchedExercises((prev: any) => ({
         ...prev,
-        [exerciseId]: newExerciseData
+        [exerciseId]: newExerciseData,
       }));
     } catch (error) {
-      console.error('Failed to generate exercises:', error);
+      console.error("Failed to generate exercises:", error);
     } finally {
       setGeneratingExercises(false);
     }
@@ -712,7 +882,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
   const bookmarkExercise = async (exerciseId: number) => {
     const idToken = (session?.user as any)?.idToken;
     if (!idToken) {
-      console.error('No idToken found in session');
+      console.error("No idToken found in session");
       return false;
     }
 
@@ -726,7 +896,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
         // Find the key that matches this exercise id
         const exerciseKey = Object.keys(prev).find(
-          key => !isNaN(Number(key)) && prev[key].id === exerciseId
+          (key) => !isNaN(Number(key)) && prev[key].id === exerciseId,
         );
 
         if (exerciseKey) {
@@ -737,7 +907,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
               bookmarked: response.bookmarked,
               title: response.title,
               tags: response.tags,
-            }
+            },
           };
         }
         return prev;
@@ -758,7 +928,7 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
 
       return response?.bookmarked ?? false;
     } catch (error) {
-      console.error('Failed to bookmark exercise:', error);
+      console.error("Failed to bookmark exercise:", error);
       return false;
     }
   };
@@ -789,163 +959,214 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
             onClick={() => setLessonExpanded(false)}
             className="cursor-pointer absolute top-4 right-4 p-2 hover:bg-base-10 rounded-lg transition-colors z-10"
           >
-            <svg className="w-6 h-6 text-text-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            <svg
+              className="w-6 h-6 text-text-70"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
             </svg>
           </button>
           {loading ? (
             <ExpandedSkeletonLoader />
           ) : (
             <div className="p-8 pb-0 pt-16 flex flex-col gap-2">
-              <h1 className="text-2xl font-bold text-primary-text mb-2">Expanded Lesson View</h1>
+              <h1 className="text-2xl font-bold text-primary-text mb-2">
+                Expanded Lesson View
+              </h1>
 
               {/* Progress Stats Component */}
-              {fetchedExercises && (() => {
-                const exercises = Object.keys(fetchedExercises)
-                  .filter(key => !isNaN(Number(key)))
-                  .map(key => fetchedExercises[key]);
+              {fetchedExercises &&
+                (() => {
+                  const exercises = Object.keys(fetchedExercises)
+                    .filter((key) => !isNaN(Number(key)))
+                    .map((key) => fetchedExercises[key]);
 
-                const total = exercises.length;
-                const completed = exercises.filter((ex: any) => ex.correctness === 2).length;
-                const partial = exercises.filter((ex: any) => ex.correctness === 1).length;
-                const incorrect = exercises.filter((ex: any) => ex.correctness === 0).length;
-                const notStarted = exercises.filter((ex: any) => ex.correctness === null).length;
+                  const total = exercises.length;
+                  const completed = exercises.filter(
+                    (ex: any) => ex.correctness === 2,
+                  ).length;
+                  const partial = exercises.filter(
+                    (ex: any) => ex.correctness === 1,
+                  ).length;
+                  const incorrect = exercises.filter(
+                    (ex: any) => ex.correctness === 0,
+                  ).length;
+                  const notStarted = exercises.filter(
+                    (ex: any) => ex.correctness === null,
+                  ).length;
 
-                // Get language stats from files
-                const languageCount: Record<string, number> = {};
-                exercises.forEach((ex: any) => {
-                  ex.files?.forEach((file: any) => {
-                    const ext = file.filename?.split('.').pop()?.toLowerCase() || 'other';
-                    const langMap: Record<string, string> = {
-                      'js': 'JavaScript',
-                      'ts': 'TypeScript',
-                      'tsx': 'TypeScript',
-                      'jsx': 'JavaScript',
-                      'py': 'Python',
-                      'java': 'Java',
-                      'json': 'JSON',
-                      'html': 'HTML',
-                      'css': 'CSS',
-                    };
-                    const lang = langMap[ext] || ext.toUpperCase();
-                    languageCount[lang] = (languageCount[lang] || 0) + 1;
+                  // Get language stats from files
+                  const languageCount: Record<string, number> = {};
+                  exercises.forEach((ex: any) => {
+                    ex.files?.forEach((file: any) => {
+                      const ext =
+                        file.filename?.split(".").pop()?.toLowerCase() ||
+                        "other";
+                      const langMap: Record<string, string> = {
+                        js: "JavaScript",
+                        ts: "TypeScript",
+                        tsx: "TypeScript",
+                        jsx: "JavaScript",
+                        py: "Python",
+                        java: "Java",
+                        json: "JSON",
+                        html: "HTML",
+                        css: "CSS",
+                      };
+                      const lang = langMap[ext] || ext.toUpperCase();
+                      languageCount[lang] = (languageCount[lang] || 0) + 1;
+                    });
                   });
-                });
 
-                const totalFiles = Object.values(languageCount).reduce((a, b) => a + b, 0);
-                const topLanguages = Object.entries(languageCount)
-                  .sort((a, b) => b[1] - a[1])
-                  .slice(0, 3);
+                  const totalFiles = Object.values(languageCount).reduce(
+                    (a, b) => a + b,
+                    0,
+                  );
+                  const topLanguages = Object.entries(languageCount)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 3);
 
-                const completionPercent = total > 0 ? Math.round((completed / total) * 100) : 0;
-                const partialPercent = total > 0 ? Math.round((partial / total) * 100) : 0;
-                const incorrectPercent = total > 0 ? Math.round((incorrect / total) * 100) : 0;
+                  const completionPercent =
+                    total > 0 ? Math.round((completed / total) * 100) : 0;
+                  const partialPercent =
+                    total > 0 ? Math.round((partial / total) * 100) : 0;
+                  const incorrectPercent =
+                    total > 0 ? Math.round((incorrect / total) * 100) : 0;
 
-                return (
-                  <div
-                    className={`bg-container-primary rounded-2xl p-px mb-4 ${twoXGlassBorder.outerBorderRadiusClass} ${twoXGlassBorder.gradientClass}`}
-                  >
+                  return (
                     <div
-                      className="p-5 bg-container-primary"
-                      style={twoXGlassBorder.innerBorderRadiusStyle}
+                      className={`bg-container-primary rounded-2xl p-px mb-4 ${twoXGlassBorder.outerBorderRadiusClass} ${twoXGlassBorder.gradientClass}`}
                     >
-                      {/* Main Progress Section */}
-                      <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <svg className="w-16 h-16 transform -rotate-90">
-                            <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
-                              stroke="#e5e7eb"
-                              strokeWidth="6"
-                              fill="none"
-                            />
-                            {/* Completed - Green */}
-                            <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
-                              stroke="#10b981"
-                              strokeWidth="6"
-                              fill="none"
-                              strokeDasharray={`${completionPercent * 1.76} 176`}
-                              strokeLinecap="round"
-                              className="transition-all duration-700"
-                            />
-                            {/* Partial - Amber */}
-                            <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
-                              stroke="#fbbf24"
-                              strokeWidth="6"
-                              fill="none"
-                              strokeDasharray={`${partialPercent * 1.76} 176`}
-                              strokeDashoffset={`-${completionPercent * 1.76}`}
-                              strokeLinecap="round"
-                              className="transition-all duration-700"
-                            />
-                            {/* Incorrect - Red */}
-                            <circle
-                              cx="32"
-                              cy="32"
-                              r="28"
-                              stroke="#f87171"
-                              strokeWidth="6"
-                              fill="none"
-                              strokeDasharray={`${incorrectPercent * 1.76} 176`}
-                              strokeDashoffset={`-${(completionPercent + partialPercent) * 1.76}`}
-                              strokeLinecap="round"
-                              className="transition-all duration-700"
-                            />
-                          </svg>
-                          <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-lg font-bold text-primary-text">{completionPercent}%</span>
+                      <div
+                        className="p-5 bg-container-primary"
+                        style={twoXGlassBorder.innerBorderRadiusStyle}
+                      >
+                        {/* Main Progress Section */}
+                        <div className="flex items-center justify-between mb-4">
+                          <div className="flex items-center gap-3">
+                            <div className="relative">
+                              <svg className="w-16 h-16 transform -rotate-90">
+                                <circle
+                                  cx="32"
+                                  cy="32"
+                                  r="28"
+                                  stroke="#e5e7eb"
+                                  strokeWidth="6"
+                                  fill="none"
+                                />
+                                {/* Completed - Green */}
+                                <circle
+                                  cx="32"
+                                  cy="32"
+                                  r="28"
+                                  stroke="#10b981"
+                                  strokeWidth="6"
+                                  fill="none"
+                                  strokeDasharray={`${completionPercent * 1.76} 176`}
+                                  strokeLinecap="round"
+                                  className="transition-all duration-700"
+                                />
+                                {/* Partial - Amber */}
+                                <circle
+                                  cx="32"
+                                  cy="32"
+                                  r="28"
+                                  stroke="#fbbf24"
+                                  strokeWidth="6"
+                                  fill="none"
+                                  strokeDasharray={`${partialPercent * 1.76} 176`}
+                                  strokeDashoffset={`-${completionPercent * 1.76}`}
+                                  strokeLinecap="round"
+                                  className="transition-all duration-700"
+                                />
+                                {/* Incorrect - Red */}
+                                <circle
+                                  cx="32"
+                                  cy="32"
+                                  r="28"
+                                  stroke="#f87171"
+                                  strokeWidth="6"
+                                  fill="none"
+                                  strokeDasharray={`${incorrectPercent * 1.76} 176`}
+                                  strokeDashoffset={`-${(completionPercent + partialPercent) * 1.76}`}
+                                  strokeLinecap="round"
+                                  className="transition-all duration-700"
+                                />
+                              </svg>
+                              <div className="absolute inset-0 flex items-center justify-center">
+                                <span className="text-lg font-bold text-primary-text">
+                                  {completionPercent}%
+                                </span>
+                              </div>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-primary-text">
+                                Exercise Progress
+                              </h3>
+                              <p className="text-sm text-text-70">
+                                {completed} of {total} completed
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                        <div>
-                          <h3 className="text-lg font-semibold text-primary-text">Exercise Progress</h3>
-                          <p className="text-sm text-text-70">{completed} of {total} completed</p>
-                        </div>
-                      </div>
 
-                      {/* Quick Stats */}
-                      <div className="flex gap-4">
-                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <span className="text-xl font-bold text-primary-text">{completed}</span>
+                          {/* Quick Stats */}
+                          <div className="flex gap-4">
+                            <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                                <span className="text-xl font-bold text-primary-text">
+                                  {completed}
+                                </span>
+                              </div>
+                              <span className="text-xs text-text-70">
+                                Completed
+                              </span>
+                            </div>
+                            <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-amber-400"></span>
+                                <span className="text-xl font-bold text-primary-text">
+                                  {partial}
+                                </span>
+                              </div>
+                              <span className="text-xs text-text-70">
+                                Partial
+                              </span>
+                            </div>
+                            <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-red-400"></span>
+                                <span className="text-xl font-bold text-primary-text">
+                                  {incorrect}
+                                </span>
+                              </div>
+                              <span className="text-xs text-text-70">
+                                Incorrect
+                              </span>
+                            </div>
+                            <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
+                              <div className="flex items-center justify-center gap-1.5">
+                                <span className="w-2 h-2 rounded-full bg-gray-300"></span>
+                                <span className="text-xl font-bold text-primary-text">
+                                  {notStarted}
+                                </span>
+                              </div>
+                              <span className="text-xs text-text-70">
+                                Not Started
+                              </span>
+                            </div>
                           </div>
-                          <span className="text-xs text-text-70">Completed</span>
                         </div>
-                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-amber-400"></span>
-                            <span className="text-xl font-bold text-primary-text">{partial}</span>
-                          </div>
-                          <span className="text-xs text-text-70">Partial</span>
-                        </div>
-                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-red-400"></span>
-                            <span className="text-xl font-bold text-primary-text">{incorrect}</span>
-                          </div>
-                          <span className="text-xs text-text-70">Incorrect</span>
-                        </div>
-                        <div className="text-center px-4 py-2 bg-base-10 rounded-xl shadow-[0_0_20px_rgba(0,0,0,0.05)]">
-                          <div className="flex items-center justify-center gap-1.5">
-                            <span className="w-2 h-2 rounded-full bg-gray-300"></span>
-                            <span className="text-xl font-bold text-primary-text">{notStarted}</span>
-                          </div>
-                          <span className="text-xs text-text-70">Not Started</span>
-                        </div>
-                      </div>
-                      </div>
 
-                    {/* Full Width Progress Bar */}
-                    {/* <div className="mb-4">
+                        {/* Full Width Progress Bar */}
+                        {/* <div className="mb-4">
                       <div className="h-2.5 bg-gray-200 rounded-full overflow-hidden flex">
                         <motion.div 
                           initial={{ width: 0 }}
@@ -968,74 +1189,94 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                       </div>
                     </div> */}
 
-                      {/* Language Stats */}
-                      {topLanguages.length > 0 && (
-                        <div className="flex items-center gap-3 pt-3 border-t-1 border-base-10">
-                          <span className="text-xs font-medium text-text-70 uppercase tracking-wide">Languages:</span>
-                          <div className="flex gap-2 flex-wrap">
-                            {topLanguages.map(([lang, count]) => {
-                              const percent = Math.round((count / totalFiles) * 100);
-                              const colors: Record<string, string> = {
-                                'JavaScript': 'bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800/50',
-                                'TypeScript': 'bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50',
-                                'Python': 'bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800/50',
-                                'Java': 'bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800/50',
-                                'JSON': 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700',
-                                'HTML': 'bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/50',
-                                'CSS': 'bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50',
-                              };
-                              const colorClass = colors[lang] || 'bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700';
-                              return (
-                                <span
-                                  key={lang}
-                                  className={`text-xs px-2 py-1 rounded-lg border ${colorClass} font-medium`}
-                                >
-                                  {lang} <span className="opacity-60">({percent}%)</span>
-                                </span>
-                              );
-                            })}
-                          </div>
-                          {exercises.some((ex: any) => ex.bookmarked) && (
-                            <span className="ml-auto flex items-center gap-1 text-sm text-blue-600">
-                              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                                <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                              </svg>
-                              {exercises.filter((ex: any) => ex.bookmarked).length} bookmarked
+                        {/* Language Stats */}
+                        {topLanguages.length > 0 && (
+                          <div className="flex items-center gap-3 pt-3 border-t-1 border-base-10">
+                            <span className="text-xs font-medium text-text-70 uppercase tracking-wide">
+                              Languages:
                             </span>
-                          )}
-                        </div>
-                      )}
+                            <div className="flex gap-2 flex-wrap">
+                              {topLanguages.map(([lang, count]) => {
+                                const percent = Math.round(
+                                  (count / totalFiles) * 100,
+                                );
+                                const colors: Record<string, string> = {
+                                  JavaScript:
+                                    "bg-yellow-100 text-yellow-800 border-yellow-200 dark:bg-yellow-950/40 dark:text-yellow-300 dark:border-yellow-800/50",
+                                  TypeScript:
+                                    "bg-blue-100 text-blue-800 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800/50",
+                                  Python:
+                                    "bg-green-100 text-green-800 border-green-200 dark:bg-green-950/40 dark:text-green-300 dark:border-green-800/50",
+                                  Java: "bg-orange-100 text-orange-800 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800/50",
+                                  JSON: "bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800/60 dark:text-gray-300 dark:border-gray-700",
+                                  HTML: "bg-red-100 text-red-800 border-red-200 dark:bg-red-950/40 dark:text-red-300 dark:border-red-800/50",
+                                  CSS: "bg-purple-100 text-purple-800 border-purple-200 dark:bg-purple-950/40 dark:text-purple-300 dark:border-purple-800/50",
+                                };
+                                const colorClass =
+                                  colors[lang] ||
+                                  "bg-slate-100 text-slate-700 border-slate-200 dark:bg-slate-800/60 dark:text-slate-300 dark:border-slate-700";
+                                return (
+                                  <span
+                                    key={lang}
+                                    className={`text-xs px-2 py-1 rounded-lg border ${colorClass} font-medium`}
+                                  >
+                                    {lang}{" "}
+                                    <span className="opacity-60">
+                                      ({percent}%)
+                                    </span>
+                                  </span>
+                                );
+                              })}
+                            </div>
+                            {exercises.some((ex: any) => ex.bookmarked) && (
+                              <span className="ml-auto flex items-center gap-1 text-sm text-blue-600">
+                                <svg
+                                  className="w-5 h-5"
+                                  fill="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                                {
+                                  exercises.filter((ex: any) => ex.bookmarked)
+                                    .length
+                                }{" "}
+                                bookmarked
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                );
-              })()}
-              {fetchedExercises && Object.keys(fetchedExercises)
-                .filter(key => !isNaN(Number(key)))
-                .map((exerciseId, idx) => {
-                  const exerciseData = fetchedExercises[exerciseId];
-                  return (
-                    <ExerciseModule
-                      bookmarkExercise={bookmarkExercise}
-                      isBookmarked={exerciseData.bookmarked}
-                      key={exerciseId}
-                      index={idx}
-                      tabSize={tabSize}
-                      data={{
-                        exercises: exerciseData.files,
-                        exercise_id: Number(exerciseId),
-                        id: exerciseData.id,
-                        correctness: exerciseData.correctness,
-                        bookmarked: exerciseData.bookmarked,
-                        title: exerciseData.title,
-                        tags: exerciseData.tags,
-                        feedback: exerciseData.feedback,
-                      }}
-                      messageId={message.id}
-                      abilityLevel={abilityLevel}
-                    />
                   );
-                })
-              }
+                })()}
+              {fetchedExercises &&
+                Object.keys(fetchedExercises)
+                  .filter((key) => !isNaN(Number(key)))
+                  .map((exerciseId, idx) => {
+                    const exerciseData = fetchedExercises[exerciseId];
+                    return (
+                      <ExerciseModule
+                        bookmarkExercise={bookmarkExercise}
+                        isBookmarked={exerciseData.bookmarked}
+                        key={exerciseId}
+                        index={idx}
+                        tabSize={tabSize}
+                        data={{
+                          exercises: exerciseData.files,
+                          exercise_id: Number(exerciseId),
+                          id: exerciseData.id,
+                          correctness: exerciseData.correctness,
+                          bookmarked: exerciseData.bookmarked,
+                          title: exerciseData.title,
+                          tags: exerciseData.tags,
+                          feedback: exerciseData.feedback,
+                        }}
+                        messageId={message.id}
+                        abilityLevel={abilityLevel}
+                      />
+                    );
+                  })}
               {/* Fallback: render from jsonData.exercises if no fetchedExercises with numeric keys */}
               {/* {(!fetchedExercises || Object.keys(fetchedExercises).filter(key => !isNaN(Number(key))).length === 0) && jsonData.exercises && (
                 <ExerciseModule
@@ -1062,14 +1303,33 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                       >
                         {generatingExercises ? (
                           <>
-                            <svg className="animate-spin w-4 h-4 text-primary-text" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                            <svg
+                              className="animate-spin w-4 h-4 text-primary-text"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
                             </svg>
-                            <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Generating...</span>
+                            <span className="text-sm text-primary-text m-0 font-medium tracking-wide">
+                              Generating...
+                            </span>
                           </>
                         ) : (
-                          <span className="text-sm text-primary-text m-0 font-medium tracking-wide">Unlock more exercises</span>
+                          <span className="text-sm text-primary-text m-0 font-medium tracking-wide">
+                            Unlock more exercises
+                          </span>
                         )}
                       </button>
                     </div>
@@ -1080,10 +1340,15 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                     <span className="mx-4 my-2">Java.java</span>
                   </div>
                   <SyntaxHighlighter
-                    language={'java'}
+                    language={"java"}
                     style={vscDarkPlus}
                     showLineNumbers
-                    customStyle={{ margin: 0, padding: '0 1rem', background: '#1E1E1E', fontSize: '13px' }}
+                    customStyle={{
+                      margin: 0,
+                      padding: "0 1rem",
+                      background: "#1E1E1E",
+                      fontSize: "13px",
+                    }}
                   >
                     {`
   public class PlaceholderService {
@@ -1108,25 +1373,31 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           className="max-w-4xl mx-auto p-6 bg-background mt-0 shadow-[0_0_60px_rgba(0,0,0,0.04)]"
         >
           <div className="flex items-center justify-between gap-4 mb-6 pb-4 border-b border-base-10">
-            <h1 className="text-3xl font-bold text-primary-text" data-speech-field="title">
-              {jsonData.lessonTitle ?? (jsonData as any).lesson_title ?? (jsonData.exercises?.[0]?.filename?.replace('.java', '').replace('.py', '').replace('.js', '') || 'Lesson')}
+            <h1
+              className="text-3xl font-bold text-primary-text"
+              data-speech-field="title"
+            >
+              {jsonData.lessonTitle ??
+                (jsonData as any).lesson_title ??
+                (jsonData.exercises?.[0]?.filename
+                  ?.replace(".java", "")
+                  .replace(".py", "")
+                  .replace(".js", "") ||
+                  "Lesson")}
             </h1>
-            <SpeakButton messageId={message.id} scope="full" label="Narrate lesson" />
-            {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
-              <svg
-                className="w-6 h-6 text-gray-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"
-                />
-              </svg>
-            </button> */}
+            <div className="flex items-center gap-2 shrink-0">
+              <SpeakButton
+                messageId={message.id}
+                scope="full"
+                label="Narrate lesson"
+              />
+              <ShareButton
+                lessonId={message.id}
+                shared={message.shared}
+                idToken={(session?.user as any)?.idToken}
+                label
+              />
+            </div>
           </div>
 
           {/* User Prompt */}
@@ -1138,21 +1409,31 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                 className="bg-container-primary p-4"
                 style={lessonGlassBorder.innerBorderRadiusStyle}
               >
-                <div className="text-sm font-bold text-text-70 mb-1">Prompt:</div>
-                <p className="text-text-90 text-base leading-relaxed">{userPrompt}</p>
+                <div className="text-sm font-bold text-text-70 mb-1">
+                  Prompt:
+                </div>
+                <p className="text-text-90 text-base leading-relaxed">
+                  {userPrompt}
+                </p>
               </div>
             </div>
           )}
 
           {/* Breakdown/Explanation */}
           {jsonData.breakdown && (
-            <div className="mb-6 leading-relaxed text-text-90" data-speech-field="breakdown">
+            <div
+              className="mb-6 leading-relaxed text-text-90"
+              data-speech-field="breakdown"
+            >
               <Markdown>{jsonData.breakdown}</Markdown>
             </div>
           )}
 
           {jsonData.explanation && (
-            <div className="mb-8 leading-relaxed text-text-90" data-speech-field="explanation">
+            <div
+              className="mb-8 leading-relaxed text-text-90"
+              data-speech-field="explanation"
+            >
               <Markdown>{jsonData.explanation}</Markdown>
             </div>
           )}
@@ -1186,7 +1467,9 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           {currentExercise && (
             <div className="mb-8">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-semibold text-primary-text">Activity:</h2>
+                <h2 className="text-xl font-semibold text-primary-text">
+                  Activity:
+                </h2>
                 {/* <button className="p-2 hover:bg-gray-100 rounded-lg transition-colors">
                   <svg
                     className="w-5 h-5 text-gray-600"
@@ -1233,35 +1516,40 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                 {jsonData.exercises && jsonData.exercises.length > 1 && (
                   <div className="bg-[#252526] flex items-center overflow-x-auto border-b border-[#1E1E1E]">
                     {jsonData.exercises.map((exercise, index) => {
-                      const ext = exercise.filename.split('.').pop() || '';
+                      const ext = exercise.filename.split(".").pop() || "";
                       const iconColors: Record<string, string> = {
-                        'py': 'text-yellow-400',
-                        'java': 'text-orange-500',
-                        'js': 'text-yellow-300',
-                        'ts': 'text-blue-400',
-                        'tsx': 'text-blue-400',
-                        'jsx': 'text-blue-300',
+                        py: "text-yellow-400",
+                        java: "text-orange-500",
+                        js: "text-yellow-300",
+                        ts: "text-blue-400",
+                        tsx: "text-blue-400",
+                        jsx: "text-blue-300",
                       };
-                      const iconColor = iconColors[ext] || 'text-text-70';
+                      const iconColor = iconColors[ext] || "text-text-70";
 
                       return (
                         <button
                           key={index}
                           onClick={() => setActiveExerciseIndex(index)}
-                          className={`cursor-pointer group relative flex items-center gap-2 px-3 py-2 text-[13px] font-normal transition-colors duration-150 border-r border-[#1E1E1E] min-w-max ${activeExerciseIndex === index
-                            ? 'bg-[#1E1E1E] text-white'
-                            : 'bg-[#2D2D2D] text-text-70 hover:bg-[#2A2A2A] hover:text-text-90'
-                            }`}
+                          className={`cursor-pointer group relative flex items-center gap-2 px-3 py-2 text-[13px] font-normal transition-colors duration-150 border-r border-[#1E1E1E] min-w-max ${
+                            activeExerciseIndex === index
+                              ? "bg-[#1E1E1E] text-white"
+                              : "bg-[#2D2D2D] text-text-70 hover:bg-[#2A2A2A] hover:text-text-90"
+                          }`}
                         >
                           {/* Active tab top accent */}
                           {activeExerciseIndex === index && (
                             <span className="absolute top-0 left-0 right-0 h-[2px] bg-[#007ACC]" />
                           )}
                           {/* File type icon */}
-                          <svg className={`w-4 h-4 flex-shrink-0 ${iconColor}`} viewBox="0 0 24 24" fill="currentColor">
-                            {ext === 'py' ? (
+                          <svg
+                            className={`w-4 h-4 flex-shrink-0 ${iconColor}`}
+                            viewBox="0 0 24 24"
+                            fill="currentColor"
+                          >
+                            {ext === "py" ? (
                               <path d="M12 0C5.4 0 5.8 2.8 5.8 2.8v2.9h6.4v.9H3.8S0 6.2 0 12.1s3.3 5.7 3.3 5.7h2v-2.7s-.1-3.3 3.2-3.3h5.5s3.1 0 3.1-3v-5S17.5 0 12 0zm-3.1 1.7c.6 0 1 .5 1 1s-.5 1-1 1c-.6 0-1-.5-1-1s.5-1 1-1z M12 24c6.6 0 6.2-2.8 6.2-2.8v-2.9h-6.4v-.9h8.4s3.8.4 3.8-5.5-3.3-5.7-3.3-5.7h-2v2.7s.1 3.3-3.2 3.3H10s-3.1 0-3.1 3v5s-.4 3.8 5.1 3.8zm3.1-1.7c-.6 0-1-.5-1-1s.5-1 1-1c.6 0 1 .5 1 1s-.5 1-1 1z" />
-                            ) : ext === 'java' ? (
+                            ) : ext === "java" ? (
                               <path d="M8.9 18.6s-1 .6.7.8c2.1.3 3.2.2 5.5-.3 0 0 .6.4 1.5.7-5.2 2.3-11.9-.1-7.7-1.2m-.6-2.8s-1.2.9.6 1c2.2.2 4 .2 7-.3 0 0 .4.4 1.1.7-6.4 1.9-13.5.1-8.7-1.4m5.1-4.7c1.3 1.5-.3 2.8-.3 2.8s3.3-1.7 1.8-3.8c-1.4-2-2.5-3 3.3-6.4 0 0-9.1 2.3-4.8 7.4m7.6 11s.7.6-.8 1.1c-2.9.9-12.1 1.2-14.6 0-.9-.4.8-.9 1.3-1 .5-.1.8-.1.8-.1-1-.7-6.2 1.3-2.6 1.9 9.6 1.6 17.5-.7 15.9-1.9m-10.9-7.9s-4.4 1-1.6 1.4c1.2.2 3.6.1 5.8-.1 1.8-.1 3.6-.4 3.6-.4s-.6.3-1.1.6c-4.4 1.2-12.9.6-10.5-.5 2.1-1 3.8-1 3.8-1m7.8 4.4c4.5-2.3 2.4-4.6.9-4.3-.4.1-.5.2-.5.2s.1-.2.4-.3c2.8-1 5 3-1 4.5 0 0 .1-.1.2-.1" />
                             ) : (
                               <path d="M3 3h18v18H3V3zm16.5 15.5v-11h-15v11h15zM6.5 8.5h4v4h-4v-4z" />
@@ -1276,18 +1564,18 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                 <div onClick={expandExercises} className="cursor-pointer">
                   <SyntaxHighlighter
                     language={
-                      currentExercise.filename.endsWith('.py')
-                        ? 'python'
-                        : currentExercise.filename.endsWith('.java')
-                          ? 'java'
-                          : 'javascript'
+                      currentExercise.filename.endsWith(".py")
+                        ? "python"
+                        : currentExercise.filename.endsWith(".java")
+                          ? "java"
+                          : "javascript"
                     }
                     style={vscDarkPlus}
                     customStyle={{
-                      scrollbarWidth: 'none',
+                      scrollbarWidth: "none",
                       margin: 0,
-                      padding: '1rem 1rem 0 1rem',
-                      background: '#1E1E1E',
+                      padding: "1rem 1rem 0 1rem",
+                      background: "#1E1E1E",
                     }}
                     showLineNumbers
                   >
@@ -1296,7 +1584,10 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
                 </div>
                 <div className="sticky bottom-0 left-6 right-6 ml-6 mr-6 py-4">
                   <div className="bg-white/0 shadow-[inset_0_0_0px_30px_rgba(244,244,244,0.03)] backdrop-blur-md border border-white/30 rounded-3xl p-4 mx-auto">
-                    <button onClick={expandExercises} className="cursor-pointer group w-full flex flex-row justify-between items-center gap-2 text-white font-medium transition-colors">
+                    <button
+                      onClick={expandExercises}
+                      className="cursor-pointer group w-full flex flex-row justify-between items-center gap-2 text-white font-medium transition-colors"
+                    >
                       <div className="flex items-center gap-2">
                         <svg
                           xmlns="http://www.w3.org/2000/svg"
@@ -1369,34 +1660,37 @@ export default function Lesson({ message, userPrompt, initialExpandedLesson, set
           )}
 
           {/* Sources Section */}
-          {jsonData.recommendedReadings && jsonData.recommendedReadings.length > 0 && (
-            <div>
-              <h2 className="text-xl font-semibold text-primary-text mb-4">Sources</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {jsonData.recommendedReadings.map((reading, index) => (
-                  <a
-                    key={index}
-                    href={reading.Url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block bg-base-10 rounded-lg p-4 hover:bg-base-20 transition-colors group h-40 flex flex-col"
-                  >
-                    <div className="flex-1 mb-2">
-                      <h3 className="text-sm font-semibold text-text-90 group-hover:primary-text transition-colors mb-1 line-clamp-2">
-                        {reading.title}
-                      </h3>
-                      <p className="text-xs text-text-70 line-clamp-2">
-                        {reading.sourceDescription}
-                      </p>
-                    </div>
-                    <div className="text-xs text-text-70">
-                      {reading.readingTime} min read
-                    </div>
-                  </a>
-                ))}
+          {jsonData.recommendedReadings &&
+            jsonData.recommendedReadings.length > 0 && (
+              <div>
+                <h2 className="text-xl font-semibold text-primary-text mb-4">
+                  Sources
+                </h2>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {jsonData.recommendedReadings.map((reading, index) => (
+                    <a
+                      key={index}
+                      href={reading.Url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block bg-base-10 rounded-lg p-4 hover:bg-base-20 transition-colors group h-40 flex flex-col"
+                    >
+                      <div className="flex-1 mb-2">
+                        <h3 className="text-sm font-semibold text-text-90 group-hover:primary-text transition-colors mb-1 line-clamp-2">
+                          {reading.title}
+                        </h3>
+                        <p className="text-xs text-text-70 line-clamp-2">
+                          {reading.sourceDescription}
+                        </p>
+                      </div>
+                      <div className="text-xs text-text-70">
+                        {reading.readingTime} min read
+                      </div>
+                    </a>
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            )}
         </motion.div>
       )}
     </AnimatePresence>
