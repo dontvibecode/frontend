@@ -100,10 +100,10 @@ export default function SocialPage() {
             yours from the chat.
           </p>
           <Link
-            href="/chat"
+            href="/"
             className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] px-5 py-2.5 rounded-full bg-primary-text text-background transition-all flex items-center gap-2"
           >
-            Back to chat
+            Back to landing page
             <Icon icon="solar:arrow-right-linear" className="w-4 h-4" />
           </Link>
         </motion.div>
