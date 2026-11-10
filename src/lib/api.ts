@@ -6,6 +6,7 @@
 import {
   InstructorResponse,
   LessonData,
+  LessonPage,
   MessageData,
   SpeechClipResult,
   SpeechScope,
@@ -507,12 +508,28 @@ export const messageAPI = {
 
 export const lessonAPI = {
   /**
-   * Get all lessons for all users
+   * One page of lessons shared by any user, optionally filtered by `query`.
+   * Pass the returned `nextCursor` back as `cursor` to get the following page.
    */
-  getLessons: async (idToken?: string): Promise<LessonData[]> => {
-    const response = await fetch(`${API_BASE_URL}api/chat/lessons/`, {
+  getSharedLessons: async ({
+    query,
+    cursor,
+    idToken,
+    signal,
+  }: {
+    query?: string;
+    cursor?: string | null;
+    idToken?: string;
+    signal?: AbortSignal;
+  }): Promise<LessonPage> => {
+    const params = new URLSearchParams();
+    if (query) params.set("q", query);
+    if (cursor) params.set("cursor", cursor);
+
+    const response = await fetch(`${API_BASE_URL}api/chat/lessons/?${params}`, {
       method: "GET",
       headers: getAuthHeaders(idToken),
+      signal,
     });
 
     if (!response.ok) {
@@ -520,19 +537,25 @@ export const lessonAPI = {
         response,
         "Failed to get lessons",
       );
-      if (isTokenWarning) return [];
+      if (isTokenWarning) return { results: [], nextCursor: null };
     }
 
     const responseJson = await parseJsonWithWarningCheck(response);
-    return responseJson.map((lesson: any) => ({
-      message_id: lesson.id,
-      json: lesson.json,
-      shared: lesson.shared,
-      shared_at: lesson.shared_at,
-      shared_by: lesson.shared_by,
-      likes: lesson.likes,
-      forks: lesson.forks,
-    })) as LessonData[];
+    return {
+      results: (responseJson?.results ?? []).map(
+        (lesson: any): LessonData => ({
+          id: lesson.id,
+          title: lesson.title,
+          breakdown: lesson.breakdown,
+          tags: lesson.tags ?? [],
+          author: lesson.author,
+          sharedAt: lesson.shared_at,
+          likes: lesson.likes ?? 0,
+          forks: lesson.forks ?? 0,
+        }),
+      ),
+      nextCursor: responseJson?.next_cursor ?? null,
+    };
   },
 
   toggleLessonShare: async (

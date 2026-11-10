@@ -12,12 +12,19 @@ export interface MessageData {
 }
 
 export interface LessonData {
-  message_id: number;
-  json: InstructorResponse;
-  shared_at: string;
-  shared_by: number;
+  id: number;
+  title: string | null;
+  breakdown: string | null;
+  tags: string[];
+  author: string | null;
+  sharedAt: string;
   likes: number;
   forks: number;
+}
+
+export interface LessonPage {
+  results: LessonData[];
+  nextCursor: string | null;
 }
 
 export interface RecommendedReading {
