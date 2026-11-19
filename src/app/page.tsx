@@ -22,6 +22,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import FluidVideo from "./components/FluidVideo";
 import { ExternalLink } from "lucide-react";
+import { useSession } from "next-auth/react";
 
 function CustomTypeface({
   src,
@@ -1014,6 +1015,9 @@ export default function LandingPage() {
       block: "start",
     });
   }, []);
+
+  const { data: session, status: sessionStatus } = useSession();
+  console.log({ sessionStatus, session });
 
   useEffect(() => {
     const sectionRatios = new Map<NavSectionId, number>();

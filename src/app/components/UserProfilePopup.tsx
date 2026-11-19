@@ -4,7 +4,12 @@ import React, { useEffect, useState, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
-import { DEFAULT_TAB_SIZE, SpeechVoicesResponse, User, UserPreferences } from "@/types/api";
+import {
+  DEFAULT_TAB_SIZE,
+  SpeechVoicesResponse,
+  User,
+  UserPreferences,
+} from "@/types/api";
 import { useTheme } from "./ThemeProvider";
 import { speechAPI, uploadAPI } from "@/lib/api";
 import { SPEECH_RATES } from "@/lib/speech";
@@ -40,13 +45,19 @@ export default function UserProfilePopup({
 
   const [name, setName] = useState(user?.username ?? "");
   const [accentColor, setAccentColor] = useState(
-    user?.preferences?.accentColor ?? "000000"
+    user?.preferences?.accentColor ?? "000000",
   );
   const [language, setLanguage] = useState(user?.preferences?.language ?? "en");
-  const [tabSize, setTabSize] = useState(user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE);
-  const [voiceEnabled, setVoiceEnabled] = useState(user?.preferences?.voiceEnabled ?? false);
+  const [tabSize, setTabSize] = useState(
+    user?.preferences?.tab_size ?? DEFAULT_TAB_SIZE,
+  );
+  const [voiceEnabled, setVoiceEnabled] = useState(
+    user?.preferences?.voiceEnabled ?? false,
+  );
   const [voiceId, setVoiceId] = useState(user?.preferences?.voiceId ?? "");
-  const [speechRate, setSpeechRate] = useState<number>(user?.preferences?.speechRate ?? 1);
+  const [speechRate, setSpeechRate] = useState<number>(
+    user?.preferences?.speechRate ?? 1,
+  );
   const [voices, setVoices] = useState<SpeechVoicesResponse | null>(null);
   const speech = useSpeech();
 
@@ -94,9 +105,11 @@ export default function UserProfilePopup({
 
   const playPreview = (url: string) => {
     if (speech) speech.previewVoice(url);
-    else new Audio(url).play().catch((error) => console.warn("Voice preview failed:", error));
+    else
+      new Audio(url)
+        .play()
+        .catch((error) => console.warn("Voice preview failed:", error));
   };
-
 
   const handleSave = async () => {
     try {
@@ -162,7 +175,7 @@ export default function UserProfilePopup({
       // Step 1: Get signed URL from backend
       const uploadUrlResponse = await uploadAPI.getProfileImageUploadUrl(
         file.type,
-        idToken
+        idToken,
       );
       if (!uploadUrlResponse) {
         throw new Error("Failed to get upload URL");
@@ -184,7 +197,9 @@ export default function UserProfilePopup({
     } catch (error) {
       console.error("Upload failed:", error);
       setUploadError(
-        error instanceof Error ? error.message : "Failed to upload image. Please try again."
+        error instanceof Error
+          ? error.message
+          : "Failed to upload image. Please try again.",
       );
     } finally {
       setIsUploading(false);
@@ -234,259 +249,334 @@ export default function UserProfilePopup({
       contentClassName="p-4 bg-background m-3 rounded-2xl max-h-[70vh] overflow-y-auto scrollbar-hide"
     >
       <div className="space-y-6">
-                  <div className="text-center">
-                    <div className="relative inline-block">
-                      <div
-                        className={`group w-32 h-32 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3 cursor-pointer relative ${isUploading ? "opacity-70" : ""} transition-opacity`}
-                        onClick={handleImageClick}
-                      >
-                        {!isUploading && (
-                          <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-black/45 text-white opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Icon icon="solar:camera-linear" className="w-6 h-6" />
-                            <span className="text-xs font-medium">Change</span>
-                          </div>
-                        )}
-                        {isUploading && (
-                          <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
-                            <svg className="animate-spin w-8 h-8 text-white" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                            </svg>
-                          </div>
-                        )}
-                        {user?.preferences?.profileImage ? (
-                          <img src={user?.preferences?.profileImage} alt="Profile" className="w-full h-full object-cover" />
-                        ) : (
-                          <div className="w-full h-full bg-loading flex items-center justify-center">
-                            <span className="text-white font-semibold text-4xl">
-                              {user?.username?.charAt(0)?.toUpperCase() ||
-                                session?.user?.name?.charAt(0)?.toUpperCase() ||
-                                "U"}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        accept="image/jpeg,image/png,image/gif,image/webp"
-                        onChange={handleImageUpload}
-                        className="hidden"
-                        disabled={isUploading}
-                      />
-                    </div>
-                    <p className="text-sm text-text-60">
-                      {isUploading ? "Uploading..." : "Click to change profile picture"}
-                    </p>
-                    {uploadError && <p className="text-sm text-text-90 mt-1">{uploadError}</p>}
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-70 mb-2">Name</label>
-                    <input
-                      type="text"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
-                      placeholder="Enter your name"
+        <div className="text-center">
+          <div className="relative inline-block">
+            <div
+              className={`group w-32 h-32 bg-gray-200 rounded-full overflow-hidden mx-auto mb-3 cursor-pointer relative ${isUploading ? "opacity-70" : ""} transition-opacity`}
+              onClick={handleImageClick}
+            >
+              {!isUploading && (
+                <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-1 bg-black/45 text-white opacity-0 group-hover:opacity-100 transition-opacity">
+                  <Icon icon="solar:camera-linear" className="w-6 h-6" />
+                  <span className="text-xs font-medium">Change</span>
+                </div>
+              )}
+              {isUploading && (
+                <div className="absolute inset-0 flex items-center justify-center bg-black/50 z-10">
+                  <svg
+                    className="animate-spin w-8 h-8 text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
                     />
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-text-70 mb-2">Email</label>
-                    <input
-                      type="email"
-                      value={user?.email ?? ""}
-                      readOnly={true}
-                      className="w-full px-3 py-2 border border-base-10 bg-base-10 font-light text-text-70 rounded-lg outline-none"
-                      placeholder="Enter your email"
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
                     />
-                  </div>
+                  </svg>
+                </div>
+              )}
+              {user?.preferences?.profileImage ? (
+                <img
+                  src={user?.preferences?.profileImage}
+                  alt="Profile"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-loading flex items-center justify-center">
+                  <span className="text-white font-semibold text-4xl">
+                    {user?.username?.charAt(0)?.toUpperCase() ||
+                      session?.user?.name?.charAt(0)?.toUpperCase() ||
+                      "U"}
+                  </span>
+                </div>
+              )}
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/jpeg,image/png,image/gif,image/webp"
+              onChange={handleImageUpload}
+              className="hidden"
+              disabled={isUploading}
+            />
+          </div>
+          <p className="text-sm text-text-60">
+            {isUploading ? "Uploading..." : "Click to change profile picture"}
+          </p>
+          {uploadError && (
+            <p className="text-sm text-text-90 mt-1">{uploadError}</p>
+          )}
+        </div>
 
-                  <div>
-                    <label className="block text-sm font-medium text-text-70 mb-2">Theme</label>
-                    <div className="grid grid-cols-3 gap-1 p-1 bg-base-10 rounded-xl">
-                      {THEME_OPTIONS.map((option) => {
-                        const isActive = theme === option.value;
-                        return (
-                          <button
-                            key={option.value}
-                            type="button"
-                            onClick={() => setTheme(option.value)}
-                            aria-pressed={isActive}
-                            className={`relative flex items-center justify-center py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
-                              isActive
-                                ? "text-primary-text"
-                                : "text-text-60 hover:text-primary-text"
-                            }`}
-                          >
-                            {isActive && (
-                              <motion.span
-                                layoutId="theme-option-pill"
-                                transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                                className="absolute inset-0 bg-container-primary rounded-lg shadow-sm"
-                              />
-                            )}
-                            <span className="relative flex items-center gap-2">
-                              <Icon icon={option.icon} className="w-4 h-4" />
-                              {option.label}
-                            </span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
+        <div>
+          <label className="block text-sm font-medium text-text-70 mb-2">
+            Name
+          </label>
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            className="w-full px-3 py-2 border border-base-10 text-primary-text rounded-lg outline-none"
+            placeholder="Enter your name"
+          />
+        </div>
 
-                  <div>
-                    <h3 className="text-sm font-semibold text-primary-text mb-4">Editor Settings</h3>
-                    <div>
-                      <label className="block text-sm font-medium text-text-70 mb-2">Tab Size</label>
-                      <div className="flex items-center gap-4">
-                        <input
-                          type="range"
-                          min="1"
-                          max="8"
-                          value={tabSize}
-                          onChange={(e) => setTabSize(Number(e.target.value))}
-                          className="flex-1 h-2 bg-base-10 rounded-lg appearance-none cursor-pointer accent-primary-text"
-                        />
-                        <span className="w-8 text-center text-sm font-medium text-primary-text bg-base-10 px-2 py-1 rounded">
-                          {tabSize}
+        <div>
+          <label className="block text-sm font-medium text-text-70 mb-2">
+            Email
+          </label>
+          <input
+            type="email"
+            value={user?.email ?? ""}
+            readOnly={true}
+            className="w-full px-3 py-2 border border-base-10 bg-base-10 font-light text-text-70 rounded-lg outline-none"
+            placeholder="Enter your email"
+          />
+        </div>
+
+        <div>
+          <label className="block text-sm font-medium text-text-70 mb-2">
+            Theme
+          </label>
+          <div className="grid grid-cols-3 gap-1 p-1 bg-base-10 rounded-xl">
+            {THEME_OPTIONS.map((option) => {
+              const isActive = theme === option.value;
+              return (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTheme(option.value)}
+                  aria-pressed={isActive}
+                  className={`relative flex items-center justify-center py-2 rounded-lg text-sm font-medium cursor-pointer transition-colors ${
+                    isActive
+                      ? "text-primary-text"
+                      : "text-text-60 hover:text-primary-text"
+                  }`}
+                >
+                  {isActive && (
+                    <motion.span
+                      layoutId="theme-option-pill"
+                      transition={{
+                        type: "spring",
+                        stiffness: 400,
+                        damping: 32,
+                      }}
+                      className="absolute inset-0 bg-container-primary rounded-lg shadow-sm"
+                    />
+                  )}
+                  <span className="relative flex items-center gap-2">
+                    <Icon icon={option.icon} className="w-4 h-4" />
+                    {option.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-primary-text mb-4">
+            Editor Settings
+          </h3>
+          <div>
+            <label className="block text-sm font-medium text-text-70 mb-2">
+              Tab Size
+            </label>
+            <div className="flex items-center gap-4">
+              <input
+                type="range"
+                min="1"
+                max="8"
+                value={tabSize}
+                onChange={(e) => setTabSize(Number(e.target.value))}
+                className="flex-1 h-2 bg-base-10 rounded-lg appearance-none cursor-pointer accent-primary-text"
+              />
+              <span className="w-8 text-center text-sm font-medium text-primary-text bg-base-10 px-2 py-1 rounded">
+                {tabSize}
+              </span>
+            </div>
+            <p className="mt-1 text-xs text-text-70">
+              Number of spaces for each tab in the code editor
+            </p>
+          </div>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold text-primary-text mb-4">
+            Voice
+          </h3>
+          <div className="flex items-center justify-between gap-4 mb-4">
+            <div>
+              <span className="block text-sm font-medium text-text-70">
+                Read replies aloud
+              </span>
+              <span className="block text-xs text-text-70">
+                New replies start reading as soon as they arrive
+              </span>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={voiceEnabled}
+              aria-label="Read replies aloud"
+              onClick={() => setVoiceEnabled(!voiceEnabled)}
+              className={`w-9 h-5 rounded-full relative shrink-0 cursor-pointer transition-colors ${voiceEnabled ? "bg-emerald-500" : "bg-base-20"}`}
+            >
+              <motion.span
+                initial={false}
+                animate={{ x: voiceEnabled ? 16 : 0 }}
+                transition={{ duration: 0.2, ease: "easeInOut" }}
+                className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
+              />
+            </button>
+          </div>
+
+          <label className="block text-sm font-medium text-text-70 mb-2">
+            Voice
+          </label>
+          {voices === null ? (
+            <div className="h-24 bg-base-10 rounded-lg animate-pulse" />
+          ) : voices.available ? (
+            <div className="space-y-1 max-h-56 overflow-y-auto scrollbar-hide">
+              {voices.voices.map((voice) => {
+                const isSelected =
+                  (voiceId || voices.default_voice_id) === voice.id;
+                return (
+                  <div
+                    key={voice.id}
+                    className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${isSelected ? "border-primary-text bg-base-5" : "border-base-10 hover:bg-base-5"}`}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setVoiceId(voice.id)}
+                      aria-pressed={isSelected}
+                      className="flex-1 min-w-0 text-left cursor-pointer"
+                    >
+                      <span className="block text-sm font-medium text-primary-text">
+                        {voice.name}
+                      </span>
+                      {voice.description && (
+                        <span className="block text-xs text-text-70 line-clamp-2">
+                          {voice.description}
                         </span>
-                      </div>
-                      <p className="mt-1 text-xs text-text-70">
-                        Number of spaces for each tab in the code editor
-                      </p>
-                    </div>
-                  </div>
-
-                  <div>
-                    <h3 className="text-sm font-semibold text-primary-text mb-4">Voice</h3>
-                    <div className="flex items-center justify-between gap-4 mb-4">
-                      <div>
-                        <span className="block text-sm font-medium text-text-70">Read replies aloud</span>
-                        <span className="block text-xs text-text-70">
-                          New replies start reading as soon as they arrive
-                        </span>
-                      </div>
+                      )}
+                    </button>
+                    {voice.preview_url && (
                       <button
                         type="button"
-                        role="switch"
-                        aria-checked={voiceEnabled}
-                        aria-label="Read replies aloud"
-                        onClick={() => setVoiceEnabled(!voiceEnabled)}
-                        className={`w-9 h-5 rounded-full relative shrink-0 cursor-pointer transition-colors ${voiceEnabled ? "bg-emerald-500" : "bg-base-20"}`}
+                        onClick={() => playPreview(voice.preview_url as string)}
+                        aria-label={`Preview ${voice.name}`}
+                        className="w-8 h-8 shrink-0 rounded-full hover:bg-base-10 flex items-center justify-center cursor-pointer text-text-70"
                       >
-                        <motion.span
-                          initial={false}
-                          animate={{ x: voiceEnabled ? 16 : 0 }}
-                          transition={{ duration: 0.2, ease: "easeInOut" }}
-                          className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
-                        />
+                        <Icon icon="solar:play-linear" className="w-4 h-4" />
                       </button>
-                    </div>
-
-                    <label className="block text-sm font-medium text-text-70 mb-2">Voice</label>
-                    {voices === null ? (
-                      <div className="h-24 bg-base-10 rounded-lg animate-pulse" />
-                    ) : voices.available ? (
-                      <div className="space-y-1 max-h-56 overflow-y-auto scrollbar-hide">
-                        {voices.voices.map((voice) => {
-                          const isSelected = (voiceId || voices.default_voice_id) === voice.id;
-                          return (
-                            <div
-                              key={voice.id}
-                              className={`flex items-center gap-2 p-2 rounded-lg border transition-colors ${isSelected ? "border-primary-text bg-base-5" : "border-base-10 hover:bg-base-5"}`}
-                            >
-                              <button
-                                type="button"
-                                onClick={() => setVoiceId(voice.id)}
-                                aria-pressed={isSelected}
-                                className="flex-1 min-w-0 text-left cursor-pointer"
-                              >
-                                <span className="block text-sm font-medium text-primary-text">{voice.name}</span>
-                                {voice.description && (
-                                  <span className="block text-xs text-text-70 line-clamp-2">{voice.description}</span>
-                                )}
-                              </button>
-                              {voice.preview_url && (
-                                <button
-                                  type="button"
-                                  onClick={() => playPreview(voice.preview_url as string)}
-                                  aria-label={`Preview ${voice.name}`}
-                                  className="w-8 h-8 shrink-0 rounded-full hover:bg-base-10 flex items-center justify-center cursor-pointer text-text-70"
-                                >
-                                  <Icon icon="solar:play-linear" className="w-4 h-4" />
-                                </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <p className="text-xs text-text-70">
-                        Premium voices aren&apos;t set up, so replies are read with your browser&apos;s built-in voice.
-                      </p>
-                    )}
-
-                    <label className="block text-sm font-medium text-text-70 mt-4 mb-2">Speed</label>
-                    <div className="grid grid-cols-6 gap-1 p-1 bg-base-10 rounded-xl">
-                      {SPEECH_RATES.map((option) => (
-                        <button
-                          key={option}
-                          type="button"
-                          onClick={() => setSpeechRate(option)}
-                          aria-pressed={speechRate === option}
-                          className={`py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${speechRate === option ? "bg-container-primary text-primary-text shadow-sm" : "text-text-70 hover:text-primary-text"}`}
-                        >
-                          {option}×
-                        </button>
-                      ))}
-                    </div>
-                    {voices?.available && (
-                      <p className="mt-2 text-xs text-text-70">
-                        Voices by{" "}
-                        <a
-                          href="https://elevenlabs.io"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="underline"
-                        >
-                          ElevenLabs
-                        </a>
-                      </p>
                     )}
                   </div>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-xs text-text-70">
+              Premium voices aren&apos;t set up, so replies are read with your
+              browser&apos;s built-in voice.
+            </p>
+          )}
 
-                  <button
-                    onClick={handleSave}
-                    disabled={isSaving || isSaved}
-                    className={`hover:opacity-90 w-full py-3 px-4 rounded-full transition-all duration-300 font-medium flex items-center justify-center space-x-2 ${isSaved
-                      ? "bg-primary-text text-secondary-text"
-                      : isSaving
-                        ? "bg-primary-text text-secondary-text cursor-not-allowed"
-                        : "bg-primary-text text-secondary-text cursor-pointer"
-                      }`}
-                  >
-                    {isSaving ? (
-                      <>
-                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
-                        <span>Saving...</span>
-                      </>
-                    ) : isSaved ? (
-                      <>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                        </svg>
-                        <span>Saved</span>
-                      </>
-                    ) : (
-                      <span>Save Changes</span>
-                    )}
-                  </button>
+          <label className="block text-sm font-medium text-text-70 mt-4 mb-2">
+            Speed
+          </label>
+          <div className="grid grid-cols-6 gap-1 p-1 bg-base-10 rounded-xl">
+            {SPEECH_RATES.map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => setSpeechRate(option)}
+                aria-pressed={speechRate === option}
+                className={`py-1.5 rounded-lg text-xs font-medium cursor-pointer transition-colors ${speechRate === option ? "bg-container-primary text-primary-text shadow-sm" : "text-text-70 hover:text-primary-text"}`}
+              >
+                {option}×
+              </button>
+            ))}
+          </div>
+          {voices?.available && (
+            <p className="mt-2 text-xs text-text-70">
+              Voices by{" "}
+              <a
+                href="https://elevenlabs.io"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline"
+              >
+                ElevenLabs
+              </a>
+            </p>
+          )}
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={isSaving || isSaved}
+          className={`hover:opacity-90 w-full py-3 px-4 rounded-full transition-all duration-300 font-medium flex items-center justify-center space-x-2 ${
+            isSaved
+              ? "bg-primary-text text-secondary-text"
+              : isSaving
+                ? "bg-primary-text text-secondary-text cursor-not-allowed"
+                : "bg-primary-text text-secondary-text cursor-pointer"
+          }`}
+        >
+          {isSaving ? (
+            <>
+              <svg
+                className="animate-spin w-4 h-4"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                ></circle>
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
+              </svg>
+              <span>Saving...</span>
+            </>
+          ) : isSaved ? (
+            <>
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+              <span>Saved</span>
+            </>
+          ) : (
+            <span>Save Changes</span>
+          )}
+        </button>
       </div>
     </ModalTemplate>
   );
