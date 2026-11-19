@@ -26,6 +26,7 @@ import {
 import Lesson from "./lesson";
 import LoginModal from "../components/LoginModal";
 import UserProfilePopup from "../components/UserProfilePopup";
+import UserMenu from "../components/UserMenu";
 import SearchModal from "../components/SearchModal";
 import UpgradeModal from "../components/UpgradeModal";
 import { StreamingThoughts } from "../components/StreamingThoughts";
@@ -466,7 +467,7 @@ const isTokenError = (error: any): boolean => {
 export default function ChatPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const { resolvedTheme, setTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const [message, setMessage] = useState("");
   const [streamStage, setStreamStage] = useState<
     | "routing"
@@ -499,7 +500,6 @@ export default function ChatPage() {
   const [isPlanSyncing, setIsPlanSyncing] = useState(false);
   const [paymentMode, setPaymentMode] = useState<"subscription" | "tokens" | "cancellation" | "updateMethod">("subscription");
   const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [conversationId, setConversationId] = useState<number | null>(null);
   const [user, setUser] = useState<User | null>(null);
@@ -1037,15 +1037,6 @@ export default function ChatPage() {
       setLoading(false);
       setStreamStage(null);
       setThoughtStream("");
-    }
-  };
-
-  const handleUserProfileClick = () => {
-    if (status === "unauthenticated") {
-      setShowLoginModal(true);
-      return;
-    } else {
-      setShowUserMenu(!showUserMenu);
     }
   };
 
@@ -1839,176 +1830,14 @@ export default function ChatPage() {
               </div>
             );
           })()}
-          <div className="relative">
-            {/* User Menu Dropdown */}
-            <AnimatePresence>
-              {showUserMenu && (
-                <>
-                  {/* Backdrop to close menu */}
-                  <div 
-                    className="fixed inset-0 z-40" 
-                    onClick={() => setShowUserMenu(false)}
-                  />
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.15 }}
-                    className={`absolute bottom-full left-0 right-0 mb-2 z-50 p-px shadow-lg ${getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl").outerBorderRadiusClass} ${getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl").gradientClass}`}
-                  >
-                    <div
-                      className="bg-container-primary overflow-hidden"
-                      style={getGlassGradientBorderClassInner(resolvedTheme, "rounded-xl").innerBorderRadiusStyle}
-                    >
-                      {/* Email */}
-                      <div className="px-4 py-3 border-b border-theme-border">
-                        <span className="text-sm text-text-60">{user?.email || session?.user?.email}</span>
-                      </div>
-                    
-                      {/* Menu Items */}
-                      <div className="py-1">
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          setShowUserProfilePopup(true);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
-                      >
-                        <Icon icon="solar:settings-linear" className="w-5 h-5 text-text-60" />
-                        <span>Settings</span>
-                      </button>
-                      
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          setShowUpgradeModal(true);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
-                      >
-                        <Icon icon="solar:arrow-up-linear" className="w-5 h-5 text-text-60" />
-                        <span>Upgrade plan</span>
-                      </button>
-                      
-                      {/* Theme Toggle */}
-                      <button
-                        onClick={() => setTheme(resolvedTheme === "dark" ? "light" : "dark")}
-                        className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
-                      >
-                        <div className="flex items-center gap-3">
-                          <div className="relative w-5 h-5">
-                            <motion.div
-                              initial={false}
-                              animate={{
-                                scale: resolvedTheme === "dark" ? 1 : 0,
-                                rotate: resolvedTheme === "dark" ? 0 : 90,
-                                opacity: resolvedTheme === "dark" ? 1 : 0,
-                              }}
-                              transition={{ duration: 0.2, ease: "easeInOut" }}
-                              className="absolute inset-0"
-                            >
-                              <Icon icon="solar:moon-linear" className="w-5 h-5 text-text-60" />
-                            </motion.div>
-                            <motion.div
-                              initial={false}
-                              animate={{
-                                scale: resolvedTheme === "light" ? 1 : 0,
-                                rotate: resolvedTheme === "light" ? 0 : -90,
-                                opacity: resolvedTheme === "light" ? 1 : 0,
-                              }}
-                              transition={{ duration: 0.2, ease: "easeInOut" }}
-                              className="absolute inset-0"
-                            >
-                              <Icon icon="solar:sun-linear" className="w-5 h-5 text-text-60" />
-                            </motion.div>
-                          </div>
-                          <span>{resolvedTheme === "dark" ? "Dark mode" : "Light mode"}</span>
-                        </div>
-                        {/* Toggle Switch */}
-                        <div className={`w-9 h-5 rounded-full relative transition-colors ${resolvedTheme === "dark" ? "bg-emerald-500" : "bg-base-20"}`}>
-                          <motion.div
-                            initial={false}
-                            animate={{ x: resolvedTheme === "dark" ? 16 : 0 }}
-                            transition={{ duration: 0.2, ease: "easeInOut" }}
-                            className="absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full shadow-sm"
-                          />
-                        </div>
-                      </button>
-                      
-                      {/* Feedback */}
-                      <button
-                        onClick={() => {
-                          setShowUserMenu(false);
-                          setShowFeedbackModal(true);
-                        }}
-                        className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
-                      >
-                        <Icon icon="solar:chat-round-dots-linear" className="w-5 h-5 text-text-60" />
-                        <span>Feedback</span>
-                      </button>
-                      </div>
-                    
-                      {/* Logout */}
-                      <div className="border-t border-theme-border py-1">
-                        <button
-                          onClick={() => {
-                            setShowUserMenu(false);
-                            signOut();
-                          }}
-                          className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-primary-text hover:bg-base-10 transition-colors"
-                        >
-                          <Icon icon="solar:logout-2-linear" className="w-5 h-5 text-text-60" />
-                          <span>Log out</span>
-                        </button>
-                      </div>
-                    </div>
-                  </motion.div>
-                </>
-              )}
-            </AnimatePresence>
-
-            {/* User Profile Button */}
-            {userLoading ? (
-              // Same metrics as the loaded row, so nothing shifts when it
-              // arrives. Without this the avatar briefly showed a fallback
-              // initial next to a blank name.
-              <div className="w-full flex items-center gap-2 p-2 animate-pulse">
-                <div className="w-8 h-8 rounded-full bg-base-10" />
-                <div className="flex flex-col justify-start items-start gap-1.5">
-                  <div className="h-3 w-24 bg-base-10 rounded" />
-                  <div className="h-2 w-8 bg-base-10 rounded" />
-                </div>
-              </div>
-            ) : (
-              <button
-                className="w-full flex items-center gap-2 cursor-pointer hover:bg-base-5 rounded-lg p-2 transition-colors duration-200"
-                onClick={handleUserProfileClick}
-              >
-                <div className="flex items-center gap-2">
-                  {user?.preferences?.profileImage ? (
-                    <img
-                      src={user?.preferences?.profileImage ?? ""}
-                      alt={session?.user?.name || "User"}
-                      className="w-8 h-8 rounded-full"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 rounded-full bg-loading flex items-center justify-center text-white text-sm font-semibold">
-                      {user?.username?.charAt(0)?.toUpperCase() ||
-                        session?.user?.name?.charAt(0)?.toUpperCase() ||
-                        "U"}
-                    </div>
-                  )}
-                  <div className="flex flex-col justify-start items-start">
-                    <span className="text-sm font-medium">{user?.username}</span>
-                    {user?.membership === "pro" && (
-                      <span className="mr-1 text-xs text-base-30 uppercase tracking-wide">
-                        Pro
-                      </span>
-                    )}
-                  </div>
-                </div>
-              </button>
-            )}
-          </div>
+          <UserMenu
+            user={user}
+            userLoading={userLoading}
+            onOpenSettings={() => setShowUserProfilePopup(true)}
+            onUpgrade={() => setShowUpgradeModal(true)}
+            onFeedback={() => setShowFeedbackModal(true)}
+            onLoginRequired={() => setShowLoginModal(true)}
+          />
         </div>
       </aside>
 

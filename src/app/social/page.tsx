@@ -6,9 +6,13 @@ import { useTheme } from "../components/ThemeProvider";
 import { motion } from "framer-motion";
 import { Icon } from "@iconify/react";
 import { useSession } from "next-auth/react";
-import { LessonData } from "@/types";
+import { LessonData, User, UserPreferences } from "@/types";
 import { Markdown } from "@/lib/markdownParser";
 import { useDebouncedValue, useSharedLessons } from "@/lib/useSharedLessons";
+import api from "@/lib/api";
+import UserProfilePopup from "../components/UserProfilePopup";
+import UserMenu from "../components/UserMenu";
+import { getGlassGradientBorderClassInner } from "../components/glassGradientBorder";
 
 const SEARCH_DEBOUNCE_MS = 300;
 
@@ -16,6 +20,14 @@ export default function SocialPage() {
   const { resolvedTheme, setTheme } = useTheme();
   const { data: session, status: sessionStatus } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
+  const [showUserProfilePopup, setShowUserProfilePopup] = useState(false);
+  const [showFeedbackModal, setShowFeedbackModal] = useState(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [userLoading, setUserLoading] = useState(true);
+
+
+  const [user, setUser] = useState<User | null>(null);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const loadMoreRef = useRef<HTMLDivElement>(null);
 
@@ -25,10 +37,20 @@ export default function SocialPage() {
   const hoverModeIcon = isDarkMode ? "solar:sun-linear" : "solar:moon-linear";
 
   const idToken = (session?.user as any)?.idToken;
-  const debouncedQuery = useDebouncedValue(searchQuery.trim(), SEARCH_DEBOUNCE_MS);
+  const debouncedQuery = useDebouncedValue(
+    searchQuery.trim(),
+    SEARCH_DEBOUNCE_MS,
+  );
   const { lessons, status, hasMore, loadMore } = useSharedLessons(
     debouncedQuery,
     idToken,
+  );
+
+  console.log({ sessionStatus, session });
+
+  const lessonGlassBorder = getGlassGradientBorderClassInner(
+    resolvedTheme,
+    "rounded-xl",
   );
 
   // Ctrl+K focuses the search box; Escape clears it.
@@ -38,7 +60,10 @@ export default function SocialPage() {
         e.preventDefault();
         searchInputRef.current?.focus();
       }
-      if (e.key === "Escape" && document.activeElement === searchInputRef.current) {
+      if (
+        e.key === "Escape" &&
+        document.activeElement === searchInputRef.current
+      ) {
         setSearchQuery("");
         searchInputRef.current?.blur();
       }
@@ -62,6 +87,22 @@ export default function SocialPage() {
   }, [hasMore, loadMore]);
 
   const isRefreshing = status === "loading" && lessons.length > 0;
+
+  const onEditUser = async (updatedUserData: {
+    username?: string;
+    preferences?: UserPreferences;
+  }) => {
+    const idToken = (session?.user as any)?.idToken;
+    if (idToken) {
+      await api.user.updateUser(updatedUserData, idToken);
+
+      setShowUserProfilePopup(false);
+
+      // Refresh user data
+      const response = await api.user.getUser(idToken);
+      setUser(response);
+    }
+  };
 
   return (
     <div>
@@ -116,16 +157,18 @@ export default function SocialPage() {
             </div>
           </button>
         </div>
-        <div className="flex items-center gap-4">
-          <div className="hidden md:flex items-center gap-4">
-            <Link
-              href="/chat"
-              className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] cursor-pointer px-5 pr-4 py-2.5 rounded-full bg-primary-text text-background transition-all flex items-center gap-2"
-            >
-              Log in
-            </Link>
+        {sessionStatus === "unauthenticated" && (
+          <div className="flex items-center gap-4">
+            <div className="hidden md:flex items-center gap-4">
+              <Link
+                href="/chat"
+                className="shadow-[0px_0px_50px_rgba(0,0,0,0.08)] cursor-pointer px-5 pr-4 py-2.5 rounded-full bg-primary-text text-background transition-all flex items-center gap-2"
+              >
+                Log in
+              </Link>
+            </div>
           </div>
-        </div>
+        )}
       </header>
       {/* <main className="min-h-screen flex items-center justify-center px-6">
         <motion.div
@@ -158,6 +201,16 @@ export default function SocialPage() {
         </motion.div>
       </main> */}
       <main className="min-h-screen px-6 md:px-12 pt-24 pb-16">
+        {sessionStatus === "authenticated" && (
+          <UserMenu
+            className="absolute bottom-6 left-6"
+            user={user}
+            userLoading={userLoading}
+            onOpenSettings={() => setShowUserProfilePopup(true)}
+            onUpgrade={() => setShowUpgradeModal(true)}
+            onFeedback={() => setShowFeedbackModal(true)}
+          />
+        )}
         <div className="max-w-6xl mx-auto">
           <div className="max-w-xl mx-auto mb-10">
             <label className="flex items-center gap-3 px-4 py-3 rounded-full bg-base-10 border border-base-10 focus-within:border-base-30 transition-colors shadow-[0px_0px_50px_rgba(0,0,0,0.08)]">
@@ -244,7 +297,10 @@ export default function SocialPage() {
           <div ref={loadMoreRef} className="h-px" />
           {status === "loadingMore" && (
             <div className="flex justify-center py-8">
-              <Icon icon="svg-spinners:ring-resize" className="w-6 h-6 text-text-60" />
+              <Icon
+                icon="svg-spinners:ring-resize"
+                className="w-6 h-6 text-text-60"
+              />
             </div>
           )}
           {status === "error" && lessons.length > 0 && (
@@ -299,10 +355,14 @@ function LessonCard({ lesson }: { lesson: LessonData }) {
       )}
       <div className="mt-auto flex items-center justify-between gap-4">
         {lesson.author && (
-          <span className="text-sm text-text-60 truncate">by {lesson.author}</span>
+          <span className="text-sm text-text-60 truncate">
+            by {lesson.author}
+          </span>
         )}
         <button className="ml-auto bg-opaque-button px-4 py-2 rounded-full shadow-[0px_0px_50px_rgba(0,0,0,0.08)] hover:bg-opaque-button-hover transition-colors cursor-pointer">
-          <span className="font-medium text-primary-text">Fork this lesson</span>
+          <span className="font-medium text-primary-text">
+            Fork this lesson
+          </span>
         </button>
       </div>
     </motion.article>
